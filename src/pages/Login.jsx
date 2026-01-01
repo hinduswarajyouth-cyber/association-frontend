@@ -26,19 +26,21 @@ export default function Login() {
     setLoading(true);
 
     try {
-      const res = await fetch("http://localhost:3000/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          username,
-          password,
-        }),
-      });
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL}/auth/login`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ username, password }),
+        }
+      );
 
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error || "Login failed");
+        setError(data?.error || "Login failed");
         return;
       }
 
@@ -48,7 +50,8 @@ export default function Login() {
 
       /* ✅ FIRST LOGIN CHECK */
       const isFirstLogin =
-        data.isFirstLogin === true || data?.user?.is_first_login === true;
+        data.isFirstLogin === true ||
+        data?.user?.is_first_login === true;
 
       if (isFirstLogin) {
         navigate("/change-password");
