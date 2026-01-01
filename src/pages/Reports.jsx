@@ -14,7 +14,7 @@ export default function Reports() {
   const [loading, setLoading] = useState(false);
 
   /* =========================
-     LOAD JSON REPORTS
+     📥 LOAD JSON REPORTS
   ========================= */
   useEffect(() => {
     loadReports();
@@ -41,7 +41,7 @@ export default function Reports() {
   };
 
   /* =========================
-     PDF DOWNLOAD
+     📄 PDF DOWNLOAD
   ========================= */
   const openPDF = (url) => {
     if (url.includes("monthly") && (!month || !year)) {
@@ -49,7 +49,10 @@ export default function Reports() {
       return;
     }
 
-    window.open(`http://localhost:3000${url}`, "_blank");
+    window.open(
+      `${import.meta.env.VITE_API_URL}${url}`,
+      "_blank"
+    );
   };
 
   return (
@@ -62,7 +65,7 @@ export default function Reports() {
         {loading && <p>Loading reports...</p>}
 
         {/* =========================
-           MONTH FILTER + PDF
+           📆 MONTH FILTER + PDF
         ========================= */}
         <div style={filterBox}>
           <input
@@ -73,6 +76,7 @@ export default function Reports() {
             value={month}
             onChange={(e) => setMonth(e.target.value)}
           />
+
           <input
             type="number"
             placeholder="Year (2025)"
@@ -82,7 +86,9 @@ export default function Reports() {
 
           <button
             onClick={() =>
-              openPDF(`/reports/pdf/monthly?month=${month}&year=${year}`)
+              openPDF(
+                `/reports/pdf/monthly?month=${month}&year=${year}`
+              )
             }
           >
             📄 Monthly PDF
@@ -90,7 +96,7 @@ export default function Reports() {
         </div>
 
         {/* =========================
-           MONTHLY REPORT
+           📆 MONTHLY REPORT
         ========================= */}
         <ReportTable
           title="📆 Monthly Report"
@@ -99,7 +105,7 @@ export default function Reports() {
         />
 
         {/* =========================
-           FUND-WISE REPORT
+           💰 FUND-WISE REPORT
         ========================= */}
         <div style={pdfRow}>
           <h3>💰 Fund-wise Report</h3>
@@ -114,7 +120,7 @@ export default function Reports() {
         />
 
         {/* =========================
-           MEMBER-WISE REPORT
+           👤 MEMBER-WISE REPORT
         ========================= */}
         <div style={pdfRow}>
           <h3>👤 Member-wise Report</h3>
@@ -133,7 +139,7 @@ export default function Reports() {
 }
 
 /* =========================
-   🎨 STYLES (🔥 REQUIRED)
+   🎨 STYLES (REQUIRED)
 ========================= */
 
 const container = {

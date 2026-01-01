@@ -48,7 +48,8 @@ export default function Profile() {
 
         setProfile(data);
         setOriginalProfile(data);
-      } catch {
+      } catch (err) {
+        console.error(err);
         alert("Failed to load profile");
       } finally {
         setPageLoading(false);
@@ -84,7 +85,8 @@ export default function Profile() {
       setMsg("✅ Profile updated successfully");
       setOriginalProfile(profile);
       setEditMode(false);
-    } catch {
+    } catch (err) {
+      console.error(err);
       setMsg("❌ Failed to update profile");
     } finally {
       setLoading(false);
@@ -106,10 +108,11 @@ export default function Profile() {
     if (!dp) return;
 
     const fd = new FormData();
-    fd.append("dp", dp); // MUST MATCH BACKEND
+    fd.append("dp", dp); // MUST MATCH BACKEND FIELD
 
     try {
       setDpLoading(true);
+
       const res = await api.post("/members/profile-dp", fd);
 
       setProfile((prev) => ({
@@ -149,7 +152,7 @@ export default function Profile() {
             src={
               preview ||
               (profile.profile_image
-                ? `http://localhost:3000${profile.profile_image}`
+                ? `${import.meta.env.VITE_API_URL}${profile.profile_image}`
                 : "/default-avatar.png")
             }
             alt="Profile"
