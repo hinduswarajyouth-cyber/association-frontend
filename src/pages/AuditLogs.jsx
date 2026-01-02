@@ -9,9 +9,9 @@ export default function AuditLogs() {
 
   useEffect(() => {
     api
-      .get("/admin/audit-logs")
+      .get("/audit-logs") // ✅ FINAL FIX
       .then((res) => {
-        // safe handling (supports both {logs: []} or [])
+        // supports both: []  OR  { logs: [] }
         const data = Array.isArray(res.data)
           ? res.data
           : Array.isArray(res.data.logs)
@@ -58,9 +58,7 @@ export default function AuditLogs() {
               {logs.map((l, i) => (
                 <tr key={l.id || i}>
                   <td>{new Date(l.created_at).toLocaleString()}</td>
-                  <td>
-                    <b>{l.action}</b>
-                  </td>
+                  <td><b>{l.action}</b></td>
                   <td>{l.entity || "-"}</td>
                   <td>{l.entity_id || "-"}</td>
                   <td>{l.performed_by || "System"}</td>
