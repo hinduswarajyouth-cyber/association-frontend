@@ -22,6 +22,7 @@ import Members from "./pages/Members";
 import AddMember from "./pages/AddMember";
 import Funds from "./pages/Funds";
 import Reports from "./pages/Reports";
+import AuditLogs from "./pages/AuditLogs";
 
 /* ===== MEMBER ===== */
 import MemberContributions from "./pages/MemberContributions";
@@ -106,6 +107,7 @@ export default function App() {
             </PrivateRoute>
           }
         />
+
         <Route
           path="/members"
           element={
@@ -114,6 +116,7 @@ export default function App() {
             </PrivateRoute>
           }
         />
+
         <Route
           path="/add-member"
           element={
@@ -122,6 +125,7 @@ export default function App() {
             </PrivateRoute>
           }
         />
+
         <Route
           path="/funds"
           element={
@@ -144,6 +148,16 @@ export default function App() {
               ]}
             >
               <Reports />
+            </PrivateRoute>
+          }
+        />
+
+        {/* 🧾 AUDIT LOGS (ADMIN ONLY) */}
+        <Route
+          path="/audit-logs"
+          element={
+            <PrivateRoute allowedRoles={["SUPER_ADMIN", "PRESIDENT"]}>
+              <AuditLogs />
             </PrivateRoute>
           }
         />

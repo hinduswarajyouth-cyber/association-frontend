@@ -50,7 +50,7 @@ export default function AdminDashboard() {
     );
   }
 
-  /* ===== SAFE DATA (ONLY FIX HERE) ===== */
+  /* ===== SAFE DATA ===== */
   const recentReceipts = Array.isArray(data.recentContributions)
     ? data.recentContributions
     : [];
@@ -62,21 +62,12 @@ export default function AdminDashboard() {
       <div style={page}>
         <h1 style={pageTitle}>Admin Dashboard</h1>
 
-        {/* ===== STATS CARDS ===== */}
+        {/* ===== STATS ===== */}
         <div style={cardsGrid}>
           <StatCard title="Members" value={data.totalMembers ?? 0} />
-          <StatCard
-            title="Approved Receipts"
-            value={data.approvedReceipts ?? 0}
-          />
-          <StatCard
-            title="Total Collection"
-            value={`₹${data.totalCollection ?? 0}`}
-          />
-          <StatCard
-            title="Cancelled Receipts"
-            value={data.cancelledReceipts ?? 0}
-          />
+          <StatCard title="Approved Receipts" value={data.approvedReceipts ?? 0} />
+          <StatCard title="Total Collection" value={`₹${data.totalCollection ?? 0}`} />
+          <StatCard title="Cancelled Receipts" value={data.cancelledReceipts ?? 0} />
         </div>
 
         {/* ===== ACTION BUTTONS ===== */}
@@ -84,11 +75,11 @@ export default function AdminDashboard() {
           <button style={primaryBtn} onClick={() => navigate("/members")}>
             View Members
           </button>
-          <button
-            style={secondaryBtn}
-            onClick={() => navigate("/add-member")}
-          >
+          <button style={secondaryBtn} onClick={() => navigate("/add-member")}>
             Add Member
+          </button>
+          <button style={auditBtn} onClick={() => navigate("/audit-logs")}>
+            Audit Logs
           </button>
         </div>
 
@@ -132,9 +123,7 @@ export default function AdminDashboard() {
   );
 }
 
-/* =========================
-   SMALL COMPONENT
-========================= */
+/* ===== SMALL COMPONENT ===== */
 function StatCard({ title, value }) {
   return (
     <div style={card}>
@@ -144,9 +133,7 @@ function StatCard({ title, value }) {
   );
 }
 
-/* =========================
-   STYLES – PROFESSIONAL
-========================= */
+/* ===== STYLES ===== */
 const page = {
   padding: "30px 40px",
   background: "#f1f5f9",
@@ -209,6 +196,16 @@ const primaryBtn = {
 const secondaryBtn = {
   background: "#e2e8f0",
   color: "#0f172a",
+  padding: "10px 18px",
+  borderRadius: 8,
+  border: "none",
+  fontWeight: 600,
+  cursor: "pointer",
+};
+
+const auditBtn = {
+  background: "#0f172a",
+  color: "#fff",
   padding: "10px 18px",
   borderRadius: 8,
   border: "none",
