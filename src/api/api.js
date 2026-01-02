@@ -1,10 +1,11 @@
 import axios from "axios";
 
 /* =========================
-   🌐 AXIOS INSTANCE
+   🌐 AXIOS INSTANCE (FINAL)
 ========================= */
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL,
+  // ✅ MUST MATCH .env
+  baseURL: import.meta.env.VITE_API_BASE_URL,
   headers: {
     "Content-Type": "application/json",
   },
@@ -15,21 +16,20 @@ const api = axios.create({
    AUTO ATTACH JWT TOKEN
 ========================= */
 api.interceptors.request.use(
-  (req) => {
+  (config) => {
     const token = localStorage.getItem("token");
 
-    // Attach token for all protected APIs
+    // Attach token ONLY if exists
     if (token) {
-      req.headers.Authorization = `Bearer ${token}`;
+      config.headers.Authorization = `Bearer ${token}`;
     }
 
-    // IMPORTANT:
-    // For FormData (file uploads), let browser set multipart boundary
-    if (req.data instanceof FormData) {
-      delete req.headers["Content-Type"];
+    // IMPORTANT: For file uploads
+    if (config.data instanceof FormData) {
+      delete config.headers["Content-Type"];
     }
 
-    return req;
+    return config;
   },
   (error) => Promise.reject(error)
 );
@@ -44,7 +44,11 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       // Token expired / invalid
       localStorage.clear();
-      window.location.href = "/";
+
+      // 🔥 Prevent redirect loop on public pages
+      if (!window.location.pathname.includes("forgot-password")) {
+        window.location.href = "/";
+      }
     }
     return Promise.reject(error);
   }
