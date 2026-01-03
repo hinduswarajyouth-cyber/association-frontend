@@ -45,11 +45,14 @@ export default function Members() {
   };
 
   /* =========================
-     SAVE MEMBER (EDIT + ASSOCIATION ID)
+     SAVE MEMBER (SAFE)
   ========================= */
   const saveMember = async () => {
-    if (!editing.username.endsWith("@hsy.org")) {
-      alert("Association ID must end with @hsy.org");
+    if (
+      !window.confirm(
+        "Are you sure you want to update this member details?"
+      )
+    ) {
       return;
     }
 
@@ -59,10 +62,6 @@ export default function Members() {
       phone: editing.phone,
       role: editing.role,
       active: editing.active,
-    });
-
-    await api.put(`/admin/edit-association-id/${editing.id}`, {
-      username: editing.username,
     });
 
     alert("Member updated successfully");
@@ -93,7 +92,11 @@ export default function Members() {
             {members.map((m, index) => (
               <tr key={m.id} style={index % 2 ? rowAlt : null}>
                 <td>{m.name}</td>
-                <td>{m.username}</td>
+
+                <td>
+                  <span style={idBadge}>{m.member_id}</span>
+                </td>
+
                 <td>{m.personal_email || "-"}</td>
 
                 <td>
@@ -156,6 +159,17 @@ export default function Members() {
           <div style={modal}>
             <h3>Edit Member</h3>
 
+            {/* READ ONLY ASSOCIATION ID */}
+            <div>
+              <label style={label}>Association ID</label>
+              <div style={readonlyBox}>
+                🔒 {editing.member_id}
+              </div>
+              <small style={hint}>
+                System generated – cannot be edited
+              </small>
+            </div>
+
             <input
               placeholder="Full Name"
               value={editing.name}
@@ -180,14 +194,6 @@ export default function Members() {
               value={editing.phone || ""}
               onChange={(e) =>
                 setEditing({ ...editing, phone: e.target.value })
-              }
-            />
-
-            <input
-              placeholder="Association ID"
-              value={editing.username}
-              onChange={(e) =>
-                setEditing({ ...editing, username: e.target.value })
               }
             />
 
@@ -281,6 +287,15 @@ const roleBadge = {
   fontWeight: 600,
 };
 
+const idBadge = {
+  background: "#ecfeff",
+  color: "#155e75",
+  padding: "4px 10px",
+  borderRadius: 6,
+  fontSize: 12,
+  fontWeight: 600,
+};
+
 const baseBtn = {
   padding: "5px 10px",
   borderRadius: 6,
@@ -315,4 +330,25 @@ const modal = {
   display: "flex",
   flexDirection: "column",
   gap: 10,
+};
+
+const label = {
+  fontSize: 12,
+  fontWeight: 600,
+  color: "#475569",
+};
+
+const readonlyBox = {
+  padding: "10px 12px",
+  borderRadius: 8,
+  background: "#f1f5f9",
+  border: "1px solid #cbd5e1",
+  fontSize: 14,
+  fontWeight: 600,
+  color: "#0f172a",
+};
+
+const hint = {
+  fontSize: 11,
+  color: "#64748b",
 };
