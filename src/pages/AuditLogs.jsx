@@ -9,9 +9,9 @@ export default function AuditLogs() {
 
   useEffect(() => {
     api
-      .get("/audit-logs") // ✅ FINAL FIX
+      .get("/admin/audit-logs") // ✅ FINAL & CORRECT
       .then((res) => {
-        // supports both: []  OR  { logs: [] }
+        // supports both: [] OR { logs: [] }
         const data = Array.isArray(res.data)
           ? res.data
           : Array.isArray(res.data.logs)
