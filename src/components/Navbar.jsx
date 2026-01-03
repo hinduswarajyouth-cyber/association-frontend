@@ -1,14 +1,47 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+
+/* =========================
+   🔐 GET USER FROM JWT
+========================= */
+const getUserFromToken = () => {
+  const token = localStorage.getItem("token");
+  if (!token) return null;
+
+  try {
+    return JSON.parse(atob(token.split(".")[1]));
+  } catch {
+    return null;
+  }
+};
 
 export default function Navbar() {
   const navigate = useNavigate();
-  const role = localStorage.getItem("role");
+  const location = useLocation();
+  const user = getUserFromToken();
 
+  /* =========================
+     🔒 SAFETY: INVALID TOKEN
+  ========================= */
+  if (!user) {
+    localStorage.clear();
+    navigate("/", { replace: true });
+    return null;
+  }
+
+  const role = user.role;
+  const name = user.name || "User";
+
+  /* =========================
+     🔓 LOGOUT
+  ========================= */
   const logout = () => {
     localStorage.clear();
-    navigate("/");
+    navigate("/", { replace: true });
   };
 
+  /* =========================
+     ROLE GROUPS
+  ========================= */
   const ADMIN_ROLES = ["SUPER_ADMIN", "PRESIDENT"];
   const OFFICE_ROLES = [
     "VICE_PRESIDENT",
@@ -18,66 +51,99 @@ export default function Navbar() {
   ];
   const MEMBER_ROLES = ["MEMBER", "VOLUNTEER"];
 
+  /* =========================
+     HOME ROUTE
+  ========================= */
+  const getHomeRoute = () => {
+    if (ADMIN_ROLES.includes(role)) return "/admin-dashboard";
+    if (role === "TREASURER") return "/treasurer-dashboard";
+    return "/dashboard";
+  };
+
+  /* =========================
+     ROLE COLOR
+  ========================= */
+  const getRoleColor = () => {
+    if (ADMIN_ROLES.includes(role)) return "#16a34a";
+    if (OFFICE_ROLES.includes(role)) return "#7c3aed";
+    return "#2563eb";
+  };
+
+  /* =========================
+     ACTIVE LINK STYLE
+  ========================= */
+  const isActive = (path) =>
+    location.pathname.startsWith(path)
+      ? { ...link, ...activeLink }
+      : link;
+
   return (
     <div style={bar}>
-      <h3 style={logo}>Association System</h3>
+      {/* 🏠 LOGO */}
+      <h3 style={logo} onClick={() => navigate(getHomeRoute())}>
+        Association System
+      </h3>
 
+      {/* 📌 MENU */}
       <div style={menu}>
-        {/* ======================
-            👑 ADMIN / PRESIDENT
-        ====================== */}
+        {/* 👑 ADMIN */}
         {ADMIN_ROLES.includes(role) && (
           <>
-            <Link style={link} to="/admin-dashboard">Dashboard</Link>
-            <Link style={link} to="/members">Members</Link>
-            <Link style={link} to="/add-member">Add Member</Link>
-            <Link style={link} to="/funds">Funds</Link>
-            <Link style={link} to="/meetings">Meetings</Link>
-            <Link style={link} to="/reports">Reports</Link>
-            <Link style={link} to="/complaints">Complaints</Link>
+            <Link style={isActive("/admin-dashboard")} to="/admin-dashboard">Dashboard</Link>
+            <Link style={isActive("/members")} to="/members">Members</Link>
+            <Link style={isActive("/add-member")} to="/add-member">Add Member</Link>
+            <Link style={isActive("/funds")} to="/funds">Funds</Link>
+            <Link style={isActive("/meetings")} to="/meetings">Meetings</Link>
+            <Link style={isActive("/reports")} to="/reports">Reports</Link>
+            <Link style={isActive("/complaints")} to="/complaints">Complaints</Link>
           </>
         )}
 
-        {/* ======================
-            💰 TREASURER
-        ====================== */}
+        {/* 💰 TREASURER */}
         {role === "TREASURER" && (
           <>
-            <Link style={link} to="/treasurer-dashboard">Dashboard</Link>
-            <Link style={link} to="/meetings">Meetings</Link>
-            <Link style={link} to="/reports">Reports</Link>
-            <Link style={link} to="/complaints">Complaints</Link>
+            <Link style={isActive("/treasurer-dashboard")} to="/treasurer-dashboard">Dashboard</Link>
+            <Link style={isActive("/meetings")} to="/meetings">Meetings</Link>
+            <Link style={isActive("/reports")} to="/reports">Reports</Link>
+            <Link style={isActive("/complaints")} to="/complaints">Complaints</Link>
           </>
         )}
 
-        {/* ======================
-            🧑‍💼 OFFICE BEARERS
-        ====================== */}
+        {/* 🧑‍💼 OFFICE */}
         {OFFICE_ROLES.includes(role) && (
           <>
-            <Link style={link} to="/meetings">Meetings</Link>
-            <Link style={link} to="/complaints">Complaints</Link>
+            <Link style={isActive("/meetings")} to="/meetings">Meetings</Link>
+            <Link style={isActive("/complaints")} to="/complaints">Complaints</Link>
           </>
         )}
 
-        {/* ======================
-            👤 MEMBER / VOLUNTEER
-        ====================== */}
+        {/* 👤 MEMBER */}
         {MEMBER_ROLES.includes(role) && (
           <>
-            <Link style={link} to="/dashboard">Dashboard</Link>
-            <Link style={link} to="/contributions">Contributions</Link>
-            <Link style={link} to="/meetings">Meetings</Link>
-            <Link style={link} to="/complaints">Complaints</Link>
-            <Link style={link} to="/profile">Profile</Link>
+            <Link style={isActive("/dashboard")} to="/dashboard">Dashboard</Link>
+            <Link style={isActive("/contributions")} to="/contributions">Contributions</Link>
+            <Link style={isActive("/meetings")} to="/meetings">Meetings</Link>
+            <Link style={isActive("/complaints")} to="/complaints">Complaints</Link>
+            <Link style={isActive("/profile")} to="/profile">Profile</Link>
           </>
         )}
 
-        {/* ======================
-            🔁 COMMON
-        ====================== */}
-        <Link style={link} to="/change-password">Change Password</Link>
-        <button onClick={logout} style={logoutBtn}>Logout</button>
+        {/* 🔁 COMMON */}
+        <Link style={isActive("/change-password")} to="/change-password">
+          Change Password
+        </Link>
+
+        {/* 👤 USER INFO */}
+        <div style={userBox}>
+          <span style={userName}>👤 {name}</span>
+          <span style={{ ...roleBadge, background: getRoleColor() }}>
+            {role.replace("_", " ")}
+          </span>
+        </div>
+
+        <button onClick={logout} style={logoutBtn}>
+          Logout
+        </button>
       </div>
     </div>
   );
@@ -97,12 +163,13 @@ const bar = {
 const logo = {
   color: "#f8fafc",
   margin: 0,
-  fontWeight: 700,
+  fontWeight: 800,
+  cursor: "pointer",
 };
 
 const menu = {
   display: "flex",
-  gap: 18,
+  gap: 16,
   alignItems: "center",
 };
 
@@ -111,6 +178,32 @@ const link = {
   textDecoration: "none",
   fontWeight: 600,
   fontSize: 14,
+  padding: "4px 6px",
+};
+
+const activeLink = {
+  color: "#38bdf8",
+  borderBottom: "2px solid #38bdf8",
+};
+
+const userBox = {
+  display: "flex",
+  alignItems: "center",
+  gap: 6,
+};
+
+const userName = {
+  color: "#e5e7eb",
+  fontSize: 13,
+  fontWeight: 600,
+};
+
+const roleBadge = {
+  color: "#fff",
+  padding: "2px 8px",
+  borderRadius: 12,
+  fontSize: 11,
+  fontWeight: 700,
 };
 
 const logoutBtn = {
