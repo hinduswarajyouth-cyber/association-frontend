@@ -16,17 +16,23 @@ function StatCard({ title, value }) {
 
 export default function Dashboard() {
   const [contributions, setContributions] = useState([]);
+  const [announcements, setAnnouncements] = useState([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
 
   /* =========================
-     📥 LOAD CONTRIBUTIONS
+     📥 LOAD DASHBOARD DATA
   ========================= */
   useEffect(() => {
     const loadDashboard = async () => {
       try {
-        const res = await api.get("/members/contributions");
-        setContributions(res.data.contributions || []);
+        const [contriRes, annRes] = await Promise.all([
+          api.get("/members/contributions"),
+          api.get("/announcements"),
+        ]);
+
+        setContributions(contriRes.data.contributions || []);
+        setAnnouncements(annRes.data || []);
       } catch (err) {
         console.error("Dashboard API error:", err);
         setError("Failed to load dashboard");
@@ -64,6 +70,27 @@ export default function Dashboard() {
         <h2>Welcome 👋</h2>
 
         {/* =========================
+           📌 PINNED ANNOUNCEMENT
+        ========================= */}
+        {announcements
+          .filter((a) => a.priority === "PINNED")
+          .slice(0, 1)
+          .map((a) => (
+            <div
+              key={a.id}
+              style={{
+                background: "#fff3cd",
+                padding: "12px 15px",
+                borderRadius: "6px",
+                margin: "20px 0",
+                border: "1px solid #ffe69c",
+              }}
+            >
+              📌 <b>{a.title}</b> — {a.message}
+            </div>
+          ))}
+
+        {/* =========================
            📊 STATS
         ========================= */}
         <div style={statsRow}>
@@ -76,6 +103,29 @@ export default function Dashboard() {
             value={`₹${totalAmount}`}
           />
         </div>
+
+        {/* =========================
+           📰 LATEST ANNOUNCEMENTS
+        ========================= */}
+        {announcements.length > 0 && (
+          <>
+            <h3 style={{ marginTop: 35 }}>📢 Latest Announcements</h3>
+
+            <div style={{ marginTop: 10 }}>
+              {announcements.slice(0, 5).map((a) => (
+                <div
+                  key={a.id}
+                  style={{
+                    padding: "8px 0",
+                    fontWeight: a.seen ? "normal" : "bold",
+                  }}
+                >
+                  {!a.seen && "🔵 "} {a.title}
+                </div>
+              ))}
+            </div>
+          </>
+        )}
 
         {/* =========================
            📋 CONTRIBUTIONS TABLE
