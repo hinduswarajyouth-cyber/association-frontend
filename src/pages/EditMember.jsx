@@ -15,8 +15,6 @@ export default function EditMember() {
   const [phone, setPhone] = useState("");
   const [role, setRole] = useState("MEMBER");
   const [active, setActive] = useState(true);
-
-  // ✅ Association ID state
   const [username, setUsername] = useState("");
 
   /* =========================
@@ -27,12 +25,12 @@ export default function EditMember() {
       .get(`/admin/member/${id}`)
       .then((res) => {
         const m = res.data;
-        setName(m.name);
+        setName(m.name || "");
         setPersonalEmail(m.personal_email || "");
         setPhone(m.phone || "");
-        setRole(m.role);
-        setActive(m.active);
-        setUsername(m.username); // ✅ IMPORTANT
+        setRole(m.role || "MEMBER");
+        setActive(Boolean(m.active));
+        setUsername(m.username || "");
       })
       .catch(() => {
         alert("Failed to load member");
@@ -47,21 +45,13 @@ export default function EditMember() {
   const handleUpdateMember = async () => {
     setSaving(true);
     try {
-      await api.put(
-        `/admin/edit-member/${id}`,
-        {
-          name,
-          personal_email: personalEmail || null,
-          phone: phone || null,
-          role,
-          active,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        }
-      );
+      await api.put(`/admin/edit-member/${id}`, {
+        name,
+        personal_email: personalEmail || null,
+        phone: phone || null,
+        role,
+        active,
+      });
 
       alert("✅ Member updated successfully");
     } catch (err) {
@@ -81,16 +71,7 @@ export default function EditMember() {
     }
 
     try {
-      await api.put(
-        `/admin/edit-association-id/${id}`,
-        { username },
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        }
-      );
-
+      await api.put(`/admin/edit-association-id/${id}`, { username });
       alert("✅ Association ID updated successfully");
     } catch (err) {
       alert(err.response?.data?.error || "Failed to update Association ID");

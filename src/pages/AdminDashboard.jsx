@@ -66,7 +66,10 @@ export default function AdminDashboard() {
         <div style={cardsGrid}>
           <StatCard title="Members" value={data.totalMembers ?? 0} />
           <StatCard title="Approved Receipts" value={data.approvedReceipts ?? 0} />
-          <StatCard title="Total Collection" value={`₹${data.totalCollection ?? 0}`} />
+          <StatCard
+            title="Total Collection"
+            value={`₹${Number(data.totalCollection ?? 0).toLocaleString("en-IN")}`}
+          />
           <StatCard title="Cancelled Receipts" value={data.cancelledReceipts ?? 0} />
         </div>
 
@@ -106,7 +109,9 @@ export default function AdminDashboard() {
                     <td style={td}>{r.receipt_no || "-"}</td>
                     <td style={td}>{r.member_name || "-"}</td>
                     <td style={td}>{r.fund_name || "-"}</td>
-                    <td style={td}>₹{r.amount ?? 0}</td>
+                    <td style={td}>
+                      ₹{Number(r.amount ?? 0).toLocaleString("en-IN")}
+                    </td>
                     <td style={td}>
                       {r.receipt_date
                         ? new Date(r.receipt_date).toLocaleDateString()

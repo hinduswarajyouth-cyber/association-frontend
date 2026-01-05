@@ -8,13 +8,16 @@ export default function AddMember() {
 
   const [name, setName] = useState("");
   const [personalEmail, setPersonalEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [address, setAddress] = useState("");
   const [role, setRole] = useState("MEMBER");
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
   /* =========================
-     ADD MEMBER (FINAL)
+     ADD MEMBER – FINAL
   ========================= */
   const handleAddMember = async (e) => {
     e.preventDefault();
@@ -33,6 +36,8 @@ export default function AddMember() {
         {
           name: name.trim(),
           personal_email: personalEmail || null,
+          phone: phone || null,
+          address: address || null,
           role,
         },
         {
@@ -49,9 +54,10 @@ export default function AddMember() {
       // reset form
       setName("");
       setPersonalEmail("");
+      setPhone("");
+      setAddress("");
       setRole("MEMBER");
 
-      // redirect after short delay
       setTimeout(() => {
         navigate("/members");
       }, 1200);
@@ -75,7 +81,7 @@ export default function AddMember() {
           </p>
 
           <div style={infoNote}>
-            If email is not provided, you can resend login credentials later.
+            Member ID & Association ID will be generated automatically.
           </div>
 
           {error && <div style={errorBox}>{error}</div>}
@@ -95,13 +101,34 @@ export default function AddMember() {
             </div>
 
             <div style={field}>
-              <label style={label}>Personal Email (optional)</label>
+              <label style={label}>Personal Email</label>
               <input
                 type="email"
                 value={personalEmail}
                 onChange={(e) => setPersonalEmail(e.target.value)}
                 style={input}
-                placeholder="Enter personal email"
+                placeholder="example@gmail.com"
+              />
+            </div>
+
+            <div style={field}>
+              <label style={label}>Phone Number</label>
+              <input
+                type="text"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                style={input}
+                placeholder="Enter phone number"
+              />
+            </div>
+
+            <div style={field}>
+              <label style={label}>Address</label>
+              <textarea
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                style={{ ...input, minHeight: 70 }}
+                placeholder="Enter address"
               />
             </div>
 
@@ -117,12 +144,8 @@ export default function AddMember() {
                 <option value="TREASURER">TREASURER</option>
                 <option value="PRESIDENT">PRESIDENT</option>
                 <option value="VICE_PRESIDENT">VICE PRESIDENT</option>
-                <option value="GENERAL_SECRETARY">
-                  GENERAL SECRETARY
-                </option>
-                <option value="JOINT_SECRETARY">
-                  JOINT SECRETARY
-                </option>
+                <option value="GENERAL_SECRETARY">GENERAL SECRETARY</option>
+                <option value="JOINT_SECRETARY">JOINT SECRETARY</option>
               </select>
             </div>
 
@@ -145,7 +168,7 @@ export default function AddMember() {
 }
 
 /* =========================
-   STYLES – PROFESSIONAL & CONSISTENT
+   STYLES
 ========================= */
 
 const page = {
@@ -153,9 +176,7 @@ const page = {
   background: "#f1f5f9",
   display: "flex",
   justifyContent: "center",
-  alignItems: "flex-start",
   paddingTop: 40,
-  fontFamily: "Inter, Segoe UI, sans-serif",
 };
 
 const card = {
@@ -169,7 +190,6 @@ const card = {
 const title = {
   fontSize: 22,
   fontWeight: 700,
-  color: "#0f172a",
   marginBottom: 4,
 };
 
@@ -181,7 +201,6 @@ const subtitle = {
 
 const infoNote = {
   fontSize: 12,
-  color: "#475569",
   background: "#f1f5f9",
   padding: "8px 12px",
   borderRadius: 8,
@@ -198,7 +217,6 @@ const label = {
   fontSize: 13,
   fontWeight: 600,
   marginBottom: 6,
-  color: "#334155",
 };
 
 const input = {
@@ -206,7 +224,6 @@ const input = {
   borderRadius: 10,
   border: "1px solid #cbd5f5",
   fontSize: 15,
-  outline: "none",
 };
 
 const select = {
@@ -214,12 +231,9 @@ const select = {
   borderRadius: 10,
   border: "1px solid #cbd5f5",
   fontSize: 15,
-  outline: "none",
-  background: "#fff",
 };
 
 const primaryBtn = {
-  marginTop: 16,
   width: "100%",
   padding: "12px",
   borderRadius: 10,
@@ -235,7 +249,6 @@ const errorBox = {
   color: "#991b1b",
   padding: "8px 12px",
   borderRadius: 8,
-  fontSize: 13,
   marginBottom: 12,
 };
 
@@ -244,6 +257,5 @@ const successBox = {
   color: "#166534",
   padding: "8px 12px",
   borderRadius: 8,
-  fontSize: 13,
   marginBottom: 12,
 };
