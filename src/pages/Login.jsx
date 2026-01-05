@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+import api from "../api/api";
 import bg from "../assets/login-bg.png";
 
 /* ✅ DASHBOARD ROLES */
@@ -19,6 +21,7 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
+  const { login } = useAuth();
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -26,53 +29,37 @@ export default function Login() {
     setLoading(true);
 
     try {
-      const res = await fetch(
-        `${import.meta.env.VITE_API_URL}/auth/login`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ username, password }),
-        }
-      );
+      const res = await api.post("/auth/login", {
+        username,
+        password,
+      });
 
-      const data = await res.json();
+      const { token, user, isFirstLogin } = res.data;
 
-      if (!res.ok) {
-        setError(data?.error || "Login failed");
+      // ✅ SAVE AUTH (SINGLE SOURCE OF TRUTH)
+      login(token, user);
+
+      // 🔁 FIRST LOGIN → FORCE PASSWORD CHANGE
+      if (isFirstLogin || user?.is_first_login) {
+        navigate("/change-password", { replace: true });
         return;
       }
 
-      /* ✅ STORE AUTH DATA */
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("role", data.role);
-
-      /* ✅ FIRST LOGIN CHECK */
-      const isFirstLogin =
-        data.isFirstLogin === true ||
-        data?.user?.is_first_login === true;
-
-      if (isFirstLogin) {
-        navigate("/change-password");
-        return;
-      }
-
-      /* ✅ ROLE BASED ROUTING */
-      const role = data.role;
+      // 🔁 ROLE BASED REDIRECT
+      const role = user.role;
 
       if (["SUPER_ADMIN", "PRESIDENT"].includes(role)) {
-        navigate("/admin-dashboard");
+        navigate("/admin-dashboard", { replace: true });
       } else if (role === "TREASURER") {
-        navigate("/treasurer-dashboard");
+        navigate("/treasurer-dashboard", { replace: true });
       } else if (dashboardRoles.includes(role)) {
-        navigate("/dashboard");
+        navigate("/dashboard", { replace: true });
       } else {
         setError("Unauthorized role");
       }
     } catch (err) {
       console.error("LOGIN ERROR 👉", err);
-      setError("Server error");
+      setError(err.response?.data?.error || "Login failed");
     } finally {
       setLoading(false);
     }
@@ -80,55 +67,58 @@ export default function Login() {
 
   return (
     <div style={page}>
-      {/* ✅ BACKGROUND IMAGE */}
       <img src={bg} alt="Background" style={bgImage} />
 
-      {/* ✅ OVERLAY */}
       <div style={overlay}>
         <div style={content}>
-          <h1 style={welcome}>Hello Welcome</h1>
-          <p style={subtitle}>Association System</p>
+          {/* ✨ FADE + SLIDE ANIMATION */}
+          <div style={animatedBox}>
+            <h1 style={welcome}>Hello Welcome</h1>
+            <p style={subtitle}>Association System</p>
 
-          <form onSubmit={handleLogin} style={box}>
-            <h3 style={{ marginBottom: 15 }}>Login</h3>
+            <form onSubmit={handleLogin} style={box}>
+              <h3 style={{ marginBottom: 15 }}>Login</h3>
 
-            {error && <p style={errorText}>{error}</p>}
+              {error && <p style={errorText}>{error}</p>}
 
-            <input
-              type="text"
-              placeholder="Association ID (example: ramesh@hsy.org)"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              required
-              style={input}
-            />
+              <input
+                type="text"
+                placeholder="Association ID"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                required
+                style={input}
+              />
 
-            <input
-              type="password"
-              placeholder="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              style={input}
-            />
+              <input
+                type="password"
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                style={input}
+              />
 
-            <button type="submit" style={btn} disabled={loading}>
-              {loading ? "Logging in..." : "LOGIN"}
-            </button>
+              <button type="submit" style={btn} disabled={loading}>
+                {loading ? "Logging in..." : "LOGIN"}
+              </button>
 
-            <p style={{ marginTop: 10 }}>
-              <a href="/forgot-password" style={{ color: "#ffd700" }}>
-                Forgot Password?
-              </a>
-            </p>
-          </form>
+              <p style={{ marginTop: 12 }}>
+                <a href="/forgot-password" style={{ color: "#ffd700" }}>
+                  Forgot Password?
+                </a>
+              </p>
+            </form>
+          </div>
         </div>
       </div>
     </div>
   );
 }
 
-/* ===== STYLES ===== */
+/* =========================
+   🎨 STYLES
+========================= */
 
 const page = {
   minHeight: "100vh",
@@ -144,15 +134,13 @@ const bgImage = {
 
 const overlay = {
   position: "absolute",
-  top: 0,
-  left: 0,
-  width: "100%",
-  minHeight: "100vh",
+  inset: 0,
+  minHeight: "100svh", // ✅ mobile safe viewport
   background: "rgba(0,0,0,0.35)",
   display: "flex",
   justifyContent: "center",
   alignItems: "center",
-  padding: "40px 20px",
+  padding: "24px 16px",
 };
 
 const content = {
@@ -160,10 +148,35 @@ const content = {
   color: "#fff",
 };
 
+/* ✨ ANIMATION */
+const animatedBox = {
+  animation: "fadeSlide 0.8s ease-out",
+};
+
+/* inject keyframes */
+const styleSheet = document.styleSheets[0];
+if (styleSheet) {
+  styleSheet.insertRule(
+    `
+    @keyframes fadeSlide {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+  `,
+    styleSheet.cssRules.length
+  );
+}
+
 const welcome = {
-  fontSize: 38,
+  fontSize: 32, // mobile friendly
   fontWeight: "bold",
-  textShadow: "0 2px 6px rgba(0,0,0,0.8)",
+  marginBottom: 4,
 };
 
 const subtitle = {
@@ -172,33 +185,36 @@ const subtitle = {
 };
 
 const box = {
-  width: 320,
-  padding: 25,
-  background: "rgba(255,255,255,0.18)",
-  backdropFilter: "blur(10px)",
-  borderRadius: 12,
+  width: "100%",
+  maxWidth: 360,
+  padding: 24,
+  background: "rgba(255,255,255,0.2)",
+  backdropFilter: "blur(12px)",
+  borderRadius: 14,
   boxShadow: "0 8px 25px rgba(0,0,0,0.4)",
 };
 
 const input = {
   width: "100%",
-  padding: 12,
-  marginBottom: 12,
-  borderRadius: 6,
+  padding: 14,
+  marginBottom: 14,
+  borderRadius: 8,
   border: "none",
+  fontSize: 16, // ✅ prevents mobile zoom
 };
 
 const btn = {
   width: "100%",
-  padding: 12,
+  padding: 14,
   background: "gold",
-  borderRadius: 8,
+  borderRadius: 10,
   fontWeight: "bold",
+  fontSize: 16,
   cursor: "pointer",
 };
 
 const errorText = {
   color: "#ffb4b4",
   fontSize: 13,
-  marginBottom: 8,
+  marginBottom: 10,
 };

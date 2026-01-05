@@ -1,43 +1,17 @@
 import { Link, useNavigate, useLocation } from "react-router-dom";
-
-/* =========================
-   🔐 GET USER FROM JWT
-========================= */
-const getUserFromToken = () => {
-  const token = localStorage.getItem("token");
-  if (!token) return null;
-
-  try {
-    return JSON.parse(atob(token.split(".")[1]));
-  } catch {
-    return null;
-  }
-};
+import { useAuth } from "../context/AuthContext";
+import { useState } from "react";
 
 export default function Navbar() {
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const user = getUserFromToken();
+  const [open, setOpen] = useState(false);
 
-  /* =========================
-     🔒 SAFETY: INVALID TOKEN
-  ========================= */
-  if (!user) {
-    localStorage.clear();
-    navigate("/", { replace: true });
-    return null;
-  }
+  if (!user) return null;
 
   const role = user.role;
   const name = user.name || "User";
-
-  /* =========================
-     🔓 LOGOUT
-  ========================= */
-  const logout = () => {
-    localStorage.clear();
-    navigate("/", { replace: true });
-  };
 
   /* =========================
      ROLE GROUPS
@@ -61,15 +35,6 @@ export default function Navbar() {
   };
 
   /* =========================
-     ROLE COLOR
-  ========================= */
-  const getRoleColor = () => {
-    if (ADMIN_ROLES.includes(role)) return "#16a34a";
-    if (OFFICE_ROLES.includes(role)) return "#7c3aed";
-    return "#2563eb";
-  };
-
-  /* =========================
      ACTIVE LINK STYLE
   ========================= */
   const isActive = (path) =>
@@ -77,74 +42,112 @@ export default function Navbar() {
       ? { ...link, ...activeLink }
       : link;
 
+  const closeMobile = () => setOpen(false);
+
   return (
-    <div style={bar}>
-      {/* 🏠 LOGO */}
-      <h3 style={logo} onClick={() => navigate(getHomeRoute())}>
-        Association System
-      </h3>
+    <>
+      {/* 🔷 TOP BAR */}
+      <div style={bar}>
+        <h3 style={logo} onClick={() => navigate(getHomeRoute())}>
+          Association System
+        </h3>
 
-      {/* 📌 MENU */}
-      <div style={menu}>
-        {/* 👑 ADMIN */}
-        {ADMIN_ROLES.includes(role) && (
-          <>
-            <Link style={isActive("/admin-dashboard")} to="/admin-dashboard">Dashboard</Link>
-            <Link style={isActive("/members")} to="/members">Members</Link>
-            <Link style={isActive("/add-member")} to="/add-member">Add Member</Link>
-            <Link style={isActive("/funds")} to="/funds">Funds</Link>
-            <Link style={isActive("/meetings")} to="/meetings">Meetings</Link>
-            <Link style={isActive("/reports")} to="/reports">Reports</Link>
-            <Link style={isActive("/complaints")} to="/complaints">Complaints</Link>
-          </>
-        )}
-
-        {/* 💰 TREASURER */}
-        {role === "TREASURER" && (
-          <>
-            <Link style={isActive("/treasurer-dashboard")} to="/treasurer-dashboard">Dashboard</Link>
-            <Link style={isActive("/meetings")} to="/meetings">Meetings</Link>
-            <Link style={isActive("/reports")} to="/reports">Reports</Link>
-            <Link style={isActive("/complaints")} to="/complaints">Complaints</Link>
-          </>
-        )}
-
-        {/* 🧑‍💼 OFFICE */}
-        {OFFICE_ROLES.includes(role) && (
-          <>
-            <Link style={isActive("/meetings")} to="/meetings">Meetings</Link>
-            <Link style={isActive("/complaints")} to="/complaints">Complaints</Link>
-          </>
-        )}
-
-        {/* 👤 MEMBER */}
-        {MEMBER_ROLES.includes(role) && (
-          <>
-            <Link style={isActive("/dashboard")} to="/dashboard">Dashboard</Link>
-            <Link style={isActive("/contributions")} to="/contributions">Contributions</Link>
-            <Link style={isActive("/meetings")} to="/meetings">Meetings</Link>
-            <Link style={isActive("/complaints")} to="/complaints">Complaints</Link>
-            <Link style={isActive("/profile")} to="/profile">Profile</Link>
-          </>
-        )}
-
-        {/* 🔁 COMMON */}
-        <Link style={isActive("/change-password")} to="/change-password">
-          Change Password
-        </Link>
-
-        {/* 👤 USER INFO */}
-        <div style={userBox}>
-          <span style={userName}>👤 {name}</span>
-          <span style={{ ...roleBadge, background: getRoleColor() }}>
-            {role.replace("_", " ")}
-          </span>
-        </div>
-
-        <button onClick={logout} style={logoutBtn}>
-          Logout
+        {/* 🍔 HAMBURGER (MOBILE) */}
+        <button style={burger} onClick={() => setOpen(!open)}>
+          ☰
         </button>
+
+        {/* 💻 DESKTOP MENU */}
+        <div style={menuDesktop}>
+          <MenuLinks role={role} isActive={isActive} onClick={closeMobile} />
+
+          <UserInfo
+            name={name}
+            role={role}
+            onLogout={() => {
+              logout();
+              navigate("/login");
+            }}
+          />
+        </div>
       </div>
+
+      {/* 📱 MOBILE MENU */}
+      {open && (
+        <div style={menuMobile}>
+          <MenuLinks role={role} isActive={isActive} onClick={closeMobile} />
+          <UserInfo
+            name={name}
+            role={role}
+            onLogout={() => {
+              logout();
+              navigate("/login");
+            }}
+          />
+        </div>
+      )}
+    </>
+  );
+}
+
+/* =========================
+   MENU LINKS
+========================= */
+function MenuLinks({ role, isActive, onClick }) {
+  const ADMIN_ROLES = ["SUPER_ADMIN", "PRESIDENT"];
+  const OFFICE_ROLES = [
+    "VICE_PRESIDENT",
+    "GENERAL_SECRETARY",
+    "JOINT_SECRETARY",
+    "EC_MEMBER",
+  ];
+  const MEMBER_ROLES = ["MEMBER", "VOLUNTEER"];
+
+  return (
+    <>
+      {ADMIN_ROLES.includes(role) && (
+        <>
+          <Link onClick={onClick} style={isActive("/admin-dashboard")} to="/admin-dashboard">Dashboard</Link>
+          <Link onClick={onClick} style={isActive("/members")} to="/members">Members</Link>
+          <Link onClick={onClick} style={isActive("/funds")} to="/funds">Funds</Link>
+          <Link onClick={onClick} style={isActive("/reports")} to="/reports">Reports</Link>
+        </>
+      )}
+
+      {role === "TREASURER" && (
+        <>
+          <Link onClick={onClick} style={isActive("/treasurer-dashboard")} to="/treasurer-dashboard">Dashboard</Link>
+          <Link onClick={onClick} style={isActive("/treasurer/expense")} to="/treasurer/expense">Create Expense</Link>
+        </>
+      )}
+
+      {OFFICE_ROLES.includes(role) && (
+        <Link onClick={onClick} style={isActive("/dashboard")} to="/dashboard">Dashboard</Link>
+      )}
+
+      {MEMBER_ROLES.includes(role) && (
+        <>
+          <Link onClick={onClick} style={isActive("/dashboard")} to="/dashboard">Dashboard</Link>
+          <Link onClick={onClick} style={isActive("/contributions")} to="/contributions">Contributions</Link>
+        </>
+      )}
+
+      <Link onClick={onClick} style={isActive("/meetings")} to="/meetings">Meetings</Link>
+      <Link onClick={onClick} style={isActive("/complaints")} to="/complaints">Complaints</Link>
+      <Link onClick={onClick} style={isActive("/change-password")} to="/change-password">Change Password</Link>
+    </>
+  );
+}
+
+/* =========================
+   USER INFO
+========================= */
+function UserInfo({ name, role, onLogout }) {
+  return (
+    <div style={userBox}>
+      <span style={userName}>👤 {name}</span>
+      <span style={roleBadge}>{role.replaceAll("_", " ")}</span>
+      <button onClick={onLogout} style={logoutBtn}>Logout</button>
     </div>
   );
 }
@@ -154,7 +157,7 @@ export default function Navbar() {
 ========================= */
 const bar = {
   background: "#1e293b",
-  padding: "14px 30px",
+  padding: "14px 20px",
   display: "flex",
   justifyContent: "space-between",
   alignItems: "center",
@@ -167,10 +170,27 @@ const logo = {
   cursor: "pointer",
 };
 
-const menu = {
+const burger = {
+  background: "transparent",
+  color: "#fff",
+  fontSize: 26,
+  border: "none",
+  cursor: "pointer",
+  display: "none",
+};
+
+const menuDesktop = {
   display: "flex",
   gap: 16,
   alignItems: "center",
+};
+
+const menuMobile = {
+  background: "#0f172a",
+  padding: 16,
+  display: "flex",
+  flexDirection: "column",
+  gap: 12,
 };
 
 const link = {
@@ -178,7 +198,6 @@ const link = {
   textDecoration: "none",
   fontWeight: 600,
   fontSize: 14,
-  padding: "4px 6px",
 };
 
 const activeLink = {
@@ -189,29 +208,36 @@ const activeLink = {
 const userBox = {
   display: "flex",
   alignItems: "center",
-  gap: 6,
+  gap: 8,
+  marginTop: 10,
 };
 
 const userName = {
   color: "#e5e7eb",
   fontSize: 13,
-  fontWeight: 600,
 };
 
 const roleBadge = {
+  background: "#2563eb",
   color: "#fff",
   padding: "2px 8px",
   borderRadius: 12,
   fontSize: 11,
-  fontWeight: 700,
 };
 
 const logoutBtn = {
   background: "#dc2626",
   color: "#fff",
   border: "none",
-  padding: "6px 14px",
+  padding: "6px 12px",
   borderRadius: 6,
   cursor: "pointer",
-  fontWeight: 600,
 };
+
+/* =========================
+   📱 MEDIA QUERY (JS)
+========================= */
+if (window.innerWidth < 768) {
+  burger.display = "block";
+  menuDesktop.display = "none";
+}

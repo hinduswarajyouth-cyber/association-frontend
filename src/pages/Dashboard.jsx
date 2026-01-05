@@ -20,6 +20,8 @@ export default function Dashboard() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
 
+  const isMobile = window.innerWidth < 768;
+
   /* =========================
      📥 LOAD DASHBOARD DATA
   ========================= */
@@ -44,20 +46,17 @@ export default function Dashboard() {
     loadDashboard();
   }, []);
 
-  if (loading) {
-    return <p style={{ padding: 30 }}>Loading...</p>;
-  }
-
-  if (error) {
-    return <p style={{ padding: 30, color: "red" }}>{error}</p>;
-  }
+  if (loading) return <p style={{ padding: 30 }}>Loading...</p>;
+  if (error) return <p style={{ padding: 30, color: "red" }}>{error}</p>;
 
   /* =========================
-     📊 CALCULATIONS
+     📊 APPROVED ONLY
   ========================= */
-  const totalContributions = contributions.length;
+  const approved = contributions.filter(
+    (c) => c.status === "APPROVED"
+  );
 
-  const totalAmount = contributions.reduce(
+  const totalAmount = approved.reduce(
     (sum, c) => sum + Number(c.amount || 0),
     0
   );
@@ -69,34 +68,21 @@ export default function Dashboard() {
       <div style={container}>
         <h2>Welcome 👋</h2>
 
-        {/* =========================
-           📌 PINNED ANNOUNCEMENT
-        ========================= */}
+        {/* 📌 PINNED */}
         {announcements
           .filter((a) => a.priority === "PINNED")
           .slice(0, 1)
           .map((a) => (
-            <div
-              key={a.id}
-              style={{
-                background: "#fff3cd",
-                padding: "12px 15px",
-                borderRadius: "6px",
-                margin: "20px 0",
-                border: "1px solid #ffe69c",
-              }}
-            >
+            <div key={a.id} style={pinned}>
               📌 <b>{a.title}</b> — {a.message}
             </div>
           ))}
 
-        {/* =========================
-           📊 STATS
-        ========================= */}
+        {/* 📊 STATS */}
         <div style={statsRow}>
           <StatCard
-            title="Total Contributions"
-            value={totalContributions}
+            title="Approved Contributions"
+            value={approved.length}
           />
           <StatCard
             title="Total Amount Contributed"
@@ -104,37 +90,28 @@ export default function Dashboard() {
           />
         </div>
 
-        {/* =========================
-           📰 LATEST ANNOUNCEMENTS
-        ========================= */}
-        {announcements.length > 0 && (
-          <>
-            <h3 style={{ marginTop: 35 }}>📢 Latest Announcements</h3>
-
-            <div style={{ marginTop: 10 }}>
-              {announcements.slice(0, 5).map((a) => (
-                <div
-                  key={a.id}
-                  style={{
-                    padding: "8px 0",
-                    fontWeight: a.seen ? "normal" : "bold",
-                  }}
-                >
-                  {!a.seen && "🔵 "} {a.title}
-                </div>
-              ))}
-            </div>
-          </>
-        )}
-
-        {/* =========================
-           📋 CONTRIBUTIONS TABLE
-        ========================= */}
+        {/* 📋 CONTRIBUTIONS */}
         <h3 style={{ marginTop: 40 }}>My Contributions</h3>
 
         {contributions.length === 0 ? (
           <p>No contributions yet</p>
+        ) : isMobile ? (
+          /* 📱 MOBILE CARDS */
+          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            {contributions.map((c, i) => (
+              <div key={i} style={mobileCard}>
+                <div><b>Fund:</b> {c.fund_name}</div>
+                <div><b>Amount:</b> ₹{c.amount}</div>
+                <div>
+                  <b>Status:</b>{" "}
+                  <span style={badge(c.status)}>{c.status}</span>
+                </div>
+                <div><b>Date:</b> {c.receipt_date?.slice(0, 10)}</div>
+              </div>
+            ))}
+          </div>
         ) : (
+          /* 💻 DESKTOP TABLE */
           <table style={tableStyle}>
             <thead>
               <tr>
@@ -150,9 +127,7 @@ export default function Dashboard() {
                   <td>{c.fund_name}</td>
                   <td>₹{c.amount}</td>
                   <td>
-                    <span style={badge(c.status)}>
-                      {c.status}
-                    </span>
+                    <span style={badge(c.status)}>{c.status}</span>
                   </td>
                   <td>{c.receipt_date?.slice(0, 10)}</td>
                 </tr>
@@ -179,6 +154,7 @@ const statsRow = {
   display: "flex",
   gap: 20,
   marginTop: 20,
+  flexWrap: "wrap",
 };
 
 const card = {
@@ -189,10 +165,25 @@ const card = {
   boxShadow: "0 2px 6px rgba(0,0,0,0.08)",
 };
 
+const pinned = {
+  background: "#fff3cd",
+  padding: "12px 15px",
+  borderRadius: 6,
+  margin: "20px 0",
+  border: "1px solid #ffe69c",
+};
+
 const tableStyle = {
   width: "100%",
   borderCollapse: "collapse",
   marginTop: 15,
+};
+
+const mobileCard = {
+  background: "#fff",
+  padding: 14,
+  borderRadius: 10,
+  boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
 };
 
 const badge = (status) => ({
@@ -200,6 +191,7 @@ const badge = (status) => ({
   borderRadius: 12,
   fontSize: 12,
   color: "#fff",
+  marginLeft: 6,
   background:
     status === "APPROVED"
       ? "#16a34a"

@@ -5,6 +5,7 @@ import Navbar from "../components/Navbar";
 export default function Members() {
   const [members, setMembers] = useState([]);
   const [editing, setEditing] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchMembers();
@@ -14,8 +15,16 @@ export default function Members() {
      FETCH MEMBERS
   ========================= */
   const fetchMembers = async () => {
-    const res = await api.get("/members");
-    setMembers(res.data);
+    try {
+      setLoading(true);
+      const res = await api.get("/members");
+      setMembers(res.data || []);
+    } catch (err) {
+      console.error("FETCH MEMBERS ERROR", err);
+      alert("Failed to load members");
+    } finally {
+      setLoading(false);
+    }
   };
 
   /* =========================
@@ -48,7 +57,7 @@ export default function Members() {
      SAVE MEMBER
   ========================= */
   const saveMember = async () => {
-    if (!window.confirm("Are you sure you want to update this member?")) return;
+    if (!window.confirm("Update this member?")) return;
 
     await api.put(`/admin/edit-member/${editing.id}`, {
       name: editing.name,
@@ -71,91 +80,103 @@ export default function Members() {
       <div style={container}>
         <h2 style={title}>Members</h2>
 
-        <table style={table}>
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Member ID</th>
-              <th>Association ID</th>
-              <th>Personal Email</th>
-              <th>Phone</th>
-              <th>Address</th>
-              <th>Role</th>
-              <th>Status</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
+        {loading ? (
+          <p>Loading members...</p>
+        ) : (
+          <div style={{ overflowX: "auto" }}>
+            <table style={table}>
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Member ID</th>
+                  <th>Association ID</th>
+                  <th>Personal Email</th>
+                  <th>Phone</th>
+                  <th>Address</th>
+                  <th>Role</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
 
-          <tbody>
-            {members.map((m, index) => (
-              <tr key={m.id} style={index % 2 ? rowAlt : null}>
-                <td>{m.name}</td>
+              <tbody>
+                {members.map((m, index) => (
+                  <tr key={m.id} style={index % 2 ? rowAlt : null}>
+                    <td>{m.name}</td>
 
-                <td>
-                  <span style={idBadge}>{m.member_id}</span>
-                </td>
+                    <td>
+                      <span style={idBadge}>{m.member_id}</span>
+                    </td>
 
-                <td>
-                  <span style={idBadge}>{m.association_id}</span>
-                </td>
+                    <td>
+                      <span style={idBadge}>{m.association_id}</span>
+                    </td>
 
-                <td>{m.personal_email || "-"}</td>
-                <td>{m.phone || "-"}</td>
-                <td>{m.address || "-"}</td>
+                    <td>{m.personal_email || "-"}</td>
+                    <td>{m.phone || "-"}</td>
+                    <td>{m.address || "-"}</td>
 
-                <td>
-                  <span style={roleBadge}>{m.role}</span>
-                </td>
+                    <td>
+                      <span style={roleBadge}>{m.role}</span>
+                    </td>
 
-                <td>
-                  <span
-                    style={{
-                      ...statusBadge,
-                      background: m.active ? "#16a34a" : "#dc2626",
-                    }}
-                  >
-                    {m.active ? "ACTIVE" : "BLOCKED"}
-                  </span>
-                </td>
-
-                <td style={{ whiteSpace: "nowrap" }}>
-                  {/* SUPER ADMIN SAFETY */}
-                  {m.role !== "SUPER_ADMIN" && (
-                    <>
-                      <button
-                        style={editBtn}
-                        onClick={() => setEditing({ ...m })}
+                    <td>
+                      <span
+                        style={{
+                          ...statusBadge,
+                          background: m.active ? "#16a34a" : "#dc2626",
+                        }}
                       >
-                        Edit
-                      </button>
+                        {m.active ? "ACTIVE" : "BLOCKED"}
+                      </span>
+                    </td>
 
-                      <button
-                        style={mailBtn}
-                        onClick={() => resendLogin(m.id)}
-                      >
-                        Resend
-                      </button>
+                    <td style={{ whiteSpace: "nowrap" }}>
+                      {/* SUPER ADMIN PROTECTION */}
+                      {m.role !== "SUPER_ADMIN" ? (
+                        <>
+                          <button
+                            style={editBtn}
+                            onClick={() => setEditing({ ...m })}
+                          >
+                            Edit
+                          </button>
 
-                      <button
-                        style={m.active ? blockBtn : unblockBtn}
-                        onClick={() => toggleStatus(m.id, !m.active)}
-                      >
-                        {m.active ? "Block" : "Unblock"}
-                      </button>
+                          <button
+                            style={mailBtn}
+                            onClick={() => resendLogin(m.id)}
+                          >
+                            Resend
+                          </button>
 
-                      <button
-                        style={deleteBtn}
-                        onClick={() => deleteMember(m.id)}
-                      >
-                        Delete
-                      </button>
-                    </>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                          <button
+                            style={m.active ? blockBtn : unblockBtn}
+                            onClick={() =>
+                              toggleStatus(m.id, !m.active)
+                            }
+                          >
+                            {m.active ? "Block" : "Unblock"}
+                          </button>
+
+                          <button
+                            style={deleteBtn}
+                            onClick={() => deleteMember(m.id)}
+                          >
+                            Delete
+                          </button>
+                        </>
+                      ) : (
+                        <span style={{ fontSize: 12, color: "#64748b" }}>
+                          Protected
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       {/* =========================
@@ -168,12 +189,12 @@ export default function Members() {
 
             <div>
               <label style={label}>Member ID</label>
-              <div style={readonlyBox}>🔒 {editing.member_id}</div>
+              <div style={readonlyBox}>{editing.member_id}</div>
             </div>
 
             <div>
               <label style={label}>Association ID</label>
-              <div style={readonlyBox}>🔒 {editing.association_id}</div>
+              <div style={readonlyBox}>{editing.association_id}</div>
             </div>
 
             <input
@@ -222,7 +243,9 @@ export default function Members() {
               <option value="TREASURER">TREASURER</option>
               <option value="PRESIDENT">PRESIDENT</option>
               <option value="VICE_PRESIDENT">VICE_PRESIDENT</option>
-              <option value="GENERAL_SECRETARY">GENERAL_SECRETARY</option>
+              <option value="GENERAL_SECRETARY">
+                GENERAL_SECRETARY
+              </option>
               <option value="JOINT_SECRETARY">JOINT_SECRETARY</option>
             </select>
 
@@ -231,7 +254,10 @@ export default function Members() {
                 type="checkbox"
                 checked={editing.active}
                 onChange={(e) =>
-                  setEditing({ ...editing, active: e.target.checked })
+                  setEditing({
+                    ...editing,
+                    active: e.target.checked,
+                  })
                 }
               />{" "}
               Active
@@ -241,7 +267,10 @@ export default function Members() {
               <button style={saveBtn} onClick={saveMember}>
                 Save
               </button>{" "}
-              <button style={cancelBtn} onClick={() => setEditing(null)}>
+              <button
+                style={cancelBtn}
+                onClick={() => setEditing(null)}
+              >
                 Cancel
               </button>
             </div>
@@ -269,7 +298,7 @@ const table = {
   borderCollapse: "collapse",
   background: "#fff",
   borderRadius: 10,
-  overflow: "hidden",
+  minWidth: 1200,
 };
 
 const rowAlt = { background: "#f9fafb" };
@@ -350,9 +379,4 @@ const readonlyBox = {
   fontSize: 14,
   fontWeight: 600,
   color: "#0f172a",
-};
-
-const hint = {
-  fontSize: 11,
-  color: "#64748b",
 };

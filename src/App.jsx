@@ -1,6 +1,10 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import PrivateRoute from "./PrivateRoute";
 import Footer from "./components/Footer";
+import { useAuth } from "./context/AuthContext";
+import InstallPWA from "./components/InstallPWA";
+import OfflineBanner from "./components/OfflineBanner";
+import UpdatePrompt from "./components/UpdatePrompt";
 
 /* ===== PUBLIC ===== */
 import Login from "./pages/Login";
@@ -27,15 +31,43 @@ import AuditLogs from "./pages/AuditLogs";
 /* ===== MEMBER ===== */
 import MemberContributions from "./pages/MemberContributions";
 
+/* =========================
+   ROLE-BASED ROOT REDIRECT
+========================= */
+function RootRedirect() {
+  const { user, loading } = useAuth();
+
+  if (loading) return null;
+  if (!user) return <Navigate to="/login" replace />;
+
+  switch (user.role) {
+    case "SUPER_ADMIN":
+    case "PRESIDENT":
+      return <Navigate to="/admin-dashboard" replace />;
+
+    case "TREASURER":
+      return <Navigate to="/treasurer-dashboard" replace />;
+
+    default:
+      return <Navigate to="/dashboard" replace />;
+  }
+}
+
 export default function App() {
   return (
     <>
+      {/* 🌐 OFFLINE INDICATOR (GLOBAL) */}
+      <OfflineBanner />
+
       <Routes>
         {/* 🔓 PUBLIC */}
-        <Route path="/" element={<Login />} />
+        <Route path="/login" element={<Login />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
 
-        {/* 🧩 COMPLAINTS – ALL LOGGED USERS */}
+        {/* 🔁 ROOT */}
+        <Route path="/" element={<RootRedirect />} />
+
+        {/* 🧩 COMPLAINTS */}
         <Route
           path="/complaints"
           element={
@@ -57,7 +89,7 @@ export default function App() {
           }
         />
 
-        {/* 📅 MEETINGS – ALL LOGGED USERS */}
+        {/* 📅 MEETINGS */}
         <Route
           path="/meetings"
           element={
@@ -98,7 +130,7 @@ export default function App() {
           }
         />
 
-        {/* 👑 ADMIN / PRESIDENT */}
+        {/* 👑 ADMIN */}
         <Route
           path="/admin-dashboard"
           element={
@@ -152,7 +184,7 @@ export default function App() {
           }
         />
 
-        {/* 🧾 AUDIT LOGS (ADMIN ONLY) */}
+        {/* 🧾 AUDIT LOGS */}
         <Route
           path="/audit-logs"
           element={
@@ -166,13 +198,13 @@ export default function App() {
         <Route
           path="/treasurer-dashboard"
           element={
-            <PrivateRoute allowedRoles={["TREASURER", "PRESIDENT"]}>
+            <PrivateRoute allowedRoles={["TREASURER"]}>
               <TreasurerDashboard />
             </PrivateRoute>
           }
         />
 
-        {/* 🧭 SINGLE DASHBOARD (MULTI-ROLE) */}
+        {/* 🧭 MEMBER DASHBOARD */}
         <Route
           path="/dashboard"
           element={
@@ -191,7 +223,7 @@ export default function App() {
           }
         />
 
-        {/* 👤 MEMBER CONTRIBUTIONS */}
+        {/* 👤 CONTRIBUTIONS */}
         <Route
           path="/contributions"
           element={
@@ -224,7 +256,13 @@ export default function App() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
 
-      {/* 🌐 GLOBAL FOOTER */}
+      {/* 🔄 UPDATE AVAILABLE PROMPT */}
+      <UpdatePrompt />
+
+      {/* 📲 PWA INSTALL BUTTON */}
+      <InstallPWA />
+
+      {/* 🌐 FOOTER */}
       <Footer />
     </>
   );
