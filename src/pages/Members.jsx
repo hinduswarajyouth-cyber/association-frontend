@@ -45,21 +45,16 @@ export default function Members() {
   };
 
   /* =========================
-     SAVE MEMBER (SAFE)
+     SAVE MEMBER
   ========================= */
   const saveMember = async () => {
-    if (
-      !window.confirm(
-        "Are you sure you want to update this member details?"
-      )
-    ) {
-      return;
-    }
+    if (!window.confirm("Are you sure you want to update this member?")) return;
 
     await api.put(`/admin/edit-member/${editing.id}`, {
       name: editing.name,
       personal_email: editing.personal_email,
       phone: editing.phone,
+      address: editing.address,
       role: editing.role,
       active: editing.active,
     });
@@ -80,8 +75,11 @@ export default function Members() {
           <thead>
             <tr>
               <th>Name</th>
+              <th>Member ID</th>
               <th>Association ID</th>
               <th>Personal Email</th>
+              <th>Phone</th>
+              <th>Address</th>
               <th>Role</th>
               <th>Status</th>
               <th>Actions</th>
@@ -97,7 +95,13 @@ export default function Members() {
                   <span style={idBadge}>{m.member_id}</span>
                 </td>
 
+                <td>
+                  <span style={idBadge}>{m.association_id}</span>
+                </td>
+
                 <td>{m.personal_email || "-"}</td>
+                <td>{m.phone || "-"}</td>
+                <td>{m.address || "-"}</td>
 
                 <td>
                   <span style={roleBadge}>{m.role}</span>
@@ -115,34 +119,37 @@ export default function Members() {
                 </td>
 
                 <td style={{ whiteSpace: "nowrap" }}>
-                  <button
-                    style={editBtn}
-                    onClick={() => setEditing({ ...m })}
-                  >
-                    Edit
-                  </button>
-
-                  <button
-                    style={mailBtn}
-                    onClick={() => resendLogin(m.id)}
-                  >
-                    Resend
-                  </button>
-
-                  <button
-                    style={m.active ? blockBtn : unblockBtn}
-                    onClick={() => toggleStatus(m.id, !m.active)}
-                  >
-                    {m.active ? "Block" : "Unblock"}
-                  </button>
-
+                  {/* SUPER ADMIN SAFETY */}
                   {m.role !== "SUPER_ADMIN" && (
-                    <button
-                      style={deleteBtn}
-                      onClick={() => deleteMember(m.id)}
-                    >
-                      Delete
-                    </button>
+                    <>
+                      <button
+                        style={editBtn}
+                        onClick={() => setEditing({ ...m })}
+                      >
+                        Edit
+                      </button>
+
+                      <button
+                        style={mailBtn}
+                        onClick={() => resendLogin(m.id)}
+                      >
+                        Resend
+                      </button>
+
+                      <button
+                        style={m.active ? blockBtn : unblockBtn}
+                        onClick={() => toggleStatus(m.id, !m.active)}
+                      >
+                        {m.active ? "Block" : "Unblock"}
+                      </button>
+
+                      <button
+                        style={deleteBtn}
+                        onClick={() => deleteMember(m.id)}
+                      >
+                        Delete
+                      </button>
+                    </>
                   )}
                 </td>
               </tr>
@@ -159,15 +166,14 @@ export default function Members() {
           <div style={modal}>
             <h3>Edit Member</h3>
 
-            {/* READ ONLY ASSOCIATION ID */}
+            <div>
+              <label style={label}>Member ID</label>
+              <div style={readonlyBox}>🔒 {editing.member_id}</div>
+            </div>
+
             <div>
               <label style={label}>Association ID</label>
-              <div style={readonlyBox}>
-                🔒 {editing.member_id}
-              </div>
-              <small style={hint}>
-                System generated – cannot be edited
-              </small>
+              <div style={readonlyBox}>🔒 {editing.association_id}</div>
             </div>
 
             <input
@@ -197,6 +203,14 @@ export default function Members() {
               }
             />
 
+            <textarea
+              placeholder="Address"
+              value={editing.address || ""}
+              onChange={(e) =>
+                setEditing({ ...editing, address: e.target.value })
+              }
+            />
+
             <select
               value={editing.role}
               onChange={(e) =>
@@ -208,12 +222,8 @@ export default function Members() {
               <option value="TREASURER">TREASURER</option>
               <option value="PRESIDENT">PRESIDENT</option>
               <option value="VICE_PRESIDENT">VICE_PRESIDENT</option>
-              <option value="GENERAL_SECRETARY">
-                GENERAL_SECRETARY
-              </option>
-              <option value="JOINT_SECRETARY">
-                JOINT_SECRETARY
-              </option>
+              <option value="GENERAL_SECRETARY">GENERAL_SECRETARY</option>
+              <option value="JOINT_SECRETARY">JOINT_SECRETARY</option>
             </select>
 
             <label>
@@ -221,10 +231,7 @@ export default function Members() {
                 type="checkbox"
                 checked={editing.active}
                 onChange={(e) =>
-                  setEditing({
-                    ...editing,
-                    active: e.target.checked,
-                  })
+                  setEditing({ ...editing, active: e.target.checked })
                 }
               />{" "}
               Active
@@ -234,10 +241,7 @@ export default function Members() {
               <button style={saveBtn} onClick={saveMember}>
                 Save
               </button>{" "}
-              <button
-                style={cancelBtn}
-                onClick={() => setEditing(null)}
-              >
+              <button style={cancelBtn} onClick={() => setEditing(null)}>
                 Cancel
               </button>
             </div>
@@ -326,7 +330,7 @@ const modal = {
   background: "#fff",
   padding: 20,
   borderRadius: 10,
-  width: 380,
+  width: 420,
   display: "flex",
   flexDirection: "column",
   gap: 10,
