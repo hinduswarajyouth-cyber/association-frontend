@@ -4,16 +4,6 @@ import { useAuth } from "../context/AuthContext";
 import api from "../api/api";
 import bg from "../assets/login-bg.png";
 
-/* ✅ DASHBOARD ROLES */
-const dashboardRoles = [
-  "EC_MEMBER",
-  "GENERAL_SECRETARY",
-  "JOINT_SECRETARY",
-  "MEMBER",
-  "VOLUNTEER",
-  "VICE_PRESIDENT",
-];
-
 export default function Login() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -23,6 +13,9 @@ export default function Login() {
   const navigate = useNavigate();
   const { login } = useAuth();
 
+  /* =========================
+     HANDLE LOGIN
+  ========================= */
   const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
@@ -39,24 +32,15 @@ export default function Login() {
       // ✅ SAVE AUTH (SINGLE SOURCE OF TRUTH)
       login(token, user);
 
-      // 🔁 FIRST LOGIN → FORCE PASSWORD CHANGE
+      // 🔁 FORCE PASSWORD CHANGE ON FIRST LOGIN
       if (isFirstLogin || user?.is_first_login) {
         navigate("/change-password", { replace: true });
         return;
       }
 
-      // 🔁 ROLE BASED REDIRECT
-      const role = user.role;
+      // ✅ SINGLE REDIRECT (PrivateRoute HANDLES ROLE)
+      navigate("/", { replace: true });
 
-      if (["SUPER_ADMIN", "PRESIDENT"].includes(role)) {
-        navigate("/admin-dashboard", { replace: true });
-      } else if (role === "TREASURER") {
-        navigate("/treasurer-dashboard", { replace: true });
-      } else if (dashboardRoles.includes(role)) {
-        navigate("/dashboard", { replace: true });
-      } else {
-        setError("Unauthorized role");
-      }
     } catch (err) {
       console.error("LOGIN ERROR 👉", err);
       setError(err.response?.data?.error || "Login failed");
@@ -71,7 +55,6 @@ export default function Login() {
 
       <div style={overlay}>
         <div style={content}>
-          {/* ✨ FADE + SLIDE ANIMATION */}
           <div style={animatedBox}>
             <h1 style={welcome}>Hello Welcome</h1>
             <p style={subtitle}>Association System</p>
@@ -135,7 +118,7 @@ const bgImage = {
 const overlay = {
   position: "absolute",
   inset: 0,
-  minHeight: "100svh", // ✅ mobile safe viewport
+  minHeight: "100svh",
   background: "rgba(0,0,0,0.35)",
   display: "flex",
   justifyContent: "center",
@@ -148,33 +131,36 @@ const content = {
   color: "#fff",
 };
 
-/* ✨ ANIMATION */
 const animatedBox = {
   animation: "fadeSlide 0.8s ease-out",
 };
 
-/* inject keyframes */
-const styleSheet = document.styleSheets[0];
-if (styleSheet) {
-  styleSheet.insertRule(
-    `
-    @keyframes fadeSlide {
-      from {
-        opacity: 0;
-        transform: translateY(20px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-  `,
-    styleSheet.cssRules.length
-  );
+/* inject keyframes safely */
+if (typeof document !== "undefined") {
+  const sheet = document.styleSheets?.[0];
+  if (sheet) {
+    try {
+      sheet.insertRule(
+        `
+        @keyframes fadeSlide {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+      `,
+        sheet.cssRules.length
+      );
+    } catch {}
+  }
 }
 
 const welcome = {
-  fontSize: 32, // mobile friendly
+  fontSize: 32,
   fontWeight: "bold",
   marginBottom: 4,
 };
@@ -200,7 +186,7 @@ const input = {
   marginBottom: 14,
   borderRadius: 8,
   border: "none",
-  fontSize: 16, // ✅ prevents mobile zoom
+  fontSize: 16,
 };
 
 const btn = {
