@@ -3,12 +3,12 @@ import api from "../api/api";
 import Navbar from "../components/Navbar";
 
 /* =========================
-   ✅ SIMPLE STAT CARD
+   STAT CARD
 ========================= */
 function StatCard({ title, value }) {
   return (
     <div style={card}>
-      <h4 style={{ marginBottom: 10 }}>{title}</h4>
+      <h4>{title}</h4>
       <h2>{value}</h2>
     </div>
   );
@@ -17,45 +17,59 @@ function StatCard({ title, value }) {
 export default function Dashboard() {
   const [contributions, setContributions] = useState([]);
   const [announcements, setAnnouncements] = useState([]);
-  const [error, setError] = useState("");
+  const [suggestions, setSuggestions] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   const isMobile = window.innerWidth < 768;
 
   /* =========================
-     📥 LOAD DASHBOARD DATA
+     LOAD DASHBOARD DATA
   ========================= */
+  const loadDashboard = async () => {
+    try {
+      const [c, a, s] = await Promise.all([
+        api.get("/members/contributions"),
+        api.get("/announcements"),
+        api.get("/suggestions/dashboard"),
+      ]);
+
+      setContributions(c.data.contributions || []);
+      setAnnouncements(a.data || []);
+      setSuggestions(s.data || []);
+    } catch (err) {
+      console.error(err);
+      setError("Failed to load dashboard");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const loadDashboard = async () => {
-      try {
-        const [contriRes, annRes] = await Promise.all([
-          api.get("/members/contributions"),
-          api.get("/announcements"),
-        ]);
-
-        setContributions(contriRes.data.contributions || []);
-        setAnnouncements(annRes.data || []);
-      } catch (err) {
-        console.error("Dashboard API error:", err);
-        setError("Failed to load dashboard");
-      } finally {
-        setLoading(false);
-      }
-    };
-
     loadDashboard();
   }, []);
+
+  /* =========================
+     MARK ANNOUNCEMENT SEEN
+  ========================= */
+  const markSeen = async (id) => {
+    try {
+      await api.post(`/announcements/${id}/seen`);
+      setAnnouncements((prev) =>
+        prev.map((a) =>
+          a.id === id ? { ...a, seen: true } : a
+        )
+      );
+    } catch {}
+  };
 
   if (loading) return <p style={{ padding: 30 }}>Loading...</p>;
   if (error) return <p style={{ padding: 30, color: "red" }}>{error}</p>;
 
   /* =========================
-     📊 APPROVED ONLY
+     CALCULATIONS
   ========================= */
-  const approved = contributions.filter(
-    (c) => c.status === "APPROVED"
-  );
-
+  const approved = contributions.filter((c) => c.status === "APPROVED");
   const totalAmount = approved.reduce(
     (sum, c) => sum + Number(c.amount || 0),
     0
@@ -68,7 +82,9 @@ export default function Dashboard() {
       <div style={container}>
         <h2>Welcome 👋</h2>
 
-        {/* 📌 PINNED */}
+        {/* =========================
+           📌 PINNED ANNOUNCEMENT
+        ========================= */}
         {announcements
           .filter((a) => a.priority === "PINNED")
           .slice(0, 1)
@@ -78,32 +94,90 @@ export default function Dashboard() {
             </div>
           ))}
 
-        {/* 📊 STATS */}
+        {/* =========================
+           📊 STATS
+        ========================= */}
         <div style={statsRow}>
-          <StatCard
-            title="Approved Contributions"
-            value={approved.length}
-          />
-          <StatCard
-            title="Total Amount Contributed"
-            value={`₹${totalAmount}`}
-          />
+          <StatCard title="Approved Contributions" value={approved.length} />
+          <StatCard title="Total Amount" value={`₹${totalAmount}`} />
         </div>
 
-        {/* 📋 CONTRIBUTIONS */}
+        {/* =========================
+           📢 ANNOUNCEMENTS
+        ========================= */}
+        <h3 style={{ marginTop: 40 }}>📢 Announcements</h3>
+
+        {announcements.length === 0 ? (
+          <p>No announcements</p>
+        ) : (
+          <div style={cardGrid}>
+            {announcements.slice(0, 5).map((a) => (
+              <div
+                key={a.id}
+                onClick={() => !a.seen && markSeen(a.id)}
+                style={{
+                  ...cardItem,
+                  cursor: "pointer",
+                  opacity: a.seen ? 0.7 : 1,
+                  borderLeft:
+                    a.priority === "PINNED"
+                      ? "5px solid #dc2626"
+                      : "5px solid #2563eb",
+                }}
+              >
+                <h4>
+                  {!a.seen && <span style={newBadge}>NEW</span>}
+                  {a.priority === "PINNED" && (
+                    <span style={pinBadge}>PINNED</span>
+                  )}
+                  {a.title}
+                </h4>
+                <p style={{ fontSize: 14 }}>{a.message}</p>
+                <small>
+                  📅 {new Date(a.created_at).toLocaleDateString()}
+                </small>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* =========================
+           💡 SUGGESTIONS
+        ========================= */}
+        <h3 style={{ marginTop: 40 }}>💡 Suggestions</h3>
+
+        {suggestions.length === 0 ? (
+          <p>No suggestions yet</p>
+        ) : (
+          <div style={cardGrid}>
+            {suggestions.map((s) => (
+              <div key={s.id} style={cardItem}>
+                <h4>{s.title || "Suggestion"}</h4>
+                <p style={{ fontSize: 14 }}>{s.message}</p>
+                <small>
+                  👤 {s.member_name} | 📅{" "}
+                  {new Date(s.created_at).toLocaleDateString()}
+                </small>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* =========================
+           📋 CONTRIBUTIONS
+        ========================= */}
         <h3 style={{ marginTop: 40 }}>My Contributions</h3>
 
         {contributions.length === 0 ? (
           <p>No contributions yet</p>
         ) : isMobile ? (
-          /* 📱 MOBILE CARDS */
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             {contributions.map((c, i) => (
               <div key={i} style={mobileCard}>
                 <div><b>Fund:</b> {c.fund_name}</div>
                 <div><b>Amount:</b> ₹{c.amount}</div>
                 <div>
-                  <b>Status:</b>{" "}
+                  <b>Status:</b>
                   <span style={badge(c.status)}>{c.status}</span>
                 </div>
                 <div><b>Date:</b> {c.receipt_date?.slice(0, 10)}</div>
@@ -111,7 +185,6 @@ export default function Dashboard() {
             ))}
           </div>
         ) : (
-          /* 💻 DESKTOP TABLE */
           <table style={tableStyle}>
             <thead>
               <tr>
@@ -126,9 +199,7 @@ export default function Dashboard() {
                 <tr key={i}>
                   <td>{c.fund_name}</td>
                   <td>₹{c.amount}</td>
-                  <td>
-                    <span style={badge(c.status)}>{c.status}</span>
-                  </td>
+                  <td><span style={badge(c.status)}>{c.status}</span></td>
                   <td>{c.receipt_date?.slice(0, 10)}</td>
                 </tr>
               ))}
@@ -141,43 +212,52 @@ export default function Dashboard() {
 }
 
 /* =========================
-   🎨 STYLES
+   STYLES
 ========================= */
-
-const container = {
-  maxWidth: 1100,
-  margin: "auto",
-  padding: 30,
-};
-
-const statsRow = {
-  display: "flex",
-  gap: 20,
-  marginTop: 20,
-  flexWrap: "wrap",
-};
-
-const card = {
-  flex: 1,
-  padding: 20,
-  borderRadius: 10,
-  background: "#f5f7fb",
-  boxShadow: "0 2px 6px rgba(0,0,0,0.08)",
-};
+const container = { maxWidth: 1100, margin: "auto", padding: 30 };
+const statsRow = { display: "flex", gap: 20, marginTop: 20, flexWrap: "wrap" };
+const card = { flex: 1, padding: 20, borderRadius: 10, background: "#f5f7fb" };
 
 const pinned = {
   background: "#fff3cd",
-  padding: "12px 15px",
+  padding: 12,
   borderRadius: 6,
   margin: "20px 0",
-  border: "1px solid #ffe69c",
 };
 
-const tableStyle = {
-  width: "100%",
-  borderCollapse: "collapse",
+const cardGrid = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+  gap: 15,
   marginTop: 15,
 };
+
+const cardItem = {
+  background: "#fff",
+  padding: 15,
+  borderRadius: 10,
+  boxShadow: "0 4px 10px rgba(0,0,0,0.08)",
+};
+
+const newBadge = {
+  background: "#2563eb",
+  color: "#fff",
+  fontSize: 10,
+  padding: "2px 6px",
+  borderRadius: 6,
+  marginRight: 6,
+};
+
+const pinBadge = {
+  background: "#dc2626",
+  color: "#fff",
+  fontSize: 10,
+  padding: "2px 6px",
+  borderRadius: 6,
+  marginRight: 6,
+};
+
+const tableStyle = { width: "100%", marginTop: 15, borderCollapse: "collapse" };
 
 const mobileCard = {
   background: "#fff",
@@ -187,11 +267,11 @@ const mobileCard = {
 };
 
 const badge = (status) => ({
+  marginLeft: 6,
   padding: "4px 10px",
   borderRadius: 12,
   fontSize: 12,
   color: "#fff",
-  marginLeft: 6,
   background:
     status === "APPROVED"
       ? "#16a34a"

@@ -35,32 +35,31 @@ export default function Navbar() {
   };
 
   /* =========================
-     ACTIVE LINK STYLE
+     ACTIVE LINK
   ========================= */
   const isActive = (path) =>
     location.pathname.startsWith(path)
       ? { ...link, ...activeLink }
       : link;
 
-  const closeMobile = () => setOpen(false);
+  const closeMenu = () => setOpen(false);
 
   return (
     <>
-      {/* 🔷 TOP BAR */}
+      {/* ================= TOP BAR ================= */}
       <div style={bar}>
         <h3 style={logo} onClick={() => navigate(getHomeRoute())}>
           Association System
         </h3>
 
-        {/* 🍔 HAMBURGER (MOBILE) */}
+        {/* 🍔 MOBILE TOGGLE */}
         <button style={burger} onClick={() => setOpen(!open)}>
           ☰
         </button>
 
-        {/* 💻 DESKTOP MENU */}
+        {/* ===== DESKTOP MENU ===== */}
         <div style={menuDesktop}>
-          <MenuLinks role={role} isActive={isActive} onClick={closeMobile} />
-
+          <MenuLinks role={role} isActive={isActive} onClick={closeMenu} />
           <UserInfo
             name={name}
             role={role}
@@ -72,10 +71,10 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* 📱 MOBILE MENU */}
+      {/* ===== MOBILE MENU ===== */}
       {open && (
         <div style={menuMobile}>
-          <MenuLinks role={role} isActive={isActive} onClick={closeMobile} />
+          <MenuLinks role={role} isActive={isActive} onClick={closeMenu} />
           <UserInfo
             name={name}
             role={role}
@@ -105,26 +104,32 @@ function MenuLinks({ role, isActive, onClick }) {
 
   return (
     <>
+      {/* 👑 ADMIN / PRESIDENT */}
       {ADMIN_ROLES.includes(role) && (
         <>
           <Link onClick={onClick} style={isActive("/admin-dashboard")} to="/admin-dashboard">Dashboard</Link>
           <Link onClick={onClick} style={isActive("/members")} to="/members">Members</Link>
           <Link onClick={onClick} style={isActive("/funds")} to="/funds">Funds</Link>
           <Link onClick={onClick} style={isActive("/reports")} to="/reports">Reports</Link>
+          <Link onClick={onClick} style={isActive("/announcements")} to="/announcements">Announcements</Link>
         </>
       )}
 
+      {/* 💰 TREASURER */}
       {role === "TREASURER" && (
         <>
           <Link onClick={onClick} style={isActive("/treasurer-dashboard")} to="/treasurer-dashboard">Dashboard</Link>
           <Link onClick={onClick} style={isActive("/treasurer/expense")} to="/treasurer/expense">Create Expense</Link>
+          <Link onClick={onClick} style={isActive("/reports")} to="/reports">Reports</Link>
         </>
       )}
 
+      {/* 🧑‍💼 OFFICE */}
       {OFFICE_ROLES.includes(role) && (
         <Link onClick={onClick} style={isActive("/dashboard")} to="/dashboard">Dashboard</Link>
       )}
 
+      {/* 👤 MEMBER */}
       {MEMBER_ROLES.includes(role) && (
         <>
           <Link onClick={onClick} style={isActive("/dashboard")} to="/dashboard">Dashboard</Link>
@@ -132,6 +137,7 @@ function MenuLinks({ role, isActive, onClick }) {
         </>
       )}
 
+      {/* 🔁 COMMON */}
       <Link onClick={onClick} style={isActive("/meetings")} to="/meetings">Meetings</Link>
       <Link onClick={onClick} style={isActive("/complaints")} to="/complaints">Complaints</Link>
       <Link onClick={onClick} style={isActive("/change-password")} to="/change-password">Change Password</Link>
@@ -176,7 +182,7 @@ const burger = {
   fontSize: 26,
   border: "none",
   cursor: "pointer",
-  display: "none",
+  display: "block",
 };
 
 const menuDesktop = {
@@ -233,11 +239,3 @@ const logoutBtn = {
   borderRadius: 6,
   cursor: "pointer",
 };
-
-/* =========================
-   📱 MEDIA QUERY (JS)
-========================= */
-if (window.innerWidth < 768) {
-  burger.display = "block";
-  menuDesktop.display = "none";
-}
