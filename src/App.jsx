@@ -2,64 +2,67 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "./context/AuthContext";
 import PrivateRoute from "./PrivateRoute";
 
-/* 🌐 GLOBAL UI */
 import Footer from "./components/Footer";
 import InstallPWA from "./components/InstallPWA";
 import OfflineBanner from "./components/OfflineBanner";
 import UpdatePrompt from "./components/UpdatePrompt";
 
-/* 🔓 PUBLIC */
+/* PUBLIC */
 import Login from "./pages/Login";
 import ForgotPassword from "./pages/ForgotPassword";
 
-/* 🧩 COMMON */
+/* COMMON */
 import Complaint from "./pages/Complaint";
 import ChangePassword from "./pages/ChangePassword";
 import Profile from "./pages/Profile";
 import Meetings from "./pages/Meetings";
 
-/* 📊 DASHBOARDS */
+/* DASHBOARDS */
 import AdminDashboard from "./pages/AdminDashboard";
 import TreasurerDashboard from "./pages/TreasurerDashboard";
 import Dashboard from "./pages/Dashboard";
 
-/* 👑 ADMIN */
+/* ADMIN */
 import Members from "./pages/Members";
 import AddMember from "./pages/AddMember";
 import Funds from "./pages/Funds";
 import Reports from "./pages/Reports";
 import AuditLogs from "./pages/AuditLogs";
 
-/* 👤 MEMBER */
+/* MEMBER */
 import MemberContributions from "./pages/MemberContributions";
 
 /* =========================
-   🔁 ROLE BASED ROOT REDIRECT
+   🔐 AUTH GATE (NO FLASH)
 ========================= */
-function RootRedirect() {
-  const { user, loading } = useAuth();
+function AuthGate({ children }) {
+  const { loading } = useAuth();
 
-  // ✅ FIX: no blink, no blank screen
   if (loading) {
     return (
-      <div style={{ padding: 40, textAlign: "center" }}>
-        Loading...
+      <div style={{ padding: 60, textAlign: "center", fontSize: 18 }}>
+        Loading application…
       </div>
     );
   }
 
-  if (!user) {
-    return <Navigate to="/login" replace />;
-  }
+  return children;
+}
+
+/* =========================
+   ROLE BASED ROOT REDIRECT
+========================= */
+function RootRedirect() {
+  const { user } = useAuth();
+
+  if (!user) return <Navigate to="/login" replace />;
 
   switch (user.role) {
     case "SUPER_ADMIN":
     case "PRESIDENT":
       return <Navigate to="/admin-dashboard" replace />;
-
     case "TREASURER":
       return <Navigate to="/treasurer-dashboard" replace />;
-
     default:
       return <Navigate to="/dashboard" replace />;
   }
@@ -68,213 +71,167 @@ function RootRedirect() {
 export default function App() {
   return (
     <>
-      {/* 🌐 OFFLINE STATUS */}
       <OfflineBanner />
 
-      <Routes>
-        {/* 🔓 PUBLIC */}
-        <Route path="/login" element={<Login />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
+      <AuthGate>
+        <Routes>
+          {/* PUBLIC */}
+          <Route path="/login" element={<Login />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
 
-        {/* 🔁 ROOT */}
-        <Route path="/" element={<RootRedirect />} />
+          {/* ROOT */}
+          <Route path="/" element={<RootRedirect />} />
 
-        {/* 🧩 COMPLAINTS */}
-        <Route
-          path="/complaints"
-          element={
-            <PrivateRoute
-              allowedRoles={[
-                "SUPER_ADMIN",
-                "PRESIDENT",
-                "VICE_PRESIDENT",
-                "GENERAL_SECRETARY",
-                "JOINT_SECRETARY",
-                "EC_MEMBER",
-                "TREASURER",
-                "MEMBER",
-                "VOLUNTEER",
-              ]}
-            >
-              <Complaint />
-            </PrivateRoute>
-          }
-        />
+          {/* ADMIN */}
+          <Route
+            path="/admin-dashboard"
+            element={
+              <PrivateRoute allowedRoles={["SUPER_ADMIN", "PRESIDENT"]}>
+                <AdminDashboard />
+              </PrivateRoute>
+            }
+          />
 
-        {/* 📅 MEETINGS */}
-        <Route
-          path="/meetings"
-          element={
-            <PrivateRoute
-              allowedRoles={[
-                "SUPER_ADMIN",
-                "PRESIDENT",
-                "VICE_PRESIDENT",
-                "GENERAL_SECRETARY",
-                "JOINT_SECRETARY",
-                "EC_MEMBER",
-                "TREASURER",
-                "MEMBER",
-                "VOLUNTEER",
-              ]}
-            >
-              <Meetings />
-            </PrivateRoute>
-          }
-        />
+          <Route
+            path="/members"
+            element={
+              <PrivateRoute allowedRoles={["SUPER_ADMIN", "PRESIDENT"]}>
+                <Members />
+              </PrivateRoute>
+            }
+          />
 
-        {/* 🔐 CHANGE PASSWORD */}
-        <Route
-          path="/change-password"
-          element={
-            <PrivateRoute
-              allowedRoles={[
-                "SUPER_ADMIN",
-                "PRESIDENT",
-                "VICE_PRESIDENT",
-                "TREASURER",
-                "MEMBER",
-                "VOLUNTEER",
-              ]}
-            >
-              <ChangePassword />
-            </PrivateRoute>
-          }
-        />
+          <Route
+            path="/add-member"
+            element={
+              <PrivateRoute allowedRoles={["SUPER_ADMIN", "PRESIDENT"]}>
+                <AddMember />
+              </PrivateRoute>
+            }
+          />
 
-        {/* 👑 ADMIN */}
-        <Route
-          path="/admin-dashboard"
-          element={
-            <PrivateRoute allowedRoles={["SUPER_ADMIN", "PRESIDENT"]}>
-              <AdminDashboard />
-            </PrivateRoute>
-          }
-        />
+          <Route
+            path="/funds"
+            element={
+              <PrivateRoute allowedRoles={["SUPER_ADMIN", "PRESIDENT"]}>
+                <Funds />
+              </PrivateRoute>
+            }
+          />
 
-        <Route
-          path="/members"
-          element={
-            <PrivateRoute allowedRoles={["SUPER_ADMIN", "PRESIDENT"]}>
-              <Members />
-            </PrivateRoute>
-          }
-        />
+          <Route
+            path="/reports"
+            element={
+              <PrivateRoute
+                allowedRoles={[
+                  "SUPER_ADMIN",
+                  "PRESIDENT",
+                  "VICE_PRESIDENT",
+                  "TREASURER",
+                ]}
+              >
+                <Reports />
+              </PrivateRoute>
+            }
+          />
 
-        <Route
-          path="/add-member"
-          element={
-            <PrivateRoute allowedRoles={["SUPER_ADMIN", "PRESIDENT"]}>
-              <AddMember />
-            </PrivateRoute>
-          }
-        />
+          <Route
+            path="/audit-logs"
+            element={
+              <PrivateRoute allowedRoles={["SUPER_ADMIN", "PRESIDENT"]}>
+                <AuditLogs />
+              </PrivateRoute>
+            }
+          />
 
-        <Route
-          path="/funds"
-          element={
-            <PrivateRoute allowedRoles={["SUPER_ADMIN", "PRESIDENT"]}>
-              <Funds />
-            </PrivateRoute>
-          }
-        />
+          {/* TREASURER */}
+          <Route
+            path="/treasurer-dashboard"
+            element={
+              <PrivateRoute allowedRoles={["TREASURER"]}>
+                <TreasurerDashboard />
+              </PrivateRoute>
+            }
+          />
 
-        {/* 📊 REPORTS */}
-        <Route
-          path="/reports"
-          element={
-            <PrivateRoute
-              allowedRoles={[
-                "SUPER_ADMIN",
-                "PRESIDENT",
-                "VICE_PRESIDENT",
-                "TREASURER",
-              ]}
-            >
-              <Reports />
-            </PrivateRoute>
-          }
-        />
+          {/* MEMBER */}
+          <Route
+            path="/dashboard"
+            element={
+              <PrivateRoute
+                allowedRoles={[
+                  "MEMBER",
+                  "EC_MEMBER",
+                  "VICE_PRESIDENT",
+                  "GENERAL_SECRETARY",
+                  "JOINT_SECRETARY",
+                  "VOLUNTEER",
+                ]}
+              >
+                <Dashboard />
+              </PrivateRoute>
+            }
+          />
 
-        {/* 🧾 AUDIT LOGS */}
-        <Route
-          path="/audit-logs"
-          element={
-            <PrivateRoute allowedRoles={["SUPER_ADMIN", "PRESIDENT"]}>
-              <AuditLogs />
-            </PrivateRoute>
-          }
-        />
+          <Route
+            path="/contributions"
+            element={
+              <PrivateRoute allowedRoles={["MEMBER"]}>
+                <MemberContributions />
+              </PrivateRoute>
+            }
+          />
 
-        {/* 💰 TREASURER */}
-        <Route
-          path="/treasurer-dashboard"
-          element={
-            <PrivateRoute allowedRoles={["TREASURER"]}>
-              <TreasurerDashboard />
-            </PrivateRoute>
-          }
-        />
+          <Route
+            path="/profile"
+            element={
+              <PrivateRoute
+                allowedRoles={[
+                  "SUPER_ADMIN",
+                  "PRESIDENT",
+                  "TREASURER",
+                  "MEMBER",
+                ]}
+              >
+                <Profile />
+              </PrivateRoute>
+            }
+          />
 
-        {/* 🧭 MEMBER DASHBOARD */}
-        <Route
-          path="/dashboard"
-          element={
-            <PrivateRoute
-              allowedRoles={[
-                "EC_MEMBER",
-                "GENERAL_SECRETARY",
-                "JOINT_SECRETARY",
-                "MEMBER",
-                "VOLUNTEER",
-                "VICE_PRESIDENT",
-              ]}
-            >
-              <Dashboard />
-            </PrivateRoute>
-          }
-        />
+          <Route
+            path="/complaints"
+            element={
+              <PrivateRoute allowedRoles={["MEMBER", "TREASURER", "PRESIDENT"]}>
+                <Complaint />
+              </PrivateRoute>
+            }
+          />
 
-        {/* 👤 CONTRIBUTIONS */}
-        <Route
-          path="/contributions"
-          element={
-            <PrivateRoute allowedRoles={["MEMBER"]}>
-              <MemberContributions />
-            </PrivateRoute>
-          }
-        />
+          <Route
+            path="/meetings"
+            element={
+              <PrivateRoute allowedRoles={["MEMBER", "TREASURER", "PRESIDENT"]}>
+                <Meetings />
+              </PrivateRoute>
+            }
+          />
 
-        {/* 👤 PROFILE */}
-        <Route
-          path="/profile"
-          element={
-            <PrivateRoute
-              allowedRoles={[
-                "SUPER_ADMIN",
-                "PRESIDENT",
-                "VICE_PRESIDENT",
-                "TREASURER",
-                "MEMBER",
-                "VOLUNTEER",
-              ]}
-            >
-              <Profile />
-            </PrivateRoute>
-          }
-        />
+          <Route
+            path="/change-password"
+            element={
+              <PrivateRoute allowedRoles={["SUPER_ADMIN", "PRESIDENT", "MEMBER"]}>
+                <ChangePassword />
+              </PrivateRoute>
+            }
+          />
 
-        {/* 🚫 FALLBACK */}
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+          {/* FALLBACK */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </AuthGate>
 
-      {/* 🔄 UPDATE PROMPT */}
       <UpdatePrompt />
-
-      {/* 📲 PWA INSTALL */}
       <InstallPWA />
-
-      {/* 🌐 FOOTER */}
       <Footer />
     </>
   );
