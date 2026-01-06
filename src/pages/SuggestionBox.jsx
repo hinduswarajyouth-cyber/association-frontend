@@ -8,8 +8,7 @@ const SuggestionBox = () => {
   const [suggestions, setSuggestions] = useState([]);
   const [success, setSuccess] = useState("");
 
-  // 👉 localStorage lo role undali (login time lo save cheyyali)
-  const role = localStorage.getItem("role"); 
+  const role = localStorage.getItem("role");
   const isAdmin = role === "SUPER_ADMIN" || role === "PRESIDENT";
 
   /* =========================
@@ -40,19 +39,24 @@ const SuggestionBox = () => {
   ========================= */
   const loadSuggestions = async () => {
     try {
-      const res = await api.get("/admin/suggestions");
+      const res = await api.get("/suggestions"); // ✅ FIX
       setSuggestions(res.data);
     } catch (err) {
-      console.error(err);
+      console.error("LOAD SUGGESTIONS ERROR 👉", err);
     }
   };
 
   /* =========================
      ADMIN – UPDATE STATUS
+     (OPTIONAL – ONLY IF BACKEND SUPPORTS)
   ========================= */
   const updateStatus = async (id, status) => {
-    await api.put(`/admin/suggestions/${id}/status`, { status });
-    loadSuggestions();
+    try {
+      await api.put(`/suggestions/${id}`, { status }); // ✅ FIX
+      loadSuggestions();
+    } catch (err) {
+      console.error("UPDATE STATUS ERROR 👉", err);
+    }
   };
 
   useEffect(() => {
@@ -108,35 +112,21 @@ const SuggestionBox = () => {
           <table border="1" width="100%">
             <thead>
               <tr>
-                <th>Member ID</th>
+                <th>Member</th>
                 <th>Type</th>
                 <th>Message</th>
                 <th>Status</th>
-                <th>Change</th>
               </tr>
             </thead>
 
             <tbody>
               {suggestions.map(s => (
                 <tr key={s.id}>
-                  <td>{s.member_id || "Anonymous"}</td>
+                  <td>{s.member_name || "Anonymous"}</td>
                   <td>{s.type}</td>
                   <td>{s.message}</td>
                   <td>
-                    <b>{s.status}</b>
-                  </td>
-                  <td>
-                    <select
-                      value={s.status}
-                      onChange={e =>
-                        updateStatus(s.id, e.target.value)
-                      }
-                    >
-                      <option value="NEW">NEW</option>
-                      <option value="REVIEWED">REVIEWED</option>
-                      <option value="RESOLVED">RESOLVED</option>
-                      <option value="REJECTED">REJECTED</option>
-                    </select>
+                    <b>{s.status || "NEW"}</b>
                   </td>
                 </tr>
               ))}

@@ -21,13 +21,21 @@ export default function MemberContribution() {
   }, []);
 
   const loadFunds = async () => {
-    const res = await api.get("/funds/list");
-    setFunds(res.data.funds || []);
+    try {
+      const res = await api.get("/funds/list");
+      setFunds(res.data || []); // ✅ FIX
+    } catch (err) {
+      console.error("LOAD FUNDS ERROR 👉", err);
+    }
   };
 
   const loadContributions = async () => {
-    const res = await api.get("/members/contributions");
-    setContributions(res.data.contributions || []);
+    try {
+      const res = await api.get("/members/contributions");
+      setContributions(res.data || []); // ✅ FIX
+    } catch (err) {
+      console.error("LOAD CONTRIBUTIONS ERROR 👉", err);
+    }
   };
 
   /* =========================
@@ -69,8 +77,7 @@ export default function MemberContribution() {
   };
 
   /* =========================
-     ✅ DOWNLOAD RECEIPT (CORRECT)
-     BACKEND: /receipts/pdf/:receiptNo
+     DOWNLOAD RECEIPT
   ========================= */
   const downloadReceipt = async (receiptNo) => {
     try {
@@ -100,12 +107,13 @@ export default function MemberContribution() {
       <Navbar />
 
       <div style={container}>
-        {/* =========================
-           NEW CONTRIBUTION
-        ========================= */}
         <h2>💰 New Contribution</h2>
 
-        <select value={fundId} onChange={(e) => setFundId(e.target.value)} style={input}>
+        <select
+          value={fundId}
+          onChange={(e) => setFundId(e.target.value)}
+          style={input}
+        >
           <option value="">Select Fund</option>
           {funds.map((f) => (
             <option key={f.id} value={f.id}>
@@ -122,7 +130,11 @@ export default function MemberContribution() {
           style={input}
         />
 
-        <select value={paymentMode} onChange={(e) => setPaymentMode(e.target.value)} style={input}>
+        <select
+          value={paymentMode}
+          onChange={(e) => setPaymentMode(e.target.value)}
+          style={input}
+        >
           <option value="CASH">Cash</option>
           <option value="UPI">UPI</option>
           <option value="BANK">Bank Transfer</option>
@@ -141,9 +153,6 @@ export default function MemberContribution() {
           {loading ? "Submitting..." : "Submit Contribution"}
         </button>
 
-        {/* =========================
-           CONTRIBUTION HISTORY
-        ========================= */}
         <h3 style={{ marginTop: 40 }}>📜 My Contributions</h3>
 
         {contributions.length === 0 ? (
@@ -211,5 +220,12 @@ export default function MemberContribution() {
 ========================= */
 const container = { padding: 30, maxWidth: 800 };
 const input = { width: "100%", padding: 10, marginBottom: 12 };
-const btn = { width: "100%", padding: 12, background: "#2e7d32", color: "#fff", border: "none", cursor: "pointer" };
+const btn = {
+  width: "100%",
+  padding: 12,
+  background: "#2e7d32",
+  color: "#fff",
+  border: "none",
+  cursor: "pointer",
+};
 const table = { width: "100%", borderCollapse: "collapse", marginTop: 15 };

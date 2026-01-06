@@ -23,15 +23,13 @@ const Announcements = () => {
   ========================= */
   const loadAnnouncements = async () => {
     try {
-      const res = await api.get("/announcements");
+      const res = await api.get("/api/announcements"); // ✅ FIX
       const today = new Date();
 
-      // filter expired
-      const valid = res.data.filter(a =>
-        !a.expiry_date || new Date(a.expiry_date) >= today
+      const valid = res.data.filter(
+        a => !a.expiry_date || new Date(a.expiry_date) >= today
       );
 
-      // pinned first
       valid.sort((a, b) =>
         a.priority === "PINNED" ? -1 : 1
       );
@@ -43,8 +41,7 @@ const Announcements = () => {
   };
 
   /* =========================
-     CREATE / UPDATE (ADMIN)
-     + NOTIFICATION TRIGGER
+     CREATE / UPDATE
   ========================= */
   const submitAnnouncement = async e => {
     e.preventDefault();
@@ -60,16 +57,15 @@ const Announcements = () => {
       category,
       priority,
       expiry_date: expiry || null,
-      notify: true // 🔔 email / WhatsApp trigger
     };
 
     try {
       if (editId) {
-        await api.put(`/announcements/${editId}`, payload);
+        await api.put(`/api/announcements/${editId}`, payload); // ✅ FIX
         setSuccess("✅ Announcement updated");
       } else {
-        await api.post("/announcements", payload);
-        setSuccess("✅ Announcement published & notifications sent");
+        await api.post("/api/announcements", payload); // ✅ FIX
+        setSuccess("✅ Announcement published");
       }
 
       resetForm();
@@ -80,16 +76,16 @@ const Announcements = () => {
   };
 
   /* =========================
-     DELETE (ADMIN)
+     DELETE
   ========================= */
   const deleteAnnouncement = async id => {
     if (!window.confirm("Delete announcement?")) return;
-    await api.delete(`/announcements/${id}`);
+    await api.delete(`/api/announcements/${id}`); // ✅ FIX
     loadAnnouncements();
   };
 
   /* =========================
-     EDIT MODE (ADMIN)
+     EDIT
   ========================= */
   const editAnnouncement = a => {
     setEditId(a.id);
@@ -110,11 +106,11 @@ const Announcements = () => {
   };
 
   /* =========================
-     MARK AS SEEN (MEMBER)
+     MARK AS SEEN
   ========================= */
   const markAsSeen = async id => {
     try {
-      await api.post(`/announcements/${id}/seen`);
+      await api.post(`/api/announcements/${id}/seen`); // ✅ FIX
       setAnnouncements(prev =>
         prev.map(a =>
           a.id === id ? { ...a, seen: true } : a
@@ -125,9 +121,6 @@ const Announcements = () => {
     }
   };
 
-  /* =========================
-     NOTIFICATION COUNT
-  ========================= */
   const unreadCount = announcements.filter(a => !a.seen).length;
 
   useEffect(() => {
@@ -136,17 +129,16 @@ const Announcements = () => {
 
   return (
     <div className="container">
+      <Navbar />
 
-      {/* 🔔 Notification Bell */}
       <div style={{ float: "right", fontSize: "18px" }}>
         🔔 {unreadCount}
       </div>
 
       <h2>📢 Announcements</h2>
 
-      {/* ================= ADMIN FORM ================= */}
       {isAdmin && (
-        <form onSubmit={submitAnnouncement} style={{ marginBottom: 30 }}>
+        <form onSubmit={submitAnnouncement}>
           <h3>{editId ? "✏️ Edit" : "➕ New"} Announcement</h3>
 
           {success && <p style={{ color: "green" }}>{success}</p>}
@@ -166,7 +158,6 @@ const Announcements = () => {
             required
           />
 
-          <label>Category</label>
           <select value={category} onChange={e => setCategory(e.target.value)}>
             <option value="GENERAL">General</option>
             <option value="FINANCE">Finance</option>
@@ -174,65 +165,30 @@ const Announcements = () => {
             <option value="ALERT">Alert</option>
           </select>
 
-          <label>Priority</label>
           <select value={priority} onChange={e => setPriority(e.target.value)}>
             <option value="NORMAL">Normal</option>
             <option value="PINNED">📌 Pinned</option>
           </select>
 
-          <label>Expiry Date (optional)</label>
           <input
             type="date"
             value={expiry}
             onChange={e => setExpiry(e.target.value)}
           />
 
-          <button type="submit">
-            {editId ? "Update" : "Publish"}
-          </button>
-
-          {editId && (
-            <button type="button" onClick={resetForm}>
-              Cancel
-            </button>
-          )}
+          <button type="submit">{editId ? "Update" : "Publish"}</button>
+          {editId && <button onClick={resetForm}>Cancel</button>}
         </form>
       )}
-
-      {/* ================= DASHBOARD PINNED HIGHLIGHT ================= */}
-      {announcements
-        .filter(a => a.priority === "PINNED")
-        .slice(0, 1)
-        .map(a => (
-          <div
-            key={a.id}
-            style={{
-              background: "#fff3cd",
-              padding: "10px",
-              borderRadius: "5px",
-              marginBottom: "20px"
-            }}
-          >
-            📌 <b>{a.title}</b> — {a.message}
-          </div>
-        ))}
-
-      {/* ================= ANNOUNCEMENT LIST ================= */}
-      {announcements.length === 0 && <p>No announcements yet</p>}
 
       {announcements.map(a => (
         <div
           key={a.id}
           onClick={() => !a.seen && markAsSeen(a.id)}
           style={{
-            border: "1px solid #ccc",
-            padding: "10px",
-            marginBottom: "10px",
-            borderLeft:
-              a.priority === "PINNED"
-                ? "5px solid red"
-                : "5px solid gray",
             background: a.seen ? "#f9f9f9" : "#e8f4ff",
+            marginBottom: 10,
+            padding: 10,
             cursor: "pointer"
           }}
         >
@@ -240,30 +196,7 @@ const Announcements = () => {
             {!a.seen && "🔵 "}
             {a.priority === "PINNED" && "📌 "} {a.title}
           </h4>
-
-          <small>
-            📂 {a.category} | 📅{" "}
-            {new Date(a.created_at).toLocaleDateString()}
-            {a.expiry_date && (
-              <> | ⏰ Expires: {new Date(a.expiry_date).toLocaleDateString()}</>
-            )}
-          </small>
-
           <p>{a.message}</p>
-
-          {!a.seen && (
-            <small style={{ color: "blue" }}>
-              👁 Click to mark as seen
-            </small>
-          )}
-
-          {/* ADMIN ACTIONS */}
-          {isAdmin && (
-            <div>
-              <button onClick={() => editAnnouncement(a)}>Edit</button>
-              <button onClick={() => deleteAnnouncement(a.id)}>Delete</button>
-            </div>
-          )}
         </div>
       ))}
     </div>
