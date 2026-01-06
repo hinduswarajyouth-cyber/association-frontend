@@ -74,7 +74,7 @@ export default function Members() {
       <Navbar />
 
       <div style={container}>
-        <h2 style={title}>Members</h2>
+        <h2 style={title}>Members (Full Details)</h2>
 
         {loading ? (
           <p>Loading members...</p>
@@ -83,14 +83,16 @@ export default function Members() {
             <table style={table}>
               <thead>
                 <tr>
-                  <th>Name</th>
+                  <th>ID</th>
                   <th>Member ID</th>
+                  <th>Name</th>
                   <th>Association ID</th>
-                  <th>Personal Email</th>
+                  <th>Email</th>
                   <th>Phone</th>
                   <th>Address</th>
                   <th>Role</th>
                   <th>Status</th>
+                  <th>Created At</th>
                   <th>Actions</th>
                 </tr>
               </thead>
@@ -98,8 +100,9 @@ export default function Members() {
               <tbody>
                 {members.map((m, index) => (
                   <tr key={m.id} style={index % 2 ? rowAlt : null}>
-                    <td>{m.name}</td>
+                    <td><span style={idBadge}>{m.id}</span></td>
                     <td><span style={idBadge}>{m.member_id}</span></td>
+                    <td>{m.name}</td>
                     <td><span style={idBadge}>{m.association_id}</span></td>
                     <td>{m.personal_email || "-"}</td>
                     <td>{m.phone || "-"}</td>
@@ -116,6 +119,12 @@ export default function Members() {
                       >
                         {m.active ? "ACTIVE" : "BLOCKED"}
                       </span>
+                    </td>
+
+                    <td>
+                      {m.created_at
+                        ? new Date(m.created_at).toLocaleString()
+                        : "-"}
                     </td>
 
                     <td style={{ whiteSpace: "nowrap" }}>
@@ -234,11 +243,11 @@ export default function Members() {
 }
 
 /* =========================
-   STYLES (UNCHANGED)
+   STYLES
 ========================= */
 const container = { padding: 30, background: "#f4f6f8", minHeight: "100vh" };
 const title = { marginBottom: 20 };
-const table = { width: "100%", borderCollapse: "collapse", background: "#fff", minWidth: 1200 };
+const table = { width: "100%", borderCollapse: "collapse", background: "#fff", minWidth: 1400 };
 const rowAlt = { background: "#f9fafb" };
 const statusBadge = { padding: "4px 12px", borderRadius: 999, color: "#fff", fontSize: 12 };
 const roleBadge = { padding: "4px 10px", borderRadius: 6, background: "#e0e7ff", color: "#1e3a8a", fontSize: 12 };
