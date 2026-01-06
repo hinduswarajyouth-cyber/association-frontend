@@ -28,19 +28,16 @@ export default function Members() {
   };
 
   /* =========================
-     RESEND LOGIN
-  ========================= */
-  const resendLogin = async (id) => {
-    if (!window.confirm("Resend login credentials?")) return;
-    await api.post(`/admin/resend-login/${id}`);
-    alert("Login credentials sent");
-  };
-
-  /* =========================
      BLOCK / UNBLOCK
   ========================= */
-  const toggleStatus = async (id, active) => {
-    await api.put(`/admin/block-member/${id}`, { active });
+  const toggleStatus = async (member) => {
+    if (!window.confirm("Change member status?")) return;
+
+    await api.put(`/members/${member.id}`, {
+      ...member,
+      active: !member.active,
+    });
+
     fetchMembers();
   };
 
@@ -49,7 +46,7 @@ export default function Members() {
   ========================= */
   const deleteMember = async (id) => {
     if (!window.confirm("Delete member permanently?")) return;
-    await api.delete(`/admin/delete-member/${id}`);
+    await api.delete(`/members/${id}`);
     fetchMembers();
   };
 
@@ -59,9 +56,8 @@ export default function Members() {
   const saveMember = async () => {
     if (!window.confirm("Update this member?")) return;
 
-    await api.put(`/admin/edit-member/${editing.id}`, {
+    await api.put(`/members/${editing.id}`, {
       name: editing.name,
-      personal_email: editing.personal_email,
       phone: editing.phone,
       address: editing.address,
       role: editing.role,
@@ -103,22 +99,13 @@ export default function Members() {
                 {members.map((m, index) => (
                   <tr key={m.id} style={index % 2 ? rowAlt : null}>
                     <td>{m.name}</td>
-
-                    <td>
-                      <span style={idBadge}>{m.member_id}</span>
-                    </td>
-
-                    <td>
-                      <span style={idBadge}>{m.association_id}</span>
-                    </td>
-
+                    <td><span style={idBadge}>{m.member_id}</span></td>
+                    <td><span style={idBadge}>{m.association_id}</span></td>
                     <td>{m.personal_email || "-"}</td>
                     <td>{m.phone || "-"}</td>
                     <td>{m.address || "-"}</td>
 
-                    <td>
-                      <span style={roleBadge}>{m.role}</span>
-                    </td>
+                    <td><span style={roleBadge}>{m.role}</span></td>
 
                     <td>
                       <span
@@ -132,7 +119,6 @@ export default function Members() {
                     </td>
 
                     <td style={{ whiteSpace: "nowrap" }}>
-                      {/* SUPER ADMIN PROTECTION */}
                       {m.role !== "SUPER_ADMIN" ? (
                         <>
                           <button
@@ -143,17 +129,8 @@ export default function Members() {
                           </button>
 
                           <button
-                            style={mailBtn}
-                            onClick={() => resendLogin(m.id)}
-                          >
-                            Resend
-                          </button>
-
-                          <button
                             style={m.active ? blockBtn : unblockBtn}
-                            onClick={() =>
-                              toggleStatus(m.id, !m.active)
-                            }
+                            onClick={() => toggleStatus(m)}
                           >
                             {m.active ? "Block" : "Unblock"}
                           </button>
@@ -187,32 +164,17 @@ export default function Members() {
           <div style={modal}>
             <h3>Edit Member</h3>
 
-            <div>
-              <label style={label}>Member ID</label>
-              <div style={readonlyBox}>{editing.member_id}</div>
-            </div>
+            <label style={label}>Member ID</label>
+            <div style={readonlyBox}>{editing.member_id}</div>
 
-            <div>
-              <label style={label}>Association ID</label>
-              <div style={readonlyBox}>{editing.association_id}</div>
-            </div>
+            <label style={label}>Association ID</label>
+            <div style={readonlyBox}>{editing.association_id}</div>
 
             <input
               placeholder="Full Name"
               value={editing.name}
               onChange={(e) =>
                 setEditing({ ...editing, name: e.target.value })
-              }
-            />
-
-            <input
-              placeholder="Personal Email"
-              value={editing.personal_email || ""}
-              onChange={(e) =>
-                setEditing({
-                  ...editing,
-                  personal_email: e.target.value,
-                })
               }
             />
 
@@ -243,9 +205,7 @@ export default function Members() {
               <option value="TREASURER">TREASURER</option>
               <option value="PRESIDENT">PRESIDENT</option>
               <option value="VICE_PRESIDENT">VICE_PRESIDENT</option>
-              <option value="GENERAL_SECRETARY">
-                GENERAL_SECRETARY
-              </option>
+              <option value="GENERAL_SECRETARY">GENERAL_SECRETARY</option>
               <option value="JOINT_SECRETARY">JOINT_SECRETARY</option>
             </select>
 
@@ -254,23 +214,15 @@ export default function Members() {
                 type="checkbox"
                 checked={editing.active}
                 onChange={(e) =>
-                  setEditing({
-                    ...editing,
-                    active: e.target.checked,
-                  })
+                  setEditing({ ...editing, active: e.target.checked })
                 }
               />{" "}
               Active
             </label>
 
             <div style={{ textAlign: "right", marginTop: 10 }}>
-              <button style={saveBtn} onClick={saveMember}>
-                Save
-              </button>{" "}
-              <button
-                style={cancelBtn}
-                onClick={() => setEditing(null)}
-              >
+              <button style={saveBtn} onClick={saveMember}>Save</button>{" "}
+              <button style={cancelBtn} onClick={() => setEditing(null)}>
                 Cancel
               </button>
             </div>
@@ -282,101 +234,23 @@ export default function Members() {
 }
 
 /* =========================
-   STYLES
+   STYLES (UNCHANGED)
 ========================= */
-const container = {
-  padding: 30,
-  background: "#f4f6f8",
-  minHeight: "100vh",
-  fontFamily: "Segoe UI, sans-serif",
-};
-
+const container = { padding: 30, background: "#f4f6f8", minHeight: "100vh" };
 const title = { marginBottom: 20 };
-
-const table = {
-  width: "100%",
-  borderCollapse: "collapse",
-  background: "#fff",
-  borderRadius: 10,
-  minWidth: 1200,
-};
-
+const table = { width: "100%", borderCollapse: "collapse", background: "#fff", minWidth: 1200 };
 const rowAlt = { background: "#f9fafb" };
-
-const statusBadge = {
-  padding: "4px 12px",
-  borderRadius: 999,
-  color: "#fff",
-  fontSize: 12,
-  fontWeight: "bold",
-};
-
-const roleBadge = {
-  padding: "4px 10px",
-  borderRadius: 6,
-  background: "#e0e7ff",
-  color: "#1e3a8a",
-  fontSize: 12,
-  fontWeight: 600,
-};
-
-const idBadge = {
-  background: "#ecfeff",
-  color: "#155e75",
-  padding: "4px 10px",
-  borderRadius: 6,
-  fontSize: 12,
-  fontWeight: 600,
-};
-
-const baseBtn = {
-  padding: "5px 10px",
-  borderRadius: 6,
-  border: "none",
-  fontSize: 12,
-  cursor: "pointer",
-  marginRight: 6,
-};
-
+const statusBadge = { padding: "4px 12px", borderRadius: 999, color: "#fff", fontSize: 12 };
+const roleBadge = { padding: "4px 10px", borderRadius: 6, background: "#e0e7ff", color: "#1e3a8a", fontSize: 12 };
+const idBadge = { background: "#ecfeff", color: "#155e75", padding: "4px 10px", borderRadius: 6, fontSize: 12 };
+const baseBtn = { padding: "5px 10px", borderRadius: 6, border: "none", fontSize: 12, cursor: "pointer", marginRight: 6 };
 const editBtn = { ...baseBtn, background: "#2563eb", color: "#fff" };
-const mailBtn = { ...baseBtn, background: "#0ea5e9", color: "#fff" };
 const blockBtn = { ...baseBtn, background: "#f97316", color: "#fff" };
 const unblockBtn = { ...baseBtn, background: "#16a34a", color: "#fff" };
 const deleteBtn = { ...baseBtn, background: "#dc2626", color: "#fff" };
 const saveBtn = { ...baseBtn, background: "#16a34a", color: "#fff" };
 const cancelBtn = { ...baseBtn, background: "#6b7280", color: "#fff" };
-
-const modalBg = {
-  position: "fixed",
-  inset: 0,
-  background: "rgba(0,0,0,0.5)",
-  display: "flex",
-  justifyContent: "center",
-  alignItems: "center",
-};
-
-const modal = {
-  background: "#fff",
-  padding: 20,
-  borderRadius: 10,
-  width: 420,
-  display: "flex",
-  flexDirection: "column",
-  gap: 10,
-};
-
-const label = {
-  fontSize: 12,
-  fontWeight: 600,
-  color: "#475569",
-};
-
-const readonlyBox = {
-  padding: "10px 12px",
-  borderRadius: 8,
-  background: "#f1f5f9",
-  border: "1px solid #cbd5e1",
-  fontSize: 14,
-  fontWeight: 600,
-  color: "#0f172a",
-};
+const modalBg = { position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", justifyContent: "center", alignItems: "center" };
+const modal = { background: "#fff", padding: 20, borderRadius: 10, width: 420, display: "flex", flexDirection: "column", gap: 10 };
+const label = { fontSize: 12, fontWeight: 600 };
+const readonlyBox = { padding: "10px 12px", borderRadius: 8, background: "#f1f5f9", border: "1px solid #cbd5e1" };

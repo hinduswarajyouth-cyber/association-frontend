@@ -44,6 +44,11 @@ export default function Navbar() {
 
   const closeMenu = () => setOpen(false);
 
+  const doLogout = () => {
+    logout();
+    navigate("/login");
+  };
+
   return (
     <>
       {/* ================= TOP BAR ================= */}
@@ -60,14 +65,7 @@ export default function Navbar() {
         {/* ===== DESKTOP MENU ===== */}
         <div style={menuDesktop}>
           <MenuLinks role={role} isActive={isActive} onClick={closeMenu} />
-          <UserInfo
-            name={name}
-            role={role}
-            onLogout={() => {
-              logout();
-              navigate("/login");
-            }}
-          />
+          <UserInfo name={name} role={role} onLogout={doLogout} />
         </div>
       </div>
 
@@ -75,14 +73,7 @@ export default function Navbar() {
       {open && (
         <div style={menuMobile}>
           <MenuLinks role={role} isActive={isActive} onClick={closeMenu} />
-          <UserInfo
-            name={name}
-            role={role}
-            onLogout={() => {
-              logout();
-              navigate("/login");
-            }}
-          />
+          <UserInfo name={name} role={role} onLogout={doLogout} />
         </div>
       )}
     </>
@@ -176,21 +167,24 @@ const logo = {
   cursor: "pointer",
 };
 
+/* 🍔 burger hidden on desktop */
 const burger = {
   background: "transparent",
   color: "#fff",
   fontSize: 26,
   border: "none",
   cursor: "pointer",
-  display: "block",
+  display: "none",
 };
 
+/* desktop menu */
 const menuDesktop = {
   display: "flex",
   gap: 16,
   alignItems: "center",
 };
 
+/* mobile menu */
 const menuMobile = {
   background: "#0f172a",
   padding: 16,
@@ -215,7 +209,6 @@ const userBox = {
   display: "flex",
   alignItems: "center",
   gap: 8,
-  marginTop: 10,
 };
 
 const userName = {
@@ -239,3 +232,11 @@ const logoutBtn = {
   borderRadius: 6,
   cursor: "pointer",
 };
+
+/* =========================
+   📱 RESPONSIVE
+========================= */
+if (window.innerWidth < 768) {
+  burger.display = "block";
+  menuDesktop.display = "none";
+}
