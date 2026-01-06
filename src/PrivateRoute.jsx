@@ -1,5 +1,5 @@
 import { Navigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "./context/AuthContext";
 
 /* =========================
    ROLE GROUPS
@@ -19,10 +19,14 @@ export default function PrivateRoute({ children, allowedRoles }) {
   const { user, loading } = useAuth();
 
   /* =========================
-     WAIT FOR AUTH
+     WAIT FOR AUTH CHECK
   ========================= */
   if (loading) {
-    return <p style={{ padding: 30 }}>Loading...</p>;
+    return (
+      <div style={{ padding: 40, textAlign: "center", fontSize: 16 }}>
+        Loading...
+      </div>
+    );
   }
 
   /* =========================
@@ -36,7 +40,7 @@ export default function PrivateRoute({ children, allowedRoles }) {
      ROLE NOT ALLOWED
   ========================= */
   if (allowedRoles && !allowedRoles.includes(user.role)) {
-    // 🔁 ADMIN
+    // 🔑 ADMIN
     if (ADMIN_ROLES.includes(user.role)) {
       return <Navigate to="/president" replace />;
     }
@@ -46,7 +50,7 @@ export default function PrivateRoute({ children, allowedRoles }) {
       return <Navigate to="/treasurer" replace />;
     }
 
-    // 👥 MEMBER / EC
+    // 👥 MEMBER / EC / VOLUNTEER
     if (MEMBER_ROLES.includes(user.role)) {
       return <Navigate to="/member" replace />;
     }
