@@ -1,44 +1,56 @@
 import { Routes, Route, Navigate } from "react-router-dom";
-import PrivateRoute from "./PrivateRoute";
-import Footer from "./components/Footer";
 import { useAuth } from "./context/AuthContext";
+import PrivateRoute from "./PrivateRoute";
+
+/* 🌐 GLOBAL UI */
+import Footer from "./components/Footer";
 import InstallPWA from "./components/InstallPWA";
 import OfflineBanner from "./components/OfflineBanner";
 import UpdatePrompt from "./components/UpdatePrompt";
 
-/* ===== PUBLIC ===== */
+/* 🔓 PUBLIC */
 import Login from "./pages/Login";
 import ForgotPassword from "./pages/ForgotPassword";
 
-/* ===== COMMON ===== */
+/* 🧩 COMMON */
 import Complaint from "./pages/Complaint";
 import ChangePassword from "./pages/ChangePassword";
 import Profile from "./pages/Profile";
 import Meetings from "./pages/Meetings";
 
-/* ===== DASHBOARDS ===== */
+/* 📊 DASHBOARDS */
 import AdminDashboard from "./pages/AdminDashboard";
 import TreasurerDashboard from "./pages/TreasurerDashboard";
 import Dashboard from "./pages/Dashboard";
 
-/* ===== ADMIN ===== */
+/* 👑 ADMIN */
 import Members from "./pages/Members";
 import AddMember from "./pages/AddMember";
 import Funds from "./pages/Funds";
 import Reports from "./pages/Reports";
 import AuditLogs from "./pages/AuditLogs";
 
-/* ===== MEMBER ===== */
+/* 👤 MEMBER */
 import MemberContributions from "./pages/MemberContributions";
 
 /* =========================
-   ROLE-BASED ROOT REDIRECT
+   🔁 ROLE BASED ROOT REDIRECT
 ========================= */
 function RootRedirect() {
   const { user, loading } = useAuth();
 
-  if (loading) return null;
-  if (!user) return <Navigate to="/login" replace />;
+  // ✅ FIX: no blink, no blank screen
+  if (loading) {
+    return (
+      <div style={{ padding: 40, textAlign: "center" }}>
+        Loading...
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
 
   switch (user.role) {
     case "SUPER_ADMIN":
@@ -56,7 +68,7 @@ function RootRedirect() {
 export default function App() {
   return (
     <>
-      {/* 🌐 OFFLINE INDICATOR (GLOBAL) */}
+      {/* 🌐 OFFLINE STATUS */}
       <OfflineBanner />
 
       <Routes>
@@ -111,7 +123,7 @@ export default function App() {
           }
         />
 
-        {/* 🔁 CHANGE PASSWORD */}
+        {/* 🔐 CHANGE PASSWORD */}
         <Route
           path="/change-password"
           element={
@@ -256,10 +268,10 @@ export default function App() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
 
-      {/* 🔄 UPDATE AVAILABLE PROMPT */}
+      {/* 🔄 UPDATE PROMPT */}
       <UpdatePrompt />
 
-      {/* 📲 PWA INSTALL BUTTON */}
+      {/* 📲 PWA INSTALL */}
       <InstallPWA />
 
       {/* 🌐 FOOTER */}
