@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import api from "../api/api";
 
-const AuthContext = createContext();
+const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -9,11 +9,13 @@ export const AuthProvider = ({ children }) => {
 
   /* =========================
      LOAD USER FROM TOKEN
+     (ON APP START / REFRESH)
   ========================= */
   useEffect(() => {
     const loadUser = async () => {
       const token = localStorage.getItem("token");
 
+      // 🔴 No token → not logged in
       if (!token) {
         setUser(null);
         setLoading(false);
@@ -21,10 +23,16 @@ export const AuthProvider = ({ children }) => {
       }
 
       try {
-        const res = await api.get("/auth/me");
-        setUser(res.data);
+        // ✅ MUST MATCH BACKEND
+        // backend: GET /auth/verify
+        const res = await api.get("/auth/verify");
+
+        // backend returns: { message, user }
+        setUser(res.data.user);
       } catch (err) {
-        // Token invalid / expired
+        console.error("AUTH VERIFY FAILED 👉", err);
+
+        // ❌ invalid / expired token
         localStorage.clear();
         setUser(null);
       } finally {
@@ -36,12 +44,11 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   /* =========================
-     LOGIN
+     LOGIN (CALLED AFTER /login)
   ========================= */
   const login = (token, userData) => {
     localStorage.setItem("token", token);
-    localStorage.setItem("user", JSON.stringify(userData));
-    setUser(userData);
+    setUser(userData); // 👈 SINGLE SOURCE OF TRUTH
   };
 
   /* =========================
@@ -53,10 +60,27 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        loading,
+        login,
+        logout,
+        isAuthenticated: !!user,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
 };
 
-export const useAuth = () => useContext(AuthContext);
+/* =========================
+   CUSTOM HOOK
+========================= */
+export const useAuth = () => {
+  const ctx = useContext(AuthContext);
+  if (!ctx) {
+    throw new Error("useAuth must be used inside AuthProvider");
+  }
+  return ctx;
+};
