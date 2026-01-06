@@ -4,6 +4,16 @@ import { useAuth } from "../context/AuthContext";
 import api from "../api/api";
 import bg from "../assets/login-bg.png";
 
+/* MEMBER DASHBOARD ROLES */
+const MEMBER_ROLES = [
+  "EC_MEMBER",
+  "GENERAL_SECRETARY",
+  "JOINT_SECRETARY",
+  "MEMBER",
+  "VOLUNTEER",
+  "VICE_PRESIDENT",
+];
+
 export default function Login() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -13,9 +23,6 @@ export default function Login() {
   const navigate = useNavigate();
   const { login } = useAuth();
 
-  /* =========================
-     HANDLE LOGIN
-  ========================= */
   const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
@@ -27,20 +34,42 @@ export default function Login() {
         password,
       });
 
-      const { token, user, isFirstLogin } = res.data;
+      /**
+       * BACKEND RESPONSE:
+       * {
+       *   token,
+       *   role,
+       *   isFirstLogin,
+       *   user: { id, name, username }
+       * }
+       */
+      const { token, user, role, isFirstLogin } = res.data;
 
-      // ✅ SAVE AUTH (SINGLE SOURCE OF TRUTH)
-      login(token, user);
+      // ✅ NORMALIZE USER (VERY IMPORTANT)
+      const finalUser = {
+        ...user,
+        role,
+      };
 
-      // 🔁 FORCE PASSWORD CHANGE ON FIRST LOGIN
-      if (isFirstLogin || user?.is_first_login) {
+      // ✅ SAVE AUTH
+      login(token, finalUser);
+
+      // 🔁 FORCE PASSWORD CHANGE
+      if (isFirstLogin) {
         navigate("/change-password", { replace: true });
         return;
       }
 
-      // ✅ SINGLE REDIRECT (PrivateRoute HANDLES ROLE)
-      navigate("/", { replace: true });
-
+      // 🔁 ROLE BASED REDIRECT
+      if (["SUPER_ADMIN", "PRESIDENT"].includes(role)) {
+        navigate("/admin-dashboard", { replace: true });
+      } else if (role === "TREASURER") {
+        navigate("/treasurer-dashboard", { replace: true });
+      } else if (MEMBER_ROLES.includes(role)) {
+        navigate("/dashboard", { replace: true });
+      } else {
+        setError("Unauthorized role");
+      }
     } catch (err) {
       console.error("LOGIN ERROR 👉", err);
       setError(err.response?.data?.error || "Login failed");
@@ -55,44 +84,42 @@ export default function Login() {
 
       <div style={overlay}>
         <div style={content}>
-          <div style={animatedBox}>
-            <h1 style={welcome}>Hello Welcome</h1>
-            <p style={subtitle}>Association System</p>
+          <h1 style={welcome}>Hello Welcome</h1>
+          <p style={subtitle}>Association System</p>
 
-            <form onSubmit={handleLogin} style={box}>
-              <h3 style={{ marginBottom: 15 }}>Login</h3>
+          <form onSubmit={handleLogin} style={box}>
+            <h3 style={{ marginBottom: 15 }}>Login</h3>
 
-              {error && <p style={errorText}>{error}</p>}
+            {error && <p style={errorText}>{error}</p>}
 
-              <input
-                type="text"
-                placeholder="Association ID"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                required
-                style={input}
-              />
+            <input
+              type="text"
+              placeholder="Association ID"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              required
+              style={input}
+            />
 
-              <input
-                type="password"
-                placeholder="Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                style={input}
-              />
+            <input
+              type="password"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              style={input}
+            />
 
-              <button type="submit" style={btn} disabled={loading}>
-                {loading ? "Logging in..." : "LOGIN"}
-              </button>
+            <button type="submit" style={btn} disabled={loading}>
+              {loading ? "Logging in..." : "LOGIN"}
+            </button>
 
-              <p style={{ marginTop: 12 }}>
-                <a href="/forgot-password" style={{ color: "#ffd700" }}>
-                  Forgot Password?
-                </a>
-              </p>
-            </form>
-          </div>
+            <p style={{ marginTop: 12 }}>
+              <a href="/forgot-password" style={{ color: "#ffd700" }}>
+                Forgot Password?
+              </a>
+            </p>
+          </form>
         </div>
       </div>
     </div>
@@ -100,7 +127,7 @@ export default function Login() {
 }
 
 /* =========================
-   🎨 STYLES
+   STYLES
 ========================= */
 
 const page = {
@@ -112,18 +139,16 @@ const page = {
 const bgImage = {
   width: "100%",
   height: "auto",
-  display: "block",
 };
 
 const overlay = {
   position: "absolute",
   inset: 0,
-  minHeight: "100svh",
   background: "rgba(0,0,0,0.35)",
   display: "flex",
   justifyContent: "center",
   alignItems: "center",
-  padding: "24px 16px",
+  padding: 16,
 };
 
 const content = {
@@ -131,53 +156,21 @@ const content = {
   color: "#fff",
 };
 
-const animatedBox = {
-  animation: "fadeSlide 0.8s ease-out",
-};
-
-/* inject keyframes safely */
-if (typeof document !== "undefined") {
-  const sheet = document.styleSheets?.[0];
-  if (sheet) {
-    try {
-      sheet.insertRule(
-        `
-        @keyframes fadeSlide {
-          from {
-            opacity: 0;
-            transform: translateY(20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-      `,
-        sheet.cssRules.length
-      );
-    } catch {}
-  }
-}
-
 const welcome = {
   fontSize: 32,
   fontWeight: "bold",
-  marginBottom: 4,
 };
 
 const subtitle = {
   marginBottom: 25,
-  opacity: 0.95,
 };
 
 const box = {
-  width: "100%",
-  maxWidth: 360,
+  width: 360,
   padding: 24,
   background: "rgba(255,255,255,0.2)",
   backdropFilter: "blur(12px)",
   borderRadius: 14,
-  boxShadow: "0 8px 25px rgba(0,0,0,0.4)",
 };
 
 const input = {
