@@ -45,38 +45,25 @@ function AuthGate({ children }) {
   return children;
 }
 
-/* =========================
-   ROLE BASED ROOT REDIRECT
-========================= */
-function RootRedirect() {
-  const { user } = useAuth();
-
-  if (!user) return <Navigate to="/login" replace />;
-
-  switch (user.role) {
-    case "SUPER_ADMIN":
-    case "PRESIDENT":
-      return <Navigate to="/admin-dashboard" replace />;
-    case "TREASURER":
-      return <Navigate to="/treasurer-dashboard" replace />;
-    default:
-      return <Navigate to="/dashboard" replace />;
-  }
-}
-
 export default function App() {
   return (
     <>
       <AuthGate>
         <Routes>
-          {/* PUBLIC */}
+          {/* =========================
+             DEFAULT (FIRST PAGE)
+          ========================= */}
+          <Route path="/" element={<Navigate to="/login" replace />} />
+
+          {/* =========================
+             PUBLIC ROUTES
+          ========================= */}
           <Route path="/login" element={<Login />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
 
-          {/* ROOT */}
-          <Route path="/" element={<RootRedirect />} />
-
-          {/* ADMIN */}
+          {/* =========================
+             ADMIN
+          ========================= */}
           <Route
             path="/admin-dashboard"
             element={
@@ -138,7 +125,9 @@ export default function App() {
             }
           />
 
-          {/* TREASURER */}
+          {/* =========================
+             TREASURER
+          ========================= */}
           <Route
             path="/treasurer-dashboard"
             element={
@@ -148,18 +137,19 @@ export default function App() {
             }
           />
 
-          {/* MEMBER */}
+          {/* =========================
+             DASHBOARD (NON-MEMBER)
+             ❌ MEMBER / VOLUNTEER NOT ALLOWED
+          ========================= */}
           <Route
             path="/dashboard"
             element={
               <PrivateRoute
                 allowedRoles={[
-                  "MEMBER",
                   "EC_MEMBER",
                   "VICE_PRESIDENT",
                   "GENERAL_SECRETARY",
                   "JOINT_SECRETARY",
-                  "VOLUNTEER",
                 ]}
               >
                 <Dashboard />
@@ -167,15 +157,21 @@ export default function App() {
             }
           />
 
+          {/* =========================
+             MEMBER / VOLUNTEER
+          ========================= */}
           <Route
-            path="/contributions"
+            path="/member"
             element={
-              <PrivateRoute allowedRoles={["MEMBER"]}>
+              <PrivateRoute allowedRoles={["MEMBER", "VOLUNTEER"]}>
                 <MemberContributions />
               </PrivateRoute>
             }
           />
 
+          {/* =========================
+             COMMON (LOGGED IN)
+          ========================= */}
           <Route
             path="/profile"
             element={
@@ -185,6 +181,7 @@ export default function App() {
                   "PRESIDENT",
                   "TREASURER",
                   "MEMBER",
+                  "EC_MEMBER",
                 ]}
               >
                 <Profile />
@@ -195,7 +192,14 @@ export default function App() {
           <Route
             path="/complaints"
             element={
-              <PrivateRoute allowedRoles={["MEMBER", "TREASURER", "PRESIDENT"]}>
+              <PrivateRoute
+                allowedRoles={[
+                  "MEMBER",
+                  "TREASURER",
+                  "PRESIDENT",
+                  "EC_MEMBER",
+                ]}
+              >
                 <Complaint />
               </PrivateRoute>
             }
@@ -204,7 +208,14 @@ export default function App() {
           <Route
             path="/meetings"
             element={
-              <PrivateRoute allowedRoles={["MEMBER", "TREASURER", "PRESIDENT"]}>
+              <PrivateRoute
+                allowedRoles={[
+                  "MEMBER",
+                  "TREASURER",
+                  "PRESIDENT",
+                  "EC_MEMBER",
+                ]}
+              >
                 <Meetings />
               </PrivateRoute>
             }
@@ -214,15 +225,22 @@ export default function App() {
             path="/change-password"
             element={
               <PrivateRoute
-                allowedRoles={["SUPER_ADMIN", "PRESIDENT", "MEMBER"]}
+                allowedRoles={[
+                  "SUPER_ADMIN",
+                  "PRESIDENT",
+                  "TREASURER",
+                  "MEMBER",
+                ]}
               >
                 <ChangePassword />
               </PrivateRoute>
             }
           />
 
-          {/* FALLBACK */}
-          <Route path="*" element={<Navigate to="/" replace />} />
+          {/* =========================
+             FALLBACK
+          ========================= */}
+          <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </AuthGate>
 
