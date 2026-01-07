@@ -39,7 +39,7 @@ export default function AdminDashboard() {
       api.get("/dashboard/admin-summary"),
       api.get("/dashboard/recent-contributions"),
       api.get("/dashboard/funds"),
-      api.get("/api/announcements"),
+      api.get("/announcements"),
       api.get(`/dashboard/cashflow?year=${year}&month=${month}`),
     ])
       .then(

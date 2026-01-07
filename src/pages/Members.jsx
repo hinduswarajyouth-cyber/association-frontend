@@ -7,38 +7,40 @@ export default function Members() {
   const [editing, setEditing] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchMembers();
-  }, []);
-
   /* =========================
      FETCH MEMBERS
   ========================= */
   const fetchMembers = async () => {
     try {
       setLoading(true);
-      const res = await api.get("/members");
+      const res = await api.get("/admin/members");
       setMembers(res.data || []);
     } catch (err) {
-      console.error("FETCH MEMBERS ERROR", err);
+      console.error("FETCH MEMBERS ERROR 👉", err);
       alert("Failed to load members");
     } finally {
       setLoading(false);
     }
   };
 
+  useEffect(() => {
+    fetchMembers();
+  }, []);
+
   /* =========================
-     BLOCK / UNBLOCK
+     BLOCK / UNBLOCK MEMBER
   ========================= */
   const toggleStatus = async (member) => {
     if (!window.confirm("Change member status?")) return;
 
-    await api.put(`/members/${member.id}`, {
-      ...member,
-      active: !member.active,
-    });
-
-    fetchMembers();
+    try {
+      await api.patch(`/admin/members/${member.id}/status`, {
+        active: !member.active,
+      });
+      fetchMembers();
+    } catch (err) {
+      alert("Failed to update status");
+    }
   };
 
   /* =========================
@@ -46,27 +48,36 @@ export default function Members() {
   ========================= */
   const deleteMember = async (id) => {
     if (!window.confirm("Delete member permanently?")) return;
-    await api.delete(`/members/${id}`);
-    fetchMembers();
+
+    try {
+      await api.delete(`/admin/members/${id}`);
+      fetchMembers();
+    } catch (err) {
+      alert("Delete failed");
+    }
   };
 
   /* =========================
-     SAVE MEMBER
+     SAVE MEMBER (EDIT)
   ========================= */
   const saveMember = async () => {
     if (!window.confirm("Update this member?")) return;
 
-    await api.put(`/members/${editing.id}`, {
-      name: editing.name,
-      phone: editing.phone,
-      address: editing.address,
-      role: editing.role,
-      active: editing.active,
-    });
+    try {
+      await api.put(`/admin/edit-member/${editing.id}`, {
+        name: editing.name,
+        phone: editing.phone,
+        address: editing.address,
+        role: editing.role,
+        active: editing.active,
+      });
 
-    alert("Member updated successfully");
-    setEditing(null);
-    fetchMembers();
+      alert("Member updated successfully");
+      setEditing(null);
+      fetchMembers();
+    } catch (err) {
+      alert("Update failed");
+    }
   };
 
   return (
@@ -74,7 +85,7 @@ export default function Members() {
       <Navbar />
 
       <div style={container}>
-        <h2 style={title}>Members (Full Details)</h2>
+        <h2 style={title}>Members</h2>
 
         {loading ? (
           <p>Loading members...</p>
@@ -86,29 +97,28 @@ export default function Members() {
                   <th>ID</th>
                   <th>Member ID</th>
                   <th>Name</th>
-                  <th>Association ID</th>
                   <th>Email</th>
                   <th>Phone</th>
                   <th>Address</th>
                   <th>Role</th>
                   <th>Status</th>
-                  <th>Created At</th>
                   <th>Actions</th>
                 </tr>
               </thead>
 
               <tbody>
-                {members.map((m, index) => (
-                  <tr key={m.id} style={index % 2 ? rowAlt : null}>
+                {members.map((m, i) => (
+                  <tr key={m.id} style={i % 2 ? rowAlt : null}>
                     <td><span style={idBadge}>{m.id}</span></td>
                     <td><span style={idBadge}>{m.member_id}</span></td>
                     <td>{m.name}</td>
-                    <td><span style={idBadge}>{m.association_id}</span></td>
                     <td>{m.personal_email || "-"}</td>
                     <td>{m.phone || "-"}</td>
                     <td>{m.address || "-"}</td>
 
-                    <td><span style={roleBadge}>{m.role}</span></td>
+                    <td>
+                      <span style={roleBadge}>{m.role}</span>
+                    </td>
 
                     <td>
                       <span
@@ -119,12 +129,6 @@ export default function Members() {
                       >
                         {m.active ? "ACTIVE" : "BLOCKED"}
                       </span>
-                    </td>
-
-                    <td>
-                      {m.created_at
-                        ? new Date(m.created_at).toLocaleString()
-                        : "-"}
                     </td>
 
                     <td style={{ whiteSpace: "nowrap" }}>
@@ -175,9 +179,6 @@ export default function Members() {
 
             <label style={label}>Member ID</label>
             <div style={readonlyBox}>{editing.member_id}</div>
-
-            <label style={label}>Association ID</label>
-            <div style={readonlyBox}>{editing.association_id}</div>
 
             <input
               placeholder="Full Name"
@@ -247,11 +248,12 @@ export default function Members() {
 ========================= */
 const container = { padding: 30, background: "#f4f6f8", minHeight: "100vh" };
 const title = { marginBottom: 20 };
-const table = { width: "100%", borderCollapse: "collapse", background: "#fff", minWidth: 1400 };
+const table = { width: "100%", borderCollapse: "collapse", background: "#fff", minWidth: 1100 };
 const rowAlt = { background: "#f9fafb" };
 const statusBadge = { padding: "4px 12px", borderRadius: 999, color: "#fff", fontSize: 12 };
 const roleBadge = { padding: "4px 10px", borderRadius: 6, background: "#e0e7ff", color: "#1e3a8a", fontSize: 12 };
 const idBadge = { background: "#ecfeff", color: "#155e75", padding: "4px 10px", borderRadius: 6, fontSize: 12 };
+
 const baseBtn = { padding: "5px 10px", borderRadius: 6, border: "none", fontSize: 12, cursor: "pointer", marginRight: 6 };
 const editBtn = { ...baseBtn, background: "#2563eb", color: "#fff" };
 const blockBtn = { ...baseBtn, background: "#f97316", color: "#fff" };
@@ -259,7 +261,30 @@ const unblockBtn = { ...baseBtn, background: "#16a34a", color: "#fff" };
 const deleteBtn = { ...baseBtn, background: "#dc2626", color: "#fff" };
 const saveBtn = { ...baseBtn, background: "#16a34a", color: "#fff" };
 const cancelBtn = { ...baseBtn, background: "#6b7280", color: "#fff" };
-const modalBg = { position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", justifyContent: "center", alignItems: "center" };
-const modal = { background: "#fff", padding: 20, borderRadius: 10, width: 420, display: "flex", flexDirection: "column", gap: 10 };
+
+const modalBg = {
+  position: "fixed",
+  inset: 0,
+  background: "rgba(0,0,0,0.5)",
+  display: "flex",
+  justifyContent: "center",
+  alignItems: "center",
+};
+
+const modal = {
+  background: "#fff",
+  padding: 20,
+  borderRadius: 10,
+  width: 420,
+  display: "flex",
+  flexDirection: "column",
+  gap: 10,
+};
+
 const label = { fontSize: 12, fontWeight: 600 };
-const readonlyBox = { padding: "10px 12px", borderRadius: 8, background: "#f1f5f9", border: "1px solid #cbd5e1" };
+const readonlyBox = {
+  padding: "10px 12px",
+  borderRadius: 8,
+  background: "#f1f5f9",
+  border: "1px solid #cbd5e1",
+};
