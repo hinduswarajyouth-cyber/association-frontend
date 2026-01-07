@@ -1,135 +1,261 @@
 import { useEffect, useState } from "react";
 import api from "../api/api";
+import Navbar from "../components/Navbar";
 import { useAuth } from "../context/AuthContext";
 
-const SuggestionBox = () => {
+export default function SuggestionBox() {
   const { user } = useAuth();
 
   const isAdmin =
     user?.role === "SUPER_ADMIN" || user?.role === "PRESIDENT";
 
-  const [title, setTitle] = useState("");
-  const [type, setType] = useState("GENERAL");
-  const [message, setMessage] = useState("");
-  const [success, setSuccess] = useState("");
+  const [form, setForm] = useState({
+    title: "",
+    type: "GENERAL",
+    message: "",
+  });
+
   const [suggestions, setSuggestions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [success, setSuccess] = useState("");
+
+  /* =========================
+     LOAD SUGGESTIONS
+  ========================= */
+  useEffect(() => {
+    loadSuggestions();
+  }, []);
+
+  const loadSuggestions = async () => {
+    try {
+      const res = isAdmin
+        ? await api.get("/api/suggestions/all")
+        : await api.get("/api/suggestions/my");
+
+      setSuggestions(res.data || []);
+    } catch (err) {
+      console.error("LOAD SUGGESTIONS ERROR 👉", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   /* =========================
      SUBMIT (ALL USERS)
   ========================= */
-  const submitSuggestion = async e => {
+  const submitSuggestion = async (e) => {
     e.preventDefault();
     setSuccess("");
 
-    try {
-      await api.post("/suggestions", {
-        title,
-        type,
-        message,
-      });
+    if (!form.message) {
+      alert("Message required");
+      return;
+    }
 
+    try {
+      await api.post("/api/suggestions", form);
       setSuccess("✅ Suggestion submitted successfully");
-      setTitle("");
-      setMessage("");
-      setType("GENERAL");
+      setForm({ title: "", type: "GENERAL", message: "" });
+      loadSuggestions();
     } catch {
       alert("Failed to submit suggestion");
     }
   };
 
   /* =========================
-     LOAD ALL (ADMIN ONLY)
+     ADMIN STATUS UPDATE
   ========================= */
-  const loadSuggestions = async () => {
-    try {
-      const res = await api.get("/suggestions");
-      setSuggestions(res.data);
-    } catch (err) {
-      console.error("LOAD SUGGESTIONS ERROR 👉", err);
-    }
+  const updateStatus = async (id, status) => {
+    await api.put(`/api/suggestions/${id}/status`, { status });
+    loadSuggestions();
   };
 
-  useEffect(() => {
-    if (isAdmin) {
-      loadSuggestions();
-    }
-  }, [isAdmin]);
-
   return (
-    <div className="container" style={{ padding: 20 }}>
-      <h2>💡 Suggestion Box</h2>
+    <>
+      <Navbar />
 
-      {/* ================= MEMBER VIEW ================= */}
-      {!isAdmin && (
-        <>
-          {success && <p style={{ color: "green" }}>{success}</p>}
+      <div style={page}>
+        <h2>💡 Suggestion Box</h2>
 
-          <form onSubmit={submitSuggestion}>
-            <label>Title (optional)</label>
+        {/* ================= CREATE ================= */}
+        {!isAdmin && (
+          <div style={card}>
+            <h3>Submit Suggestion</h3>
+
+            {success && (
+              <p style={{ color: "green", marginBottom: 10 }}>
+                {success}
+              </p>
+            )}
+
             <input
-              value={title}
-              onChange={e => setTitle(e.target.value)}
+              style={input}
+              placeholder="Title (optional)"
+              value={form.title}
+              onChange={(e) =>
+                setForm({ ...form, title: e.target.value })
+              }
             />
 
-            <label>Type</label>
-            <select value={type} onChange={e => setType(e.target.value)}>
+            <select
+              style={input}
+              value={form.type}
+              onChange={(e) =>
+                setForm({ ...form, type: e.target.value })
+              }
+            >
               <option value="GENERAL">General</option>
-              <option value="COMPLAINT">Complaint</option>
+              <option value="IMPROVEMENT">Improvement</option>
               <option value="FINANCE">Finance</option>
               <option value="EVENT">Event</option>
-              <option value="IMPROVEMENT">Improvement</option>
             </select>
 
-            <label>Message *</label>
             <textarea
-              rows="5"
-              required
-              value={message}
-              onChange={e => setMessage(e.target.value)}
+              style={textarea}
+              placeholder="Your suggestion..."
+              value={form.message}
+              onChange={(e) =>
+                setForm({ ...form, message: e.target.value })
+              }
             />
 
-            <button type="submit">Submit</button>
-          </form>
-        </>
-      )}
+            <button style={btnPrimary} onClick={submitSuggestion}>
+              Submit
+            </button>
+          </div>
+        )}
 
-      {/* ================= ADMIN VIEW ================= */}
-      {isAdmin && (
-        <>
-          <h3>📬 All Suggestions</h3>
+        {/* ================= LIST ================= */}
+        <h3>
+          {isAdmin ? "📬 All Suggestions" : "📝 My Suggestions"}
+        </h3>
 
-          {suggestions.length === 0 ? (
-            <p>No suggestions yet</p>
-          ) : (
-            <table width="100%" border="1">
-              <thead>
-                <tr>
-                  <th>Member</th>
-                  <th>Title</th>
-                  <th>Type</th>
-                  <th>Message</th>
-                  <th>Date</th>
-                </tr>
-              </thead>
-              <tbody>
-                {suggestions.map(s => (
-                  <tr key={s.id}>
-                    <td>{s.member_name}</td>
-                    <td>{s.title || "-"}</td>
-                    <td>{s.type}</td>
-                    <td>{s.message}</td>
-                    <td>
-                      {new Date(s.created_at).toLocaleDateString()}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </>
-      )}
-    </div>
+        {loading && <p>Loading suggestions...</p>}
+        {!loading && suggestions.length === 0 && (
+          <p>No suggestions found</p>
+        )}
+
+        {suggestions.map((s) => (
+          <div key={s.id} style={card}>
+            <div style={cardHeader}>
+              <strong>{s.title || "No Title"}</strong>
+              <span
+                style={{
+                  ...badge,
+                  background:
+                    s.status === "APPROVED"
+                      ? "#86efac"
+                      : s.status === "REJECTED"
+                      ? "#fca5a5"
+                      : "#fde68a",
+                }}
+              >
+                {s.status}
+              </span>
+            </div>
+
+            <p>{s.message}</p>
+
+            <small style={{ color: "#64748b" }}>
+              {s.member_name && <>By {s.member_name} • </>}
+              {new Date(s.created_at).toLocaleString()}
+            </small>
+
+            {/* ADMIN ACTIONS */}
+            {isAdmin && s.status === "PENDING" && (
+              <div style={actionRow}>
+                <button
+                  style={btnSuccess}
+                  onClick={() => updateStatus(s.id, "APPROVED")}
+                >
+                  Approve
+                </button>
+                <button
+                  style={btnDanger}
+                  onClick={() => updateStatus(s.id, "REJECTED")}
+                >
+                  Reject
+                </button>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </>
   );
+}
+
+/* =========================
+   🎨 STYLES
+========================= */
+const page = {
+  padding: 30,
+  background: "#f1f5f9",
+  minHeight: "100vh",
 };
 
-export default SuggestionBox;
+const card = {
+  background: "#fff",
+  padding: 18,
+  borderRadius: 12,
+  marginBottom: 16,
+};
+
+const cardHeader = {
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
+};
+
+const badge = {
+  padding: "4px 10px",
+  borderRadius: 12,
+  fontSize: 12,
+  fontWeight: 600,
+};
+
+const actionRow = {
+  display: "flex",
+  gap: 10,
+  marginTop: 12,
+};
+
+const input = {
+  width: 320,
+  padding: 8,
+  marginBottom: 10,
+};
+
+const textarea = {
+  width: 320,
+  height: 90,
+  padding: 8,
+  marginBottom: 10,
+};
+
+const btnPrimary = {
+  background: "#2563eb",
+  color: "#fff",
+  border: "none",
+  padding: "8px 16px",
+  borderRadius: 8,
+  cursor: "pointer",
+};
+
+const btnSuccess = {
+  background: "#16a34a",
+  color: "#fff",
+  border: "none",
+  padding: "6px 14px",
+  borderRadius: 6,
+  cursor: "pointer",
+};
+
+const btnDanger = {
+  background: "#dc2626",
+  color: "#fff",
+  border: "none",
+  padding: "6px 14px",
+  borderRadius: 6,
+  cursor: "pointer",
+};

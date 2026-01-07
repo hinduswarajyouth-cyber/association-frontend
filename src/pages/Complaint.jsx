@@ -6,9 +6,9 @@ import Navbar from "../components/Navbar";
    🔐 GET ROLE FROM JWT
 ========================= */
 const getRole = () => {
-  const token = localStorage.getItem("token");
-  if (!token) return null;
   try {
+    const token = localStorage.getItem("token");
+    if (!token) return null;
     return JSON.parse(atob(token.split(".")[1])).role;
   } catch {
     return null;
@@ -35,6 +35,10 @@ export default function Complaint() {
   const [complaints, setComplaints] = useState([]);
   const [dashboard, setDashboard] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  /* COMMENTS STATE */
+  const [comments, setComments] = useState({});
+  const [commentInput, setCommentInput] = useState({});
 
   const [form, setForm] = useState({
     subject: "",
@@ -105,6 +109,25 @@ export default function Complaint() {
     loadComplaints();
   };
 
+  /* =========================
+     COMMENTS
+  ========================= */
+  const loadComments = async (id) => {
+    const res = await api.get(`/api/complaints/${id}/comments`);
+    setComments((prev) => ({ ...prev, [id]: res.data || [] }));
+  };
+
+  const addComment = async (id) => {
+    if (!commentInput[id]) return alert("Comment required");
+
+    await api.post(`/api/complaints/${id}/comment`, {
+      comment: commentInput[id],
+    });
+
+    setCommentInput((prev) => ({ ...prev, [id]: "" }));
+    loadComments(id);
+  };
+
   return (
     <>
       <Navbar />
@@ -116,7 +139,7 @@ export default function Complaint() {
           <div style={dashboardRow}>
             {Object.entries(dashboard).map(([k, v]) => (
               <div key={k} style={dashboardCard}>
-                <div style={{ color: "#64748b", fontSize: 13 }}>
+                <div style={{ fontSize: 13, color: "#64748b" }}>
                   {k.replaceAll("_", " ")}
                 </div>
                 <strong style={{ fontSize: 22 }}>{v}</strong>
@@ -245,6 +268,53 @@ export default function Complaint() {
                 </button>
               </div>
             )}
+
+            {/* ================= COMMENTS ================= */}
+            <div style={{ marginTop: 12 }}>
+              <button
+                style={commentToggle}
+                onClick={() => loadComments(c.id)}
+              >
+                💬 View Comments
+              </button>
+
+              {comments[c.id] && (
+                <div style={commentBox}>
+                  {comments[c.id].length === 0 && (
+                    <p style={{ fontSize: 13 }}>No comments yet</p>
+                  )}
+
+                  {comments[c.id].map((cm, i) => (
+                    <div key={i} style={commentItem}>
+                      <strong>{cm.created_by}</strong>
+                      <p>{cm.comment}</p>
+                      <small>
+                        {new Date(cm.created_at).toLocaleString()}
+                      </small>
+                    </div>
+                  ))}
+
+                  <textarea
+                    style={commentInputStyle}
+                    placeholder="Add comment..."
+                    value={commentInput[c.id] || ""}
+                    onChange={(e) =>
+                      setCommentInput((prev) => ({
+                        ...prev,
+                        [c.id]: e.target.value,
+                      }))
+                    }
+                  />
+
+                  <button
+                    style={btnPrimary}
+                    onClick={() => addComment(c.id)}
+                  >
+                    Add Comment
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         ))}
       </div>
@@ -312,4 +382,35 @@ const btnSuccess = {
   padding: "8px 16px",
   borderRadius: 8,
   cursor: "pointer",
+};
+
+/* COMMENTS */
+const commentToggle = {
+  background: "#e5e7eb",
+  border: "none",
+  padding: "6px 10px",
+  borderRadius: 6,
+  cursor: "pointer",
+};
+
+const commentBox = {
+  background: "#f8fafc",
+  padding: 12,
+  borderRadius: 10,
+  marginTop: 8,
+};
+
+const commentItem = {
+  borderBottom: "1px solid #e5e7eb",
+  paddingBottom: 6,
+  marginBottom: 6,
+};
+
+const commentInputStyle = {
+  width: "100%",
+  minHeight: 60,
+  padding: 8,
+  borderRadius: 6,
+  border: "1px solid #cbd5f5",
+  marginBottom: 8,
 };
