@@ -46,7 +46,7 @@ export default function Navbar() {
 
   const doLogout = () => {
     logout();
-    navigate("/login");
+    navigate("/login", { replace: true });
   };
 
   return (
@@ -128,9 +128,10 @@ function MenuLinks({ role, isActive, onClick }) {
         </>
       )}
 
-      {/* 🔁 COMMON */}
+      {/* 🔁 COMMON (ALL LOGGED USERS) */}
       <Link onClick={onClick} style={isActive("/meetings")} to="/meetings">Meetings</Link>
       <Link onClick={onClick} style={isActive("/complaints")} to="/complaints">Complaints</Link>
+      <Link onClick={onClick} style={isActive("/suggestions")} to="/suggestions">Suggestions</Link>
       <Link onClick={onClick} style={isActive("/change-password")} to="/change-password">Change Password</Link>
     </>
   );
@@ -173,7 +174,7 @@ const burger = {
   fontSize: 26,
   border: "none",
   cursor: "pointer",
-  display: "none", // responsive later via CSS
+  display: "none",
 };
 
 const menuDesktop = {
