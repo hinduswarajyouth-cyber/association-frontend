@@ -28,20 +28,19 @@ import AuditLogs from "./pages/AuditLogs";
 /* MEMBER */
 import MemberContributions from "./pages/MemberContributions";
 
+/* NEW */
+import Announcements from "./pages/Announcements";
+import SuggestionBox from "./pages/SuggestionBox";
+
 /* =========================
-   🔐 AUTH GATE (NO FLASH)
+   AUTH GATE
 ========================= */
 function AuthGate({ children }) {
   const { loading } = useAuth();
 
   if (loading) {
-    return (
-      <div style={{ padding: 60, textAlign: "center", fontSize: 18 }}>
-        Loading application…
-      </div>
-    );
+    return <div style={{ padding: 60 }}>Loading…</div>;
   }
-
   return children;
 }
 
@@ -50,20 +49,14 @@ export default function App() {
     <>
       <AuthGate>
         <Routes>
-          {/* =========================
-             DEFAULT
-          ========================= */}
+          {/* DEFAULT */}
           <Route path="/" element={<Navigate to="/login" replace />} />
 
-          {/* =========================
-             PUBLIC
-          ========================= */}
+          {/* PUBLIC */}
           <Route path="/login" element={<Login />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
 
-          {/* =========================
-             ADMIN
-          ========================= */}
+          {/* ADMIN */}
           <Route
             path="/admin-dashboard"
             element={
@@ -103,14 +96,7 @@ export default function App() {
           <Route
             path="/reports"
             element={
-              <PrivateRoute
-                allowedRoles={[
-                  "SUPER_ADMIN",
-                  "PRESIDENT",
-                  "VICE_PRESIDENT",
-                  "TREASURER",
-                ]}
-              >
+              <PrivateRoute allowedRoles={["SUPER_ADMIN", "PRESIDENT", "TREASURER"]}>
                 <Reports />
               </PrivateRoute>
             }
@@ -125,9 +111,7 @@ export default function App() {
             }
           />
 
-          {/* =========================
-             TREASURER
-          ========================= */}
+          {/* TREASURER */}
           <Route
             path="/treasurer-dashboard"
             element={
@@ -137,9 +121,7 @@ export default function App() {
             }
           />
 
-          {/* =========================
-             EC / OFFICE BEARERS
-          ========================= */}
+          {/* EC / OFFICE BEARERS */}
           <Route
             path="/dashboard"
             element={
@@ -156,9 +138,7 @@ export default function App() {
             }
           />
 
-          {/* =========================
-             MEMBER / VOLUNTEER
-          ========================= */}
+          {/* MEMBER */}
           <Route
             path="/member"
             element={
@@ -168,21 +148,38 @@ export default function App() {
             }
           />
 
-          {/* =========================
-             COMMON (LOGGED IN)
-          ========================= */}
+          {/* ANNOUNCEMENTS */}
+          <Route
+            path="/announcements"
+            element={
+              <PrivateRoute allowedRoles={[
+                "SUPER_ADMIN","PRESIDENT","TREASURER",
+                "EC_MEMBER","GENERAL_SECRETARY","JOINT_SECRETARY",
+                "VICE_PRESIDENT","MEMBER","VOLUNTEER"
+              ]}>
+                <Announcements />
+              </PrivateRoute>
+            }
+          />
+
+          {/* SUGGESTIONS */}
+          <Route
+            path="/suggestions"
+            element={
+              <PrivateRoute allowedRoles={[
+                "SUPER_ADMIN","PRESIDENT","TREASURER",
+                "EC_MEMBER","MEMBER","VOLUNTEER"
+              ]}>
+                <SuggestionBox />
+              </PrivateRoute>
+            }
+          />
+
+          {/* COMMON */}
           <Route
             path="/profile"
             element={
-              <PrivateRoute
-                allowedRoles={[
-                  "SUPER_ADMIN",
-                  "PRESIDENT",
-                  "TREASURER",
-                  "MEMBER",
-                  "EC_MEMBER",
-                ]}
-              >
+              <PrivateRoute allowedRoles={["SUPER_ADMIN","PRESIDENT","TREASURER","MEMBER"]}>
                 <Profile />
               </PrivateRoute>
             }
@@ -191,14 +188,7 @@ export default function App() {
           <Route
             path="/complaints"
             element={
-              <PrivateRoute
-                allowedRoles={[
-                  "MEMBER",
-                  "TREASURER",
-                  "PRESIDENT",
-                  "EC_MEMBER",
-                ]}
-              >
+              <PrivateRoute allowedRoles={["MEMBER","TREASURER","PRESIDENT"]}>
                 <Complaint />
               </PrivateRoute>
             }
@@ -207,14 +197,7 @@ export default function App() {
           <Route
             path="/meetings"
             element={
-              <PrivateRoute
-                allowedRoles={[
-                  "MEMBER",
-                  "TREASURER",
-                  "PRESIDENT",
-                  "EC_MEMBER",
-                ]}
-              >
+              <PrivateRoute allowedRoles={["MEMBER","TREASURER","PRESIDENT"]}>
                 <Meetings />
               </PrivateRoute>
             }
@@ -223,22 +206,13 @@ export default function App() {
           <Route
             path="/change-password"
             element={
-              <PrivateRoute
-                allowedRoles={[
-                  "SUPER_ADMIN",
-                  "PRESIDENT",
-                  "TREASURER",
-                  "MEMBER",
-                ]}
-              >
+              <PrivateRoute allowedRoles={["SUPER_ADMIN","PRESIDENT","TREASURER","MEMBER"]}>
                 <ChangePassword />
               </PrivateRoute>
             }
           />
 
-          {/* =========================
-             FALLBACK
-          ========================= */}
+          {/* FALLBACK */}
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </AuthGate>
