@@ -18,9 +18,9 @@ export default function AdminDashboard() {
   ========================= */
   useEffect(() => {
     Promise.all([
-      api.get("/admin/dashboard"),        // ✅ stats
-      api.get("/announcements"),          // ✅ FIXED (no /api)
-      api.get("/suggestions/dashboard"),  // ✅ FIXED
+      api.get("/api/admin/dashboard"),        // ✅ CORRECT
+      api.get("/api/announcements"),          // ✅ CORRECT
+      api.get("/api/suggestions/dashboard"),  // ✅ CORRECT
     ])
       .then(([dashRes, annRes, sugRes]) => {
         setDashboard(dashRes.data);
@@ -218,7 +218,6 @@ const auditBtn = {
 };
 
 const tableCard = { background: "#fff", padding: 20, borderRadius: 12 };
-
 const table = { width: "100%", borderCollapse: "collapse" };
 const th = { padding: 10, borderBottom: "1px solid #e2e8f0" };
 const td = { padding: 10, borderBottom: "1px solid #f1f5f9" };

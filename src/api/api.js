@@ -4,11 +4,12 @@ import axios from "axios";
    🌐 AXIOS INSTANCE (FINAL)
 ========================= */
 const api = axios.create({
-  // ✅ MUST MATCH .env
-  baseURL: import.meta.env.VITE_API_BASE_URL,
+  // ✅ BASE URL MUST INCLUDE /api
+  baseURL: import.meta.env.VITE_API_BASE_URL, // e.g. https://api.hinduswarajyouth.online/api
   headers: {
     "Content-Type": "application/json",
   },
+  withCredentials: true, // ✅ safe for auth
 });
 
 /* =========================
@@ -24,7 +25,7 @@ api.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`;
     }
 
-    // IMPORTANT: For file uploads
+    // IMPORTANT: For file uploads (FormData)
     if (config.data instanceof FormData) {
       delete config.headers["Content-Type"];
     }
