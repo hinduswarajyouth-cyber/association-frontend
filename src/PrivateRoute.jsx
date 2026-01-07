@@ -15,18 +15,14 @@ const MEMBER_ROLES = [
   "VOLUNTEER",
 ];
 
-export default function PrivateRoute({ children, allowedRoles }) {
+export default function PrivateRoute({ allowedRoles, children }) {
   const { user, loading } = useAuth();
 
   /* =========================
      WAIT FOR AUTH CHECK
   ========================= */
   if (loading) {
-    return (
-      <div style={{ padding: 40, textAlign: "center", fontSize: 16 }}>
-        Loading...
-      </div>
-    );
+    return null; // ⛔ no flicker, no redirect
   }
 
   /* =========================
@@ -38,6 +34,7 @@ export default function PrivateRoute({ children, allowedRoles }) {
 
   /* =========================
      ROLE NOT ALLOWED
+     ❗ REDIRECT TO OWN DASHBOARD
   ========================= */
   if (allowedRoles && !allowedRoles.includes(user.role)) {
     // 🔑 ADMIN
@@ -52,10 +49,10 @@ export default function PrivateRoute({ children, allowedRoles }) {
 
     // 👥 MEMBER / EC / VOLUNTEER
     if (MEMBER_ROLES.includes(user.role)) {
-      return <Navigate to="/member" replace />;
+      return <Navigate to="/dashboard" replace />;
     }
 
-    // 🚫 UNKNOWN ROLE
+    // 🚫 FALLBACK (SAFETY)
     return <Navigate to="/login" replace />;
   }
 

@@ -25,10 +25,10 @@ import Funds from "./pages/Funds";
 import Reports from "./pages/Reports";
 import AuditLogs from "./pages/AuditLogs";
 
-/* MEMBER */
+/* CONTRIBUTIONS */
 import MemberContributions from "./pages/MemberContributions";
 
-/* NEW */
+/* EXTRA */
 import Announcements from "./pages/Announcements";
 import SuggestionBox from "./pages/SuggestionBox";
 
@@ -37,7 +37,6 @@ import SuggestionBox from "./pages/SuggestionBox";
 ========================= */
 function AuthGate({ children }) {
   const { loading } = useAuth();
-
   if (loading) {
     return <div style={{ padding: 60 }}>Loading…</div>;
   }
@@ -96,7 +95,9 @@ export default function App() {
           <Route
             path="/reports"
             element={
-              <PrivateRoute allowedRoles={["SUPER_ADMIN", "PRESIDENT", "TREASURER"]}>
+              <PrivateRoute
+                allowedRoles={["SUPER_ADMIN", "PRESIDENT", "TREASURER"]}
+              >
                 <Reports />
               </PrivateRoute>
             }
@@ -121,7 +122,7 @@ export default function App() {
             }
           />
 
-          {/* OFFICE / EC */}
+          {/* EC / OFFICE BEARERS */}
           <Route
             path="/dashboard"
             element={
@@ -138,11 +139,23 @@ export default function App() {
             }
           />
 
-          {/* MEMBER */}
+          {/* ✅ CONTRIBUTIONS – ALL ROLES */}
           <Route
             path="/contributions"
             element={
-              <PrivateRoute allowedRoles={["MEMBER", "VOLUNTEER"]}>
+              <PrivateRoute
+                allowedRoles={[
+                  "SUPER_ADMIN",
+                  "PRESIDENT",
+                  "TREASURER",
+                  "EC_MEMBER",
+                  "VICE_PRESIDENT",
+                  "GENERAL_SECRETARY",
+                  "JOINT_SECRETARY",
+                  "MEMBER",
+                  "VOLUNTEER",
+                ]}
+              >
                 <MemberContributions />
               </PrivateRoute>
             }
@@ -158,9 +171,9 @@ export default function App() {
                   "PRESIDENT",
                   "TREASURER",
                   "EC_MEMBER",
+                  "VICE_PRESIDENT",
                   "GENERAL_SECRETARY",
                   "JOINT_SECRETARY",
-                  "VICE_PRESIDENT",
                   "MEMBER",
                   "VOLUNTEER",
                 ]}
@@ -180,6 +193,9 @@ export default function App() {
                   "PRESIDENT",
                   "TREASURER",
                   "EC_MEMBER",
+                  "VICE_PRESIDENT",
+                  "GENERAL_SECRETARY",
+                  "JOINT_SECRETARY",
                   "MEMBER",
                   "VOLUNTEER",
                 ]}
@@ -189,25 +205,50 @@ export default function App() {
             }
           />
 
-          {/* COMMON */}
+          {/* COMPLAINTS */}
           <Route
             path="/complaints"
             element={
-              <PrivateRoute allowedRoles={["MEMBER", "TREASURER", "PRESIDENT"]}>
+              <PrivateRoute
+                allowedRoles={[
+                  "SUPER_ADMIN",
+                  "PRESIDENT",
+                  "TREASURER",
+                  "EC_MEMBER",
+                  "VICE_PRESIDENT",
+                  "GENERAL_SECRETARY",
+                  "JOINT_SECRETARY",
+                  "MEMBER",
+                ]}
+              >
                 <Complaint />
               </PrivateRoute>
             }
           />
 
+          {/* MEETINGS */}
           <Route
             path="/meetings"
             element={
-              <PrivateRoute allowedRoles={["MEMBER", "TREASURER", "PRESIDENT"]}>
+              <PrivateRoute
+                allowedRoles={[
+                  "SUPER_ADMIN",
+                  "PRESIDENT",
+                  "TREASURER",
+                  "EC_MEMBER",
+                  "VICE_PRESIDENT",
+                  "GENERAL_SECRETARY",
+                  "JOINT_SECRETARY",
+                  "MEMBER",
+                  "VOLUNTEER",
+                ]}
+              >
                 <Meetings />
               </PrivateRoute>
             }
           />
 
+          {/* PROFILE */}
           <Route
             path="/profile"
             element={
@@ -217,6 +258,7 @@ export default function App() {
                   "PRESIDENT",
                   "TREASURER",
                   "MEMBER",
+                  "VOLUNTEER",
                 ]}
               >
                 <Profile />
@@ -224,6 +266,7 @@ export default function App() {
             }
           />
 
+          {/* CHANGE PASSWORD */}
           <Route
             path="/change-password"
             element={
@@ -232,7 +275,12 @@ export default function App() {
                   "SUPER_ADMIN",
                   "PRESIDENT",
                   "TREASURER",
+                  "EC_MEMBER",
+                  "VICE_PRESIDENT",
+                  "GENERAL_SECRETARY",
+                  "JOINT_SECRETARY",
                   "MEMBER",
+                  "VOLUNTEER",
                 ]}
               >
                 <ChangePassword />
