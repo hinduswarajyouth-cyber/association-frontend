@@ -35,7 +35,7 @@ export default function Navbar() {
   };
 
   /* =========================
-     ACTIVE LINK
+     ACTIVE LINK STYLE
   ========================= */
   const isActive = (path) =>
     location.pathname.startsWith(path)
@@ -167,24 +167,21 @@ const logo = {
   cursor: "pointer",
 };
 
-/* 🍔 burger hidden on desktop */
 const burger = {
   background: "transparent",
   color: "#fff",
   fontSize: 26,
   border: "none",
   cursor: "pointer",
-  display: "none",
+  display: "none", // responsive later via CSS
 };
 
-/* desktop menu */
 const menuDesktop = {
   display: "flex",
   gap: 16,
   alignItems: "center",
 };
 
-/* mobile menu */
 const menuMobile = {
   background: "#0f172a",
   padding: 16,
@@ -232,11 +229,3 @@ const logoutBtn = {
   borderRadius: 6,
   cursor: "pointer",
 };
-
-/* =========================
-   📱 RESPONSIVE
-========================= */
-if (window.innerWidth < 768) {
-  burger.display = "block";
-  menuDesktop.display = "none";
-}

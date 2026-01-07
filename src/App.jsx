@@ -121,7 +121,7 @@ export default function App() {
             }
           />
 
-          {/* EC / OFFICE BEARERS */}
+          {/* OFFICE / EC */}
           <Route
             path="/dashboard"
             element={
@@ -140,7 +140,7 @@ export default function App() {
 
           {/* MEMBER */}
           <Route
-            path="/member"
+            path="/contributions"
             element={
               <PrivateRoute allowedRoles={["MEMBER", "VOLUNTEER"]}>
                 <MemberContributions />
@@ -152,11 +152,19 @@ export default function App() {
           <Route
             path="/announcements"
             element={
-              <PrivateRoute allowedRoles={[
-                "SUPER_ADMIN","PRESIDENT","TREASURER",
-                "EC_MEMBER","GENERAL_SECRETARY","JOINT_SECRETARY",
-                "VICE_PRESIDENT","MEMBER","VOLUNTEER"
-              ]}>
+              <PrivateRoute
+                allowedRoles={[
+                  "SUPER_ADMIN",
+                  "PRESIDENT",
+                  "TREASURER",
+                  "EC_MEMBER",
+                  "GENERAL_SECRETARY",
+                  "JOINT_SECRETARY",
+                  "VICE_PRESIDENT",
+                  "MEMBER",
+                  "VOLUNTEER",
+                ]}
+              >
                 <Announcements />
               </PrivateRoute>
             }
@@ -166,10 +174,16 @@ export default function App() {
           <Route
             path="/suggestions"
             element={
-              <PrivateRoute allowedRoles={[
-                "SUPER_ADMIN","PRESIDENT","TREASURER",
-                "EC_MEMBER","MEMBER","VOLUNTEER"
-              ]}>
+              <PrivateRoute
+                allowedRoles={[
+                  "SUPER_ADMIN",
+                  "PRESIDENT",
+                  "TREASURER",
+                  "EC_MEMBER",
+                  "MEMBER",
+                  "VOLUNTEER",
+                ]}
+              >
                 <SuggestionBox />
               </PrivateRoute>
             }
@@ -177,18 +191,9 @@ export default function App() {
 
           {/* COMMON */}
           <Route
-            path="/profile"
-            element={
-              <PrivateRoute allowedRoles={["SUPER_ADMIN","PRESIDENT","TREASURER","MEMBER"]}>
-                <Profile />
-              </PrivateRoute>
-            }
-          />
-
-          <Route
             path="/complaints"
             element={
-              <PrivateRoute allowedRoles={["MEMBER","TREASURER","PRESIDENT"]}>
+              <PrivateRoute allowedRoles={["MEMBER", "TREASURER", "PRESIDENT"]}>
                 <Complaint />
               </PrivateRoute>
             }
@@ -197,8 +202,24 @@ export default function App() {
           <Route
             path="/meetings"
             element={
-              <PrivateRoute allowedRoles={["MEMBER","TREASURER","PRESIDENT"]}>
+              <PrivateRoute allowedRoles={["MEMBER", "TREASURER", "PRESIDENT"]}>
                 <Meetings />
+              </PrivateRoute>
+            }
+          />
+
+          <Route
+            path="/profile"
+            element={
+              <PrivateRoute
+                allowedRoles={[
+                  "SUPER_ADMIN",
+                  "PRESIDENT",
+                  "TREASURER",
+                  "MEMBER",
+                ]}
+              >
+                <Profile />
               </PrivateRoute>
             }
           />
@@ -206,7 +227,14 @@ export default function App() {
           <Route
             path="/change-password"
             element={
-              <PrivateRoute allowedRoles={["SUPER_ADMIN","PRESIDENT","TREASURER","MEMBER"]}>
+              <PrivateRoute
+                allowedRoles={[
+                  "SUPER_ADMIN",
+                  "PRESIDENT",
+                  "TREASURER",
+                  "MEMBER",
+                ]}
+              >
                 <ChangePassword />
               </PrivateRoute>
             }
