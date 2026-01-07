@@ -13,9 +13,7 @@ import ChangePassword from "./pages/ChangePassword";
 import Profile from "./pages/Profile";
 import Meetings from "./pages/Meetings";
 
-/* DASHBOARDS */
-import AdminDashboard from "./pages/AdminDashboard";
-import TreasurerDashboard from "./pages/TreasurerDashboard";
+/* DASHBOARD (SINGLE) */
 import Dashboard from "./pages/Dashboard";
 
 /* ADMIN */
@@ -37,9 +35,11 @@ import SuggestionBox from "./pages/SuggestionBox";
 ========================= */
 function AuthGate({ children }) {
   const { loading } = useAuth();
+
   if (loading) {
     return <div style={{ padding: 60 }}>Loading…</div>;
   }
+
   return children;
 }
 
@@ -55,16 +55,30 @@ export default function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
 
-          {/* ADMIN */}
+          {/* =========================
+              ✅ SINGLE DASHBOARD (ALL ROLES)
+          ========================= */}
           <Route
-            path="/admin-dashboard"
+            path="/dashboard"
             element={
-              <PrivateRoute allowedRoles={["SUPER_ADMIN", "PRESIDENT"]}>
-                <AdminDashboard />
+              <PrivateRoute
+                allowedRoles={[
+                  "SUPER_ADMIN",
+                  "PRESIDENT",
+                  "VICE_PRESIDENT",
+                  "GENERAL_SECRETARY",
+                  "JOINT_SECRETARY",
+                  "EC_MEMBER",
+                  "TREASURER",
+                  "MEMBER",
+                ]}
+              >
+                <Dashboard />
               </PrivateRoute>
             }
           />
 
+          {/* ADMIN ONLY */}
           <Route
             path="/members"
             element={
@@ -112,34 +126,7 @@ export default function App() {
             }
           />
 
-          {/* TREASURER */}
-          <Route
-            path="/treasurer-dashboard"
-            element={
-              <PrivateRoute allowedRoles={["TREASURER"]}>
-                <TreasurerDashboard />
-              </PrivateRoute>
-            }
-          />
-
-          {/* EC / OFFICE BEARERS */}
-          <Route
-            path="/dashboard"
-            element={
-              <PrivateRoute
-                allowedRoles={[
-                  "EC_MEMBER",
-                  "VICE_PRESIDENT",
-                  "GENERAL_SECRETARY",
-                  "JOINT_SECRETARY",
-                ]}
-              >
-                <Dashboard />
-              </PrivateRoute>
-            }
-          />
-
-          {/* ✅ CONTRIBUTIONS – ALL ROLES */}
+          {/* CONTRIBUTIONS – ALL ROLES */}
           <Route
             path="/contributions"
             element={

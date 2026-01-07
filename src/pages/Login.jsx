@@ -5,7 +5,7 @@ import api from "../api/api";
 import bg from "../assets/login-bg.png";
 
 /* =========================
-   LOGIN PAGE
+   LOGIN PAGE (FINAL – FIXED)
 ========================= */
 export default function Login() {
   const [username, setUsername] = useState("");
@@ -25,14 +25,14 @@ export default function Login() {
     setLoading(true);
 
     try {
-      // 🔐 CALL LOGIN API
+      // 🔐 LOGIN API
       const res = await api.post("/auth/login", {
         username,
         password,
       });
 
       /**
-       * EXPECTED RESPONSE:
+       * BACKEND RESPONSE
        * {
        *   token,
        *   role,
@@ -42,35 +42,32 @@ export default function Login() {
        */
       const { token, user, role, isFirstLogin } = res.data;
 
-      // ✅ FINAL USER OBJECT
-      const finalUser = {
-        ...user,
-        role,
-      };
+      // ✅ SAVE AUTH
+      login(token, { ...user, role });
 
-      // ✅ SAVE TOKEN + USER
-      login(token, finalUser);
-
-      // 🔁 FORCE PASSWORD CHANGE (FIRST LOGIN)
+      // 🔁 FORCE PASSWORD CHANGE
       if (isFirstLogin) {
         navigate("/change-password", { replace: true });
         return;
       }
 
-      // 🔁 ROLE BASED REDIRECT (MATCH BACKEND)
-      if (
+      // ✅ ROLE BASED REDIRECT (MATCHES App.jsx)
+      if (["SUPER_ADMIN", "PRESIDENT"].includes(role)) {
+        navigate("/admin-dashboard", { replace: true });
+
+      } else if (
         [
-          "SUPER_ADMIN",
-          "PRESIDENT",
+          "EC_MEMBER",
           "VICE_PRESIDENT",
           "GENERAL_SECRETARY",
           "JOINT_SECRETARY",
-          "EC_MEMBER",
         ].includes(role)
       ) {
         navigate("/dashboard", { replace: true });
+
       } else if (role === "TREASURER") {
-        navigate("/treasurer", { replace: true });
+        navigate("/treasurer-dashboard", { replace: true });
+
       } else {
         // MEMBER / VOLUNTEER
         navigate("/member", { replace: true });
@@ -78,7 +75,7 @@ export default function Login() {
 
     } catch (err) {
       console.error("LOGIN ERROR 👉", err);
-      setError(err.response?.data?.error || "Login failed");
+      setError(err.response?.data?.error || "Invalid username or password");
     } finally {
       setLoading(false);
     }
@@ -100,7 +97,7 @@ export default function Login() {
 
             <input
               type="text"
-              placeholder="Username / Association ID"
+              placeholder="Username / Member ID"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               required
@@ -135,7 +132,6 @@ export default function Login() {
 /* =========================
    STYLES
 ========================= */
-
 const page = {
   minHeight: "100vh",
   position: "relative",
