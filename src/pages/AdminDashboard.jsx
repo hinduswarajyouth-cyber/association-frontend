@@ -8,24 +8,24 @@ export default function AdminDashboard() {
 
   const [dashboard, setDashboard] = useState(null);
   const [announcements, setAnnouncements] = useState([]);
-  const [suggestions, setSuggestions] = useState([]);
+  const [suggestions, setSuggestions] = useState([]); // backend lo ledu – empty
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   /* =========================
      LOAD DASHBOARD DATA
+     (BACKEND CONFIRMED ROUTES)
   ========================= */
   useEffect(() => {
     Promise.all([
-      api.get("/api/admin/dashboard"),        // ✅ CORRECT
-      api.get("/api/announcements"),          // ✅ CORRECT
-      api.get("/api/suggestions/dashboard"),  // ✅ CORRECT
+      api.get("/admin/dashboard"),     // ✅ EXISTS
+      api.get("/api/announcements"),   // ✅ EXISTS
     ])
-      .then(([dashRes, annRes, sugRes]) => {
+      .then(([dashRes, annRes]) => {
         setDashboard(dashRes.data);
         setAnnouncements(annRes.data.slice(0, 5));
-        setSuggestions(sugRes.data.slice(0, 5));
+        setSuggestions([]); // ❌ suggestions route backend lo ledu
       })
       .catch((err) => {
         console.error("Dashboard error 👉", err);
@@ -105,20 +105,10 @@ export default function AdminDashboard() {
           )}
         </div>
 
-        {/* ===== SUGGESTIONS ===== */}
+        {/* ===== SUGGESTIONS (TEMP – BACKEND NOT AVAILABLE) ===== */}
         <div style={card}>
           <h3>💡 Latest Suggestions</h3>
-          {suggestions.length === 0 ? (
-            <p>No suggestions</p>
-          ) : (
-            <ul>
-              {suggestions.map((s) => (
-                <li key={s.id}>
-                  <b>{s.member_name}</b> — {s.message}
-                </li>
-              ))}
-            </ul>
-          )}
+          <p>No suggestions</p>
         </div>
 
         {/* ===== RECENT RECEIPTS ===== */}
