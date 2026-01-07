@@ -36,24 +36,24 @@ export default function AdminDashboard() {
     const month = now.getMonth() + 1;
 
     Promise.all([
-      api.get("/dashboard/admin-summary"),
-      api.get("/dashboard/recent-contributions"),
-      api.get("/dashboard/funds"),
-      api.get("/announcements"),
-      api.get(`/dashboard/cashflow?year=${year}&month=${month}`),
+      api.get("/api/dashboard/admin-summary"),
+      api.get("/api/dashboard/recent-contributions"),
+      api.get("/api/dashboard/funds"),
+      api.get("/api/announcements"),
+      api.get(`/api/dashboard/cashflow?year=${year}&month=${month}`),
     ])
       .then(
         ([summaryRes, recentRes, fundsRes, annRes, cashRes]) => {
           setSummary(summaryRes.data);
-          setRecentReceipts(recentRes.data);
-          setFunds(fundsRes.data);
-          setAnnouncements(annRes.data.slice(0, 5));
+          setRecentReceipts(recentRes.data || []);
+          setFunds(fundsRes.data || []);
+          setAnnouncements((annRes.data || []).slice(0, 5));
 
           setCashflow([
             {
               name: now.toLocaleString("default", { month: "short" }),
-              credit: Number(cashRes.data.total_credit || 0),
-              debit: Number(cashRes.data.total_debit || 0),
+              credit: Number(cashRes.data?.total_credit || 0),
+              debit: Number(cashRes.data?.total_debit || 0),
             },
           ]);
         }
@@ -131,7 +131,6 @@ export default function AdminDashboard() {
 
         {/* ===== CHARTS ===== */}
         <div style={chartsGrid}>
-          {/* Monthly Cashflow */}
           <div style={chartCard}>
             <h3>📊 Monthly Cashflow</h3>
             <ResponsiveContainer width="100%" height={300}>
@@ -145,7 +144,6 @@ export default function AdminDashboard() {
             </ResponsiveContainer>
           </div>
 
-          {/* Fund-wise Balance */}
           <div style={chartCard}>
             <h3>💼 Fund-wise Balance</h3>
             <ResponsiveContainer width="100%" height={300}>
@@ -196,7 +194,7 @@ export default function AdminDashboard() {
                 <tr key={i}>
                   <td style={td}>{r.receipt_no}</td>
                   <td style={td}>{r.member_name}</td>
-                  <td style={td}>₹{r.amount}</td>
+                  <td style={td}>₹{Number(r.amount).toLocaleString("en-IN")}</td>
                   <td style={td}>
                     {new Date(r.receipt_date).toLocaleDateString()}
                   </td>
