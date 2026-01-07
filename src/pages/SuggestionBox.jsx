@@ -1,18 +1,21 @@
 import { useEffect, useState } from "react";
-import api from "../services/api";
+import api from "../api/api";
+import { useAuth } from "../context/AuthContext";
 
 const SuggestionBox = () => {
+  const { user } = useAuth();
+
+  const isAdmin =
+    user?.role === "SUPER_ADMIN" || user?.role === "PRESIDENT";
+
   const [title, setTitle] = useState("");
   const [type, setType] = useState("GENERAL");
   const [message, setMessage] = useState("");
-  const [suggestions, setSuggestions] = useState([]);
   const [success, setSuccess] = useState("");
-
-  const role = localStorage.getItem("role");
-  const isAdmin = role === "SUPER_ADMIN" || role === "PRESIDENT";
+  const [suggestions, setSuggestions] = useState([]);
 
   /* =========================
-     MEMBER – SUBMIT SUGGESTION
+     SUBMIT (ALL USERS)
   ========================= */
   const submitSuggestion = async e => {
     e.preventDefault();
@@ -29,33 +32,20 @@ const SuggestionBox = () => {
       setTitle("");
       setMessage("");
       setType("GENERAL");
-    } catch (err) {
+    } catch {
       alert("Failed to submit suggestion");
     }
   };
 
   /* =========================
-     ADMIN – LOAD SUGGESTIONS
+     LOAD ALL (ADMIN ONLY)
   ========================= */
   const loadSuggestions = async () => {
     try {
-      const res = await api.get("/suggestions"); // ✅ FIX
+      const res = await api.get("/suggestions");
       setSuggestions(res.data);
     } catch (err) {
       console.error("LOAD SUGGESTIONS ERROR 👉", err);
-    }
-  };
-
-  /* =========================
-     ADMIN – UPDATE STATUS
-     (OPTIONAL – ONLY IF BACKEND SUPPORTS)
-  ========================= */
-  const updateStatus = async (id, status) => {
-    try {
-      await api.put(`/suggestions/${id}`, { status }); // ✅ FIX
-      loadSuggestions();
-    } catch (err) {
-      console.error("UPDATE STATUS ERROR 👉", err);
     }
   };
 
@@ -66,7 +56,7 @@ const SuggestionBox = () => {
   }, [isAdmin]);
 
   return (
-    <div className="container">
+    <div className="container" style={{ padding: 20 }}>
       <h2>💡 Suggestion Box</h2>
 
       {/* ================= MEMBER VIEW ================= */}
@@ -77,7 +67,6 @@ const SuggestionBox = () => {
           <form onSubmit={submitSuggestion}>
             <label>Title (optional)</label>
             <input
-              type="text"
               value={title}
               onChange={e => setTitle(e.target.value)}
             />
@@ -109,29 +98,34 @@ const SuggestionBox = () => {
         <>
           <h3>📬 All Suggestions</h3>
 
-          <table border="1" width="100%">
-            <thead>
-              <tr>
-                <th>Member</th>
-                <th>Type</th>
-                <th>Message</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {suggestions.map(s => (
-                <tr key={s.id}>
-                  <td>{s.member_name || "Anonymous"}</td>
-                  <td>{s.type}</td>
-                  <td>{s.message}</td>
-                  <td>
-                    <b>{s.status || "NEW"}</b>
-                  </td>
+          {suggestions.length === 0 ? (
+            <p>No suggestions yet</p>
+          ) : (
+            <table width="100%" border="1">
+              <thead>
+                <tr>
+                  <th>Member</th>
+                  <th>Title</th>
+                  <th>Type</th>
+                  <th>Message</th>
+                  <th>Date</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {suggestions.map(s => (
+                  <tr key={s.id}>
+                    <td>{s.member_name}</td>
+                    <td>{s.title || "-"}</td>
+                    <td>{s.type}</td>
+                    <td>{s.message}</td>
+                    <td>
+                      {new Date(s.created_at).toLocaleDateString()}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </>
       )}
     </div>
