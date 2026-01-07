@@ -19,8 +19,8 @@ export default function AdminDashboard() {
   useEffect(() => {
     Promise.all([
       api.get("/admin/dashboard"),
-      api.get("/announcements"),
-      api.get("/suggestions/dashboard"),
+      api.get("/api/announcements"),
+      api.get("/api/suggestions/dashboard"),
     ])
       .then(([dashboardRes, annRes, sugRes]) => {
         setData(dashboardRes.data);
@@ -176,15 +176,38 @@ const page = {
 };
 
 const pageTitle = { fontSize: 26, fontWeight: 700 };
-const cardsGrid = { display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 20 };
-const card = { background: "#fff", padding: 20, borderRadius: 12, marginBottom: 20 };
+const cardsGrid = {
+  display: "grid",
+  gridTemplateColumns: "repeat(4,1fr)",
+  gap: 20,
+};
+const card = {
+  background: "#fff",
+  padding: 20,
+  borderRadius: 12,
+  marginBottom: 20,
+};
 const cardTitle = { fontSize: 14, color: "#64748b" };
 const cardValue = { fontSize: 28, fontWeight: 700 };
 
 const actions = { display: "flex", gap: 12, marginBottom: 30 };
-const primaryBtn = { background: "#2563eb", color: "#fff", padding: 10, borderRadius: 8 };
-const secondaryBtn = { background: "#e2e8f0", padding: 10, borderRadius: 8 };
-const auditBtn = { background: "#0f172a", color: "#fff", padding: 10, borderRadius: 8 };
+const primaryBtn = {
+  background: "#2563eb",
+  color: "#fff",
+  padding: 10,
+  borderRadius: 8,
+};
+const secondaryBtn = {
+  background: "#e2e8f0",
+  padding: 10,
+  borderRadius: 8,
+};
+const auditBtn = {
+  background: "#0f172a",
+  color: "#fff",
+  padding: 10,
+  borderRadius: 8,
+};
 
 const tableCard = { background: "#fff", padding: 20, borderRadius: 12 };
 const table = { width: "100%", borderCollapse: "collapse" };
