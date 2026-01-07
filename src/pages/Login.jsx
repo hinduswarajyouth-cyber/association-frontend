@@ -4,9 +4,6 @@ import { useAuth } from "../context/AuthContext";
 import api from "../api/api";
 import bg from "../assets/login-bg.png";
 
-/* =========================
-   LOGIN PAGE (FINAL – FIXED)
-========================= */
 export default function Login() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -16,28 +13,24 @@ export default function Login() {
   const navigate = useNavigate();
   const { login } = useAuth();
 
-  /* =========================
-     HANDLE LOGIN
-  ========================= */
   const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
     setLoading(true);
 
     try {
-      // 🔐 LOGIN API
       const res = await api.post("/auth/login", {
         username,
         password,
       });
 
       /**
-       * BACKEND RESPONSE
+       * Expected backend response:
        * {
        *   token,
+       *   user: { id, name, username },
        *   role,
-       *   isFirstLogin,
-       *   user: { id, name, username }
+       *   isFirstLogin
        * }
        */
       const { token, user, role, isFirstLogin } = res.data;
@@ -51,9 +44,9 @@ export default function Login() {
         return;
       }
 
-      // ✅ ROLE BASED REDIRECT (MATCHES App.jsx)
+      // ✅ FINAL ROLE-BASED REDIRECT (FIXED)
       if (["SUPER_ADMIN", "PRESIDENT"].includes(role)) {
-        navigate("/admin-dashboard", { replace: true });
+        navigate("/dashboard", { replace: true });
 
       } else if (
         [
@@ -132,6 +125,7 @@ export default function Login() {
 /* =========================
    STYLES
 ========================= */
+
 const page = {
   minHeight: "100vh",
   position: "relative",
