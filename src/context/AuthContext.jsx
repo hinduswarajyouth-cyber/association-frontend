@@ -4,24 +4,25 @@ import api from "../api/api";
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
-  // ✅ LOAD USER FROM LOCAL STORAGE FIRST
-  const [user, setUser] = useState(() => {
-    const saved = localStorage.getItem("user");
-    return saved ? JSON.parse(saved) : null;
-  });
-
+  const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
   /* =========================
-     VERIFY TOKEN (ON REFRESH)
+     VERIFY TOKEN (ON APP LOAD)
   ========================= */
   useEffect(() => {
-    const verifyToken = async () => {
+    const initAuth = async () => {
       const token = localStorage.getItem("token");
+      const savedUser = localStorage.getItem("user");
 
-      if (!token || user) {
+      if (!token) {
         setLoading(false);
         return;
+      }
+
+      // optimistic restore (prevents white screen)
+      if (savedUser) {
+        setUser(JSON.parse(savedUser));
       }
 
       try {
@@ -36,8 +37,8 @@ export const AuthProvider = ({ children }) => {
       }
     };
 
-    verifyToken();
-  }, [user]);
+    initAuth();
+  }, []);
 
   /* =========================
      LOGIN

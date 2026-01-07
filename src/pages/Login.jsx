@@ -4,16 +4,9 @@ import { useAuth } from "../context/AuthContext";
 import api from "../api/api";
 import bg from "../assets/login-bg.png";
 
-/* MEMBER DASHBOARD ROLES */
-const MEMBER_ROLES = [
-  "EC_MEMBER",
-  "GENERAL_SECRETARY",
-  "JOINT_SECRETARY",
-  "MEMBER",
-  "VOLUNTEER",
-  "VICE_PRESIDENT",
-];
-
+/* =========================
+   LOGIN PAGE
+========================= */
 export default function Login() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -23,19 +16,23 @@ export default function Login() {
   const navigate = useNavigate();
   const { login } = useAuth();
 
+  /* =========================
+     HANDLE LOGIN
+  ========================= */
   const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
     setLoading(true);
 
     try {
+      // 🔐 CALL LOGIN API
       const res = await api.post("/auth/login", {
         username,
         password,
       });
 
       /**
-       * BACKEND RESPONSE:
+       * EXPECTED RESPONSE:
        * {
        *   token,
        *   role,
@@ -45,31 +42,40 @@ export default function Login() {
        */
       const { token, user, role, isFirstLogin } = res.data;
 
-      // ✅ NORMALIZE USER (VERY IMPORTANT)
+      // ✅ FINAL USER OBJECT
       const finalUser = {
         ...user,
         role,
       };
 
-      // ✅ SAVE AUTH
+      // ✅ SAVE TOKEN + USER
       login(token, finalUser);
 
-      // 🔁 FORCE PASSWORD CHANGE
+      // 🔁 FORCE PASSWORD CHANGE (FIRST LOGIN)
       if (isFirstLogin) {
         navigate("/change-password", { replace: true });
         return;
       }
 
-      // 🔁 ROLE BASED REDIRECT
-      if (["SUPER_ADMIN", "PRESIDENT"].includes(role)) {
-        navigate("/admin-dashboard", { replace: true });
-      } else if (role === "TREASURER") {
-        navigate("/treasurer-dashboard", { replace: true });
-      } else if (MEMBER_ROLES.includes(role)) {
+      // 🔁 ROLE BASED REDIRECT (MATCH BACKEND)
+      if (
+        [
+          "SUPER_ADMIN",
+          "PRESIDENT",
+          "VICE_PRESIDENT",
+          "GENERAL_SECRETARY",
+          "JOINT_SECRETARY",
+          "EC_MEMBER",
+        ].includes(role)
+      ) {
         navigate("/dashboard", { replace: true });
+      } else if (role === "TREASURER") {
+        navigate("/treasurer", { replace: true });
       } else {
-        setError("Unauthorized role");
+        // MEMBER / VOLUNTEER
+        navigate("/member", { replace: true });
       }
+
     } catch (err) {
       console.error("LOGIN ERROR 👉", err);
       setError(err.response?.data?.error || "Login failed");
@@ -94,7 +100,7 @@ export default function Login() {
 
             <input
               type="text"
-              placeholder="Association ID"
+              placeholder="Username / Association ID"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               required
