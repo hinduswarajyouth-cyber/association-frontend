@@ -18,7 +18,7 @@ import {
 export default function AdminDashboard() {
   const navigate = useNavigate();
 
-  /* ===== STATES ===== */
+  /* ================= STATES ================= */
   const [summary, setSummary] = useState(null);
   const [funds, setFunds] = useState([]);
   const [recentReceipts, setRecentReceipts] = useState([]);
@@ -28,9 +28,7 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  /* =========================
-     LOAD DASHBOARD DATA
-  ========================= */
+  /* ================= LOAD DASHBOARD ================= */
   useEffect(() => {
     const now = new Date();
     const year = now.getFullYear();
@@ -66,7 +64,7 @@ export default function AdminDashboard() {
       .finally(() => setLoading(false));
   }, []);
 
-  /* ===== LOADING ===== */
+  /* ================= LOADING ================= */
   if (loading) {
     return (
       <>
@@ -76,7 +74,7 @@ export default function AdminDashboard() {
     );
   }
 
-  /* ===== ERROR ===== */
+  /* ================= ERROR ================= */
   if (error || !summary) {
     return (
       <>
@@ -91,11 +89,11 @@ export default function AdminDashboard() {
       <Navbar />
 
       <div style={page}>
-        <h1 style={pageTitle}>Admin Dashboard</h1>
+        <DashboardHeader />
 
         {/* ===== STATS ===== */}
         <div style={cardsGrid}>
-          <StatCard title="Members" value={summary.total_members} />
+          <StatCard title="Total Members" value={summary.total_members} />
           <StatCard title="Approved Receipts" value={summary.approved_receipts} />
           <StatCard
             title="Total Collection"
@@ -104,10 +102,10 @@ export default function AdminDashboard() {
           <StatCard title="Cancelled Receipts" value={summary.cancelled_receipts} />
         </div>
 
-        {/* ===== ACTIONS ===== */}
+        {/* ===== QUICK ACTIONS ===== */}
         <div style={actions}>
           <button style={primaryBtn} onClick={() => navigate("/members")}>
-            View Members
+            Members
           </button>
           <button style={secondaryBtn} onClick={() => navigate("/expenses")}>
             Expenses
@@ -169,18 +167,22 @@ export default function AdminDashboard() {
         {/* ===== ANNOUNCEMENTS ===== */}
         <div style={card}>
           <h3>📢 Latest Announcements</h3>
-          <ul>
-            {announcements.map((a) => (
-              <li key={a.id}>
-                <b>{a.title}</b> — {a.message}
-              </li>
-            ))}
-          </ul>
+          {announcements.length === 0 ? (
+            <p>No announcements</p>
+          ) : (
+            <ul>
+              {announcements.map((a) => (
+                <li key={a.id}>
+                  <b>{a.title}</b> — {a.message}
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
 
         {/* ===== RECENT RECEIPTS ===== */}
         <div style={tableCard}>
-          <h3>🧾 Recent Receipts</h3>
+          <h3>🧾 Recent Contributions</h3>
           <table style={table}>
             <thead>
               <tr>
@@ -195,7 +197,9 @@ export default function AdminDashboard() {
                 <tr key={i}>
                   <td style={td}>{r.receipt_no}</td>
                   <td style={td}>{r.member_name}</td>
-                  <td style={td}>₹{Number(r.amount).toLocaleString("en-IN")}</td>
+                  <td style={td}>
+                    ₹{Number(r.amount).toLocaleString("en-IN")}
+                  </td>
                   <td style={td}>
                     {new Date(r.receipt_date).toLocaleDateString()}
                   </td>
@@ -209,7 +213,7 @@ export default function AdminDashboard() {
   );
 }
 
-/* ===== SMALL COMPONENT ===== */
+/* ================= SMALL COMPONENT ================= */
 function StatCard({ title, value }) {
   return (
     <div style={card}>
@@ -219,12 +223,11 @@ function StatCard({ title, value }) {
   );
 }
 
-/* ===== CONSTANTS ===== */
+/* ================= CONSTANTS ================= */
 const COLORS = ["#2563eb", "#16a34a", "#f97316", "#dc2626"];
 
-/* ===== STYLES ===== */
+/* ================= STYLES ================= */
 const page = { padding: 30, background: "#f1f5f9", minHeight: "100vh" };
-const pageTitle = { fontSize: 26, fontWeight: 700 };
 
 const cardsGrid = {
   display: "grid",
