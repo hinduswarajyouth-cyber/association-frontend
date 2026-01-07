@@ -5,33 +5,37 @@ const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
+  const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
 
   /* =========================
-     VERIFY TOKEN (ON APP LOAD)
+     INIT AUTH (ON APP LOAD)
   ========================= */
   useEffect(() => {
     const initAuth = async () => {
-      const token = localStorage.getItem("token");
-      const savedUser = localStorage.getItem("user");
+      const storedToken = localStorage.getItem("token");
+      const storedUser = localStorage.getItem("user");
 
-      if (!token) {
+      if (!storedToken) {
         setLoading(false);
         return;
       }
 
-      // optimistic restore (prevents white screen)
-      if (savedUser) {
-        setUser(JSON.parse(savedUser));
+      // Optimistic restore (avoids UI flicker)
+      if (storedUser) {
+        setUser(JSON.parse(storedUser));
+        setToken(storedToken);
       }
 
       try {
         const res = await api.get("/auth/verify");
         setUser(res.data.user);
+        setToken(storedToken);
         localStorage.setItem("user", JSON.stringify(res.data.user));
-      } catch (err) {
+      } catch (error) {
         localStorage.clear();
         setUser(null);
+        setToken(null);
       } finally {
         setLoading(false);
       }
@@ -46,20 +50,34 @@ export const AuthProvider = ({ children }) => {
   const login = (token, userData) => {
     localStorage.setItem("token", token);
     localStorage.setItem("user", JSON.stringify(userData));
+    setToken(token);
     setUser(userData);
   };
 
   /* =========================
      LOGOUT
   ========================= */
-  const logout = () => {
+  const logout = (redirect = true) => {
     localStorage.clear();
     setUser(null);
-    window.location.href = "/login";
+    setToken(null);
+
+    if (redirect) {
+      window.location.href = "/login";
+    }
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        token,
+        loading,
+        login,
+        logout,
+        isAuthenticated: !!user,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
