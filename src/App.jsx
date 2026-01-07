@@ -51,12 +51,12 @@ export default function App() {
       <AuthGate>
         <Routes>
           {/* =========================
-             DEFAULT (FIRST PAGE)
+             DEFAULT
           ========================= */}
           <Route path="/" element={<Navigate to="/login" replace />} />
 
           {/* =========================
-             PUBLIC ROUTES
+             PUBLIC
           ========================= */}
           <Route path="/login" element={<Login />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
@@ -138,8 +138,7 @@ export default function App() {
           />
 
           {/* =========================
-             DASHBOARD (NON-MEMBER)
-             ❌ MEMBER / VOLUNTEER NOT ALLOWED
+             EC / OFFICE BEARERS
           ========================= */}
           <Route
             path="/dashboard"

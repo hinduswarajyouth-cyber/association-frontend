@@ -42,12 +42,12 @@ export default function PrivateRoute({ children, allowedRoles }) {
   if (allowedRoles && !allowedRoles.includes(user.role)) {
     // 🔑 ADMIN
     if (ADMIN_ROLES.includes(user.role)) {
-      return <Navigate to="/president" replace />;
+      return <Navigate to="/admin-dashboard" replace />;
     }
 
     // 💰 TREASURER
     if (TREASURER_ROLES.includes(user.role)) {
-      return <Navigate to="/treasurer" replace />;
+      return <Navigate to="/treasurer-dashboard" replace />;
     }
 
     // 👥 MEMBER / EC / VOLUNTEER
