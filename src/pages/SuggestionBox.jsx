@@ -23,10 +23,14 @@ export default function SuggestionBox() {
      LOAD SUGGESTIONS
   ========================= */
   useEffect(() => {
-    loadSuggestions();
-  }, []);
+    if (user) {
+      loadSuggestions();
+    }
+    // eslint-disable-next-line
+  }, [user, isAdmin]);
 
   const loadSuggestions = async () => {
+    setLoading(true);
     try {
       const res = isAdmin
         ? await api.get("/api/suggestions/all")
@@ -35,13 +39,14 @@ export default function SuggestionBox() {
       setSuggestions(res.data || []);
     } catch (err) {
       console.error("LOAD SUGGESTIONS ERROR 👉", err);
+      alert("Failed to load suggestions");
     } finally {
       setLoading(false);
     }
   };
 
   /* =========================
-     SUBMIT (ALL USERS)
+     SUBMIT SUGGESTION
   ========================= */
   const submitSuggestion = async (e) => {
     e.preventDefault();
@@ -57,17 +62,22 @@ export default function SuggestionBox() {
       setSuccess("✅ Suggestion submitted successfully");
       setForm({ title: "", type: "GENERAL", message: "" });
       loadSuggestions();
-    } catch {
+    } catch (err) {
+      console.error("SUBMIT ERROR 👉", err);
       alert("Failed to submit suggestion");
     }
   };
 
   /* =========================
-     ADMIN STATUS UPDATE
+     ADMIN APPROVE / REJECT
   ========================= */
   const updateStatus = async (id, status) => {
-    await api.put(`/api/suggestions/${id}/status`, { status });
-    loadSuggestions();
+    try {
+      await api.put(`/api/suggestions/${id}/status`, { status });
+      loadSuggestions();
+    } catch {
+      alert("Failed to update status");
+    }
   };
 
   return (
@@ -77,7 +87,7 @@ export default function SuggestionBox() {
       <div style={page}>
         <h2>💡 Suggestion Box</h2>
 
-        {/* ================= CREATE ================= */}
+        {/* ================= CREATE (ALL USERS) ================= */}
         {!isAdmin && (
           <div style={card}>
             <h3>Submit Suggestion</h3>
@@ -126,7 +136,7 @@ export default function SuggestionBox() {
         )}
 
         {/* ================= LIST ================= */}
-        <h3>
+        <h3 style={{ marginTop: 20 }}>
           {isAdmin ? "📬 All Suggestions" : "📝 My Suggestions"}
         </h3>
 
@@ -166,13 +176,17 @@ export default function SuggestionBox() {
               <div style={actionRow}>
                 <button
                   style={btnSuccess}
-                  onClick={() => updateStatus(s.id, "APPROVED")}
+                  onClick={() =>
+                    updateStatus(s.id, "APPROVED")
+                  }
                 >
                   Approve
                 </button>
                 <button
                   style={btnDanger}
-                  onClick={() => updateStatus(s.id, "REJECTED")}
+                  onClick={() =>
+                    updateStatus(s.id, "REJECTED")
+                  }
                 >
                   Reject
                 </button>
@@ -221,13 +235,15 @@ const actionRow = {
 };
 
 const input = {
-  width: 320,
+  width: "100%",
+  maxWidth: 360,
   padding: 8,
   marginBottom: 10,
 };
 
 const textarea = {
-  width: 320,
+  width: "100%",
+  maxWidth: 360,
   height: 90,
   padding: 8,
   marginBottom: 10,

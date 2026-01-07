@@ -17,11 +17,8 @@ const getRole = () => {
 
 const ROLE = getRole();
 
-const OFFICE_ROLES = [
-  "GENERAL_SECRETARY",
-  "JOINT_SECRETARY",
-  "EC_MEMBER",
-];
+const ADMIN_ROLES = ["SUPER_ADMIN", "PRESIDENT"];
+const OFFICE_ROLES = ["GENERAL_SECRETARY", "JOINT_SECRETARY", "EC_MEMBER"];
 
 const STATUS_COLORS = {
   OPEN: "#fde68a",
@@ -36,7 +33,7 @@ export default function Complaint() {
   const [dashboard, setDashboard] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  /* COMMENTS STATE */
+  /* COMMENTS */
   const [comments, setComments] = useState({});
   const [commentInput, setCommentInput] = useState({});
 
@@ -52,11 +49,12 @@ export default function Complaint() {
   useEffect(() => {
     loadComplaints();
 
-    if (["SUPER_ADMIN", "PRESIDENT"].includes(ROLE)) {
+    if (ADMIN_ROLES.includes(ROLE)) {
       api.get("/api/complaints/stats").then((res) => {
         setDashboard(res.data);
       });
     }
+    // eslint-disable-next-line
   }, []);
 
   const loadComplaints = async () => {
@@ -71,18 +69,19 @@ export default function Complaint() {
       }
       setComplaints(res.data || []);
     } catch (err) {
-      console.error("LOAD COMPLAINTS ERROR", err);
+      console.error("LOAD COMPLAINTS ERROR 👉", err);
+      alert("Failed to load complaints");
     } finally {
       setLoading(false);
     }
   };
 
   /* =========================
-     MEMBER CREATE
+     CREATE COMPLAINT (MEMBER)
   ========================= */
   const submitComplaint = async () => {
     if (!form.subject || !form.description) {
-      alert("Fill all fields");
+      alert("Subject & description required");
       return;
     }
 
@@ -92,7 +91,7 @@ export default function Complaint() {
   };
 
   /* =========================
-     ASSIGN
+     ADMIN → ASSIGN
   ========================= */
   const assignComplaint = async (id, role) => {
     if (!role) return alert("Select role");
@@ -101,7 +100,7 @@ export default function Complaint() {
   };
 
   /* =========================
-     UPDATE STATUS
+     OFFICE → UPDATE STATUS
   ========================= */
   const updateStatus = async (id, status) => {
     if (!status) return;
@@ -131,6 +130,7 @@ export default function Complaint() {
   return (
     <>
       <Navbar />
+
       <div style={page}>
         <h2>📮 Complaint Management</h2>
 
@@ -178,8 +178,8 @@ export default function Complaint() {
                 setForm({ ...form, priority: e.target.value })
               }
             >
-              <option>NORMAL</option>
-              <option>HIGH</option>
+              <option value="NORMAL">Normal</option>
+              <option value="HIGH">High</option>
             </select>
 
             <button style={btnPrimary} onClick={submitComplaint}>
@@ -211,17 +211,11 @@ export default function Complaint() {
             <p>{c.description}</p>
 
             {/* ADMIN ASSIGN */}
-            {["SUPER_ADMIN", "PRESIDENT"].includes(ROLE) && (
+            {ADMIN_ROLES.includes(ROLE) && (
               <div style={actionRow}>
                 <select
                   onChange={(e) =>
-                    setComplaints((prev) =>
-                      prev.map((x) =>
-                        x.id === c.id
-                          ? { ...x, _assign: e.target.value }
-                          : x
-                      )
-                    )
+                    assignComplaint(c.id, e.target.value)
                   }
                 >
                   <option value="">Assign to</option>
@@ -231,13 +225,6 @@ export default function Complaint() {
                     </option>
                   ))}
                 </select>
-
-                <button
-                  style={btnPrimary}
-                  onClick={() => assignComplaint(c.id, c._assign)}
-                >
-                  Assign
-                </button>
               </div>
             )}
 
@@ -246,26 +233,13 @@ export default function Complaint() {
               <div style={actionRow}>
                 <select
                   onChange={(e) =>
-                    setComplaints((prev) =>
-                      prev.map((x) =>
-                        x.id === c.id
-                          ? { ...x, _status: e.target.value }
-                          : x
-                      )
-                    )
+                    updateStatus(c.id, e.target.value)
                   }
                 >
                   <option value="">Update Status</option>
                   <option value="IN_PROGRESS">In Progress</option>
                   <option value="RESOLVED">Resolved</option>
                 </select>
-
-                <button
-                  style={btnSuccess}
-                  onClick={() => updateStatus(c.id, c._status)}
-                >
-                  Save
-                </button>
               </div>
             )}
 
@@ -375,16 +349,6 @@ const btnPrimary = {
   cursor: "pointer",
 };
 
-const btnSuccess = {
-  background: "#16a34a",
-  color: "#fff",
-  border: "none",
-  padding: "8px 16px",
-  borderRadius: 8,
-  cursor: "pointer",
-};
-
-/* COMMENTS */
 const commentToggle = {
   background: "#e5e7eb",
   border: "none",
