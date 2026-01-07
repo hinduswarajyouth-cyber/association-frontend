@@ -17,7 +17,6 @@ function StatCard({ title, value }) {
 export default function Dashboard() {
   const [contributions, setContributions] = useState([]);
   const [announcements, setAnnouncements] = useState([]);
-  const [suggestions, setSuggestions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -28,17 +27,15 @@ export default function Dashboard() {
   ========================= */
   const loadDashboard = async () => {
     try {
-      const [c, a, s] = await Promise.all([
-        api.get("/members/contributions"),
-        api.get("/announcements"),
-        api.get("/suggestions/dashboard"),
+      const [dashboardRes, announcementsRes] = await Promise.all([
+        api.get("/admin/dashboard"),
+        api.get("/api/announcements"),
       ]);
 
-      setContributions(c.data.contributions || []);
-      setAnnouncements(a.data || []);
-      setSuggestions(s.data || []);
+      setContributions(dashboardRes.data.recentContributions || []);
+      setAnnouncements(announcementsRes.data || []);
     } catch (err) {
-      console.error(err);
+      console.error("Dashboard load error 👉", err);
       setError("Failed to load dashboard");
     } finally {
       setLoading(false);
@@ -54,13 +51,13 @@ export default function Dashboard() {
   ========================= */
   const markSeen = async (id) => {
     try {
-      await api.post(`/announcements/${id}/seen`);
+      await api.post(`/api/announcements/${id}/seen`);
       setAnnouncements((prev) =>
-        prev.map((a) =>
-          a.id === id ? { ...a, seen: true } : a
-        )
+        prev.map((a) => (a.id === id ? { ...a, seen: true } : a))
       );
-    } catch {}
+    } catch (err) {
+      console.error("Mark seen failed 👉", err);
+    }
   };
 
   if (loading) return <p style={{ padding: 30 }}>Loading...</p>;
@@ -142,28 +139,6 @@ export default function Dashboard() {
         )}
 
         {/* =========================
-           💡 SUGGESTIONS
-        ========================= */}
-        <h3 style={{ marginTop: 40 }}>💡 Suggestions</h3>
-
-        {suggestions.length === 0 ? (
-          <p>No suggestions yet</p>
-        ) : (
-          <div style={cardGrid}>
-            {suggestions.map((s) => (
-              <div key={s.id} style={cardItem}>
-                <h4>{s.title || "Suggestion"}</h4>
-                <p style={{ fontSize: 14 }}>{s.message}</p>
-                <small>
-                  👤 {s.member_name} | 📅{" "}
-                  {new Date(s.created_at).toLocaleDateString()}
-                </small>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* =========================
            📋 CONTRIBUTIONS
         ========================= */}
         <h3 style={{ marginTop: 40 }}>My Contributions</h3>
@@ -199,7 +174,9 @@ export default function Dashboard() {
                 <tr key={i}>
                   <td>{c.fund_name}</td>
                   <td>₹{c.amount}</td>
-                  <td><span style={badge(c.status)}>{c.status}</span></td>
+                  <td>
+                    <span style={badge(c.status)}>{c.status}</span>
+                  </td>
                   <td>{c.receipt_date?.slice(0, 10)}</td>
                 </tr>
               ))}
