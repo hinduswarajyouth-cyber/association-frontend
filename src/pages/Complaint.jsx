@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import api from "../api/api";
+import Navbar from "../components/Navbar";
 
 /* =========================
    🔐 GET ROLE FROM JWT
@@ -25,7 +26,7 @@ const OFFICE_ROLES = [
 const STATUS_COLORS = {
   OPEN: "#fde68a",
   FORWARDED: "#bfdbfe",
-  IN_PROGRESS: "#60a5fa",
+  IN_PROGRESS: "#93c5fd",
   RESOLVED: "#86efac",
   CLOSED: "#e5e7eb",
 };
@@ -33,7 +34,7 @@ const STATUS_COLORS = {
 export default function Complaint() {
   const [complaints, setComplaints] = useState([]);
   const [dashboard, setDashboard] = useState(null);
-  const [expanded, setExpanded] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   const [form, setForm] = useState({
     subject: "",
@@ -47,7 +48,7 @@ export default function Complaint() {
   useEffect(() => {
     loadComplaints();
 
-    if (ROLE === "SUPER_ADMIN" || ROLE === "PRESIDENT") {
+    if (["SUPER_ADMIN", "PRESIDENT"].includes(ROLE)) {
       api.get("/api/complaints/stats").then((res) => {
         setDashboard(res.data);
       });
@@ -56,15 +57,19 @@ export default function Complaint() {
 
   const loadComplaints = async () => {
     try {
+      let res;
       if (ROLE === "MEMBER") {
-        setComplaints((await api.get("/api/complaints/my")).data);
+        res = await api.get("/api/complaints/my");
       } else if (OFFICE_ROLES.includes(ROLE)) {
-        setComplaints((await api.get("/api/complaints/assigned")).data);
+        res = await api.get("/api/complaints/assigned");
       } else {
-        setComplaints((await api.get("/api/complaints/all")).data);
+        res = await api.get("/api/complaints/all");
       }
+      setComplaints(res.data || []);
     } catch (err) {
       console.error("LOAD COMPLAINTS ERROR", err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -101,134 +106,149 @@ export default function Complaint() {
   };
 
   return (
-    <div style={page}>
-      <h2>Complaint Management</h2>
+    <>
+      <Navbar />
+      <div style={page}>
+        <h2>📮 Complaint Management</h2>
 
-      {/* ================= DASHBOARD ================= */}
-      {dashboard && (
-        <div style={dashboardRow}>
-          {Object.entries(dashboard).map(([k, v]) => (
-            <div key={k} style={dashboardCard}>
-              <div>{k.replace("_", " ").toUpperCase()}</div>
-              <strong>{v}</strong>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* ================= CREATE ================= */}
-      {ROLE === "MEMBER" && (
-        <div style={card}>
-          <h3>Create Complaint</h3>
-
-          <input
-            style={input}
-            placeholder="Subject"
-            value={form.subject}
-            onChange={(e) => setForm({ ...form, subject: e.target.value })}
-          />
-
-          <textarea
-            style={textarea}
-            placeholder="Description"
-            value={form.description}
-            onChange={(e) =>
-              setForm({ ...form, description: e.target.value })
-            }
-          />
-
-          <select
-            style={input}
-            value={form.priority}
-            onChange={(e) =>
-              setForm({ ...form, priority: e.target.value })
-            }
-          >
-            <option>NORMAL</option>
-            <option>HIGH</option>
-          </select>
-
-          <button style={btnPrimary} onClick={submitComplaint}>
-            Submit
-          </button>
-        </div>
-      )}
-
-      {/* ================= LIST ================= */}
-      <h3>Complaints</h3>
-
-      {complaints.map((c) => (
-        <div key={c.id} style={card}>
-          <div style={cardHeader}>
-            <strong>{c.subject}</strong>
-
-            <span
-              style={{
-                ...badge,
-                background: STATUS_COLORS[c.status],
-              }}
-            >
-              {c.status}
-            </span>
+        {/* ================= DASHBOARD ================= */}
+        {dashboard && (
+          <div style={dashboardRow}>
+            {Object.entries(dashboard).map(([k, v]) => (
+              <div key={k} style={dashboardCard}>
+                <div style={{ color: "#64748b", fontSize: 13 }}>
+                  {k.replaceAll("_", " ")}
+                </div>
+                <strong style={{ fontSize: 22 }}>{v}</strong>
+              </div>
+            ))}
           </div>
+        )}
 
-          <p>{c.description}</p>
+        {/* ================= CREATE ================= */}
+        {ROLE === "MEMBER" && (
+          <div style={card}>
+            <h3>Create Complaint</h3>
 
-          {/* ADMIN ASSIGN */}
-          {(ROLE === "SUPER_ADMIN" || ROLE === "PRESIDENT") && (
-            <div style={actionRow}>
-              <select
-                onChange={(e) =>
-                  setComplaints((prev) =>
-                    prev.map((x) =>
-                      x.id === c.id ? { ...x, _assign: e.target.value } : x
-                    )
-                  )
-                }
+            <input
+              style={input}
+              placeholder="Subject"
+              value={form.subject}
+              onChange={(e) =>
+                setForm({ ...form, subject: e.target.value })
+              }
+            />
+
+            <textarea
+              style={textarea}
+              placeholder="Description"
+              value={form.description}
+              onChange={(e) =>
+                setForm({ ...form, description: e.target.value })
+              }
+            />
+
+            <select
+              style={input}
+              value={form.priority}
+              onChange={(e) =>
+                setForm({ ...form, priority: e.target.value })
+              }
+            >
+              <option>NORMAL</option>
+              <option>HIGH</option>
+            </select>
+
+            <button style={btnPrimary} onClick={submitComplaint}>
+              Submit Complaint
+            </button>
+          </div>
+        )}
+
+        {/* ================= LIST ================= */}
+        <h3>Complaints</h3>
+
+        {loading && <p>Loading complaints...</p>}
+        {!loading && complaints.length === 0 && <p>No complaints found</p>}
+
+        {complaints.map((c) => (
+          <div key={c.id} style={card}>
+            <div style={cardHeader}>
+              <strong>{c.subject}</strong>
+              <span
+                style={{
+                  ...badge,
+                  background: STATUS_COLORS[c.status],
+                }}
               >
-                <option value="">Assign</option>
-                {OFFICE_ROLES.map((r) => (
-                  <option key={r}>{r.replace("_", " ")}</option>
-                ))}
-              </select>
-
-              <button
-                style={btnPrimary}
-                onClick={() => assignComplaint(c.id, c._assign)}
-              >
-                Save
-              </button>
+                {c.status}
+              </span>
             </div>
-          )}
 
-          {/* OFFICE UPDATE */}
-          {OFFICE_ROLES.includes(ROLE) && (
-            <div style={actionRow}>
-              <select
-                onChange={(e) =>
-                  setComplaints((prev) =>
-                    prev.map((x) =>
-                      x.id === c.id ? { ...x, _status: e.target.value } : x
+            <p>{c.description}</p>
+
+            {/* ADMIN ASSIGN */}
+            {["SUPER_ADMIN", "PRESIDENT"].includes(ROLE) && (
+              <div style={actionRow}>
+                <select
+                  onChange={(e) =>
+                    setComplaints((prev) =>
+                      prev.map((x) =>
+                        x.id === c.id
+                          ? { ...x, _assign: e.target.value }
+                          : x
+                      )
                     )
-                  )
-                }
-              >
-                <option value="">Update Status</option>
-                <option value="IN_PROGRESS">In Progress</option>
-                <option value="RESOLVED">Resolved</option>
-              </select>
+                  }
+                >
+                  <option value="">Assign to</option>
+                  {OFFICE_ROLES.map((r) => (
+                    <option key={r} value={r}>
+                      {r.replaceAll("_", " ")}
+                    </option>
+                  ))}
+                </select>
 
-              <button
-                style={btnSuccess}
-                onClick={() => updateStatus(c.id, c._status)}
-              >
-                Save
-              </button>
-            </div>
-          )}
-        </div>
-      ))}
-    </div>
+                <button
+                  style={btnPrimary}
+                  onClick={() => assignComplaint(c.id, c._assign)}
+                >
+                  Assign
+                </button>
+              </div>
+            )}
+
+            {/* OFFICE UPDATE */}
+            {OFFICE_ROLES.includes(ROLE) && (
+              <div style={actionRow}>
+                <select
+                  onChange={(e) =>
+                    setComplaints((prev) =>
+                      prev.map((x) =>
+                        x.id === c.id
+                          ? { ...x, _status: e.target.value }
+                          : x
+                      )
+                    )
+                  }
+                >
+                  <option value="">Update Status</option>
+                  <option value="IN_PROGRESS">In Progress</option>
+                  <option value="RESOLVED">Resolved</option>
+                </select>
+
+                <button
+                  style={btnSuccess}
+                  onClick={() => updateStatus(c.id, c._status)}
+                >
+                  Save
+                </button>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </>
   );
 }
 
@@ -237,19 +257,23 @@ export default function Complaint() {
 ========================= */
 const page = { padding: 30, background: "#f1f5f9", minHeight: "100vh" };
 
-const dashboardRow = { display: "flex", gap: 16, marginBottom: 20 };
+const dashboardRow = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))",
+  gap: 16,
+  marginBottom: 25,
+};
 
 const dashboardCard = {
   background: "#fff",
   padding: 16,
-  borderRadius: 10,
-  minWidth: 120,
+  borderRadius: 12,
   textAlign: "center",
 };
 
 const card = {
   background: "#fff",
-  padding: 16,
+  padding: 18,
   borderRadius: 12,
   marginBottom: 16,
 };
@@ -257,6 +281,7 @@ const card = {
 const cardHeader = {
   display: "flex",
   justifyContent: "space-between",
+  alignItems: "center",
 };
 
 const badge = {
@@ -266,17 +291,17 @@ const badge = {
   fontWeight: 600,
 };
 
-const actionRow = { display: "flex", gap: 10, marginTop: 10 };
+const actionRow = { display: "flex", gap: 10, marginTop: 12 };
 
-const input = { width: 300, padding: 8, marginBottom: 10 };
-const textarea = { width: 300, height: 80, padding: 8 };
+const input = { width: 320, padding: 8, marginBottom: 10 };
+const textarea = { width: 320, height: 90, padding: 8 };
 
 const btnPrimary = {
   background: "#2563eb",
   color: "#fff",
   border: "none",
-  padding: "6px 14px",
-  borderRadius: 6,
+  padding: "8px 16px",
+  borderRadius: 8,
   cursor: "pointer",
 };
 
@@ -284,7 +309,7 @@ const btnSuccess = {
   background: "#16a34a",
   color: "#fff",
   border: "none",
-  padding: "6px 14px",
-  borderRadius: 6,
+  padding: "8px 16px",
+  borderRadius: 8,
   cursor: "pointer",
 };
