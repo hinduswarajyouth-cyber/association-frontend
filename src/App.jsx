@@ -1,11 +1,7 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "./context/AuthContext";
 import PrivateRoute from "./PrivateRoute";
-
 import Footer from "./components/Footer";
-import InstallPWA from "./components/InstallPWA";
-import OfflineBanner from "./components/OfflineBanner";
-import UpdatePrompt from "./components/UpdatePrompt";
 
 /* PUBLIC */
 import Login from "./pages/Login";
@@ -71,8 +67,6 @@ function RootRedirect() {
 export default function App() {
   return (
     <>
-      <OfflineBanner />
-
       <AuthGate>
         <Routes>
           {/* PUBLIC */}
@@ -219,7 +213,9 @@ export default function App() {
           <Route
             path="/change-password"
             element={
-              <PrivateRoute allowedRoles={["SUPER_ADMIN", "PRESIDENT", "MEMBER"]}>
+              <PrivateRoute
+                allowedRoles={["SUPER_ADMIN", "PRESIDENT", "MEMBER"]}
+              >
                 <ChangePassword />
               </PrivateRoute>
             }
@@ -230,8 +226,6 @@ export default function App() {
         </Routes>
       </AuthGate>
 
-      <UpdatePrompt />
-      <InstallPWA />
       <Footer />
     </>
   );
