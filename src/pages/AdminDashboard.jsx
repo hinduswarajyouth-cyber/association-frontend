@@ -18,9 +18,9 @@ export default function AdminDashboard() {
   ========================= */
   useEffect(() => {
     Promise.all([
-      api.get("/admin/dashboard"),              // ✅ stats
-      api.get("/api/announcements"),            // ✅ announcements
-      api.get("/suggestions/dashboard"),        // ✅ suggestions (FIXED)
+      api.get("/admin/dashboard"),        // ✅ stats
+      api.get("/announcements"),          // ✅ FIXED (no /api)
+      api.get("/suggestions/dashboard"),  // ✅ FIXED
     ])
       .then(([dashRes, annRes, sugRes]) => {
         setDashboard(dashRes.data);
@@ -34,9 +34,7 @@ export default function AdminDashboard() {
       .finally(() => setLoading(false));
   }, []);
 
-  /* =========================
-     LOADING
-  ========================= */
+  /* ===== LOADING ===== */
   if (loading) {
     return (
       <>
@@ -46,9 +44,7 @@ export default function AdminDashboard() {
     );
   }
 
-  /* =========================
-     ERROR
-  ========================= */
+  /* ===== ERROR ===== */
   if (error || !dashboard) {
     return (
       <>
@@ -160,9 +156,7 @@ export default function AdminDashboard() {
   );
 }
 
-/* =========================
-   SMALL COMPONENT
-========================= */
+/* ===== SMALL COMPONENT ===== */
 function StatCard({ title, value }) {
   return (
     <div style={card}>
@@ -172,9 +166,7 @@ function StatCard({ title, value }) {
   );
 }
 
-/* =========================
-   STYLES
-========================= */
+/* ===== STYLES ===== */
 const page = {
   padding: 30,
   background: "#f1f5f9",
