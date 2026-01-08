@@ -2,108 +2,243 @@ import { useEffect, useState } from "react";
 import api from "../api/api";
 import Navbar from "../components/Navbar";
 
-/* GET ROLE FROM TOKEN */
-const getRole = () => {
-  try {
-    const token = localStorage.getItem("token");
-    return JSON.parse(atob(token.split(".")[1])).role;
-  } catch {
-    return null;
-  }
-};
-
-const ROLE = getRole();
-const FINANCE_ROLES = ["SUPER_ADMIN", "PRESIDENT", "TREASURER"];
+/* =========================
+   CONSTANTS
+========================= */
+const UPI_ID = "hinduswarajyouth@ybl";
+const PAYEE_NAME = "Hindu Swarajya Youth";
 
 export default function MemberContributions() {
-  const [list, setList] = useState([]);
-  const [form, setForm] = useState({
-    amount: "",
-    fund_name: "GENERAL",
-    note: "",
-  });
-  const [loading, setLoading] = useState(true);
+  const [contributions, setContributions] = useState([]);
 
-  const loadData = async () => {
-    setLoading(true);
-    const url = FINANCE_ROLES.includes(ROLE)
-      ? "/api/contributions/all"
-      : "/api/contributions/my";
+  const [fundName, setFundName] = useState("GENERAL");
+  const [amount, setAmount] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState("CASH");
+  const [note, setNote] = useState("");
+  const [loading, setLoading] = useState(false);
 
-    const res = await api.get(url);
-    setList(res.data || []);
-    setLoading(false);
-  };
-
+  /* =========================
+     LOAD CONTRIBUTIONS
+  ========================= */
   useEffect(() => {
-    loadData();
+    loadContributions();
   }, []);
 
-  const submit = async () => {
-    if (!form.amount) return alert("Amount required");
-    await api.post("/api/contributions/submit", form);
-    setForm({ amount: "", fund_name: "GENERAL", note: "" });
-    loadData();
+  const loadContributions = async () => {
+    const res = await api.get("/api/contributions/my");
+    setContributions(res.data || []);
   };
 
-  const approve = async (id) => {
-    await api.put(`/api/contributions/approve/${id}`);
-    loadData();
+  /* =========================
+     UPI PAY
+  ========================= */
+  const openUpiApp = () => {
+    if (!amount) return alert("Enter amount");
+
+    const noteText = "Association Contribution";
+    const url =
+      `upi://pay?pa=${UPI_ID}` +
+      `&pn=${encodeURIComponent(PAYEE_NAME)}` +
+      `&am=${amount}` +
+      `&cu=INR` +
+      `&tn=${encodeURIComponent(noteText)}`;
+
+    window.location.href = url;
   };
+
+  /* =========================
+     SUBMIT CONTRIBUTION
+  ========================= */
+  const submit = async () => {
+    if (!amount) return alert("Amount required");
+
+    setLoading(true);
+    try {
+      await api.post("/api/contributions/submit", {
+        amount,
+        fund_name: fundName,
+        payment_method: paymentMethod,
+        note,
+      });
+
+      alert("✅ Contribution submitted (Pending approval)");
+
+      setAmount("");
+      setNote("");
+      setPaymentMethod("CASH");
+      setFundName("GENERAL");
+
+      loadContributions();
+    } catch (err) {
+      alert(err.response?.data?.error || "Failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /* =========================
+     UPI QR
+  ========================= */
+  const upiQrUrl = amount
+    ? `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(
+        `upi://pay?pa=${UPI_ID}&pn=${PAYEE_NAME}&am=${amount}&cu=INR`
+      )}`
+    : null;
 
   return (
     <>
       <Navbar />
-      <div style={page}>
-        <h2>💰 Contributions</h2>
 
-        {/* SUBMIT */}
-        <div style={card}>
-          <h4>Make Contribution</h4>
-          <input
-            placeholder="Amount"
-            type="number"
-            value={form.amount}
-            onChange={(e) => setForm({ ...form, amount: e.target.value })}
-          />
-          <input
-            placeholder="Fund Name"
-            value={form.fund_name}
-            onChange={(e) => setForm({ ...form, fund_name: e.target.value })}
-          />
-          <textarea
-            placeholder="Note (optional)"
-            value={form.note}
-            onChange={(e) => setForm({ ...form, note: e.target.value })}
-          />
-          <button onClick={submit}>Submit</button>
+      <div style={container}>
+        <h2>💰 Contribution</h2>
+
+        {/* FUND NAME */}
+        <input
+          placeholder="Fund Name (GENERAL)"
+          value={fundName}
+          onChange={(e) => setFundName(e.target.value)}
+          style={input}
+        />
+
+        {/* QUICK AMOUNTS */}
+        <div style={quickRow}>
+          {[116, 216, 516].map((v) => (
+            <button key={v} onClick={() => setAmount(v)} style={quickBtn}>
+              ₹{v}
+            </button>
+          ))}
         </div>
 
-        {/* LIST */}
-        {loading && <p>Loading...</p>}
-        {!loading && list.length === 0 && <p>No contributions</p>}
+        {/* AMOUNT */}
+        <input
+          type="number"
+          placeholder="Amount"
+          value={amount}
+          onChange={(e) => setAmount(e.target.value)}
+          style={input}
+        />
 
-        {list.map((c) => (
-          <div key={c.id} style={card}>
-            <strong>₹ {c.amount}</strong> — {c.fund_name}
-            <p>Status: {c.payment_status}</p>
-            {c.member_name && <p>By: {c.member_name}</p>}
-            {FINANCE_ROLES.includes(ROLE) &&
-              c.payment_status === "PENDING" && (
-                <button onClick={() => approve(c.id)}>Approve</button>
-              )}
-          </div>
-        ))}
+        {/* PAYMENT METHOD */}
+        <select
+          value={paymentMethod}
+          onChange={(e) => setPaymentMethod(e.target.value)}
+          style={input}
+        >
+          <option value="CASH">Cash</option>
+          <option value="UPI">UPI</option>
+          <option value="BANK">Bank Transfer</option>
+        </select>
+
+        {/* UPI */}
+        {paymentMethod === "UPI" && (
+          <>
+            <button style={upiBtn} onClick={openUpiApp}>
+              📲 Pay via UPI
+            </button>
+
+            {upiQrUrl && (
+              <div style={{ textAlign: "center", marginBottom: 12 }}>
+                <img src={upiQrUrl} alt="UPI QR" />
+                <p style={{ fontSize: 12 }}>UPI ID: {UPI_ID}</p>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* NOTE */}
+        <textarea
+          placeholder="Note (optional)"
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          style={input}
+        />
+
+        <button onClick={submit} disabled={loading} style={submitBtn}>
+          {loading ? "Submitting..." : "Submit Contribution"}
+        </button>
+
+        {/* HISTORY */}
+        <h3 style={{ marginTop: 30 }}>📜 My Contributions</h3>
+
+        {contributions.length === 0 ? (
+          <p>No contributions yet</p>
+        ) : (
+          <table style={table}>
+            <thead>
+              <tr>
+                <th>Fund</th>
+                <th>Amount</th>
+                <th>Method</th>
+                <th>Status</th>
+                <th>Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              {contributions.map((c) => (
+                <tr key={c.id}>
+                  <td>{c.fund_name}</td>
+                  <td>₹{c.amount}</td>
+                  <td>{c.payment_method}</td>
+                  <td>
+                    <b
+                      style={{
+                        color:
+                          c.payment_status === "APPROVED"
+                            ? "green"
+                            : "orange",
+                      }}
+                    >
+                      {c.payment_status}
+                    </b>
+                  </td>
+                  <td>{new Date(c.created_at).toLocaleDateString()}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
     </>
   );
 }
 
-/* STYLES */
-const page = { padding: 30, background: "#f1f5f9", minHeight: "100vh" };
-const card = {
-  background: "#fff",
-  padding: 16,
-  borderRadius: 12,
-  marginBottom: 14,
+/* =========================
+   STYLES
+========================= */
+const container = { padding: 30, maxWidth: 800 };
+const input = { width: "100%", padding: 10, marginBottom: 12 };
+
+const quickRow = { display: "flex", gap: 10, marginBottom: 10 };
+
+const quickBtn = {
+  padding: "6px 14px",
+  borderRadius: 20,
+  border: "1px solid #2563eb",
+  background: "#eff6ff",
+  cursor: "pointer",
+};
+
+const upiBtn = {
+  width: "100%",
+  padding: 12,
+  background: "#0f9d58",
+  color: "#fff",
+  border: "none",
+  borderRadius: 8,
+  marginBottom: 12,
+};
+
+const submitBtn = {
+  width: "100%",
+  padding: 12,
+  background: "#2563eb",
+  color: "#fff",
+  border: "none",
+  borderRadius: 8,
+};
+
+const table = {
+  width: "100%",
+  borderCollapse: "collapse",
+  marginTop: 15,
 };
