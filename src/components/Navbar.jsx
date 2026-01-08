@@ -26,10 +26,10 @@ export default function Navbar() {
   const MEMBER_ROLES = ["MEMBER", "VOLUNTEER"];
 
   /* =========================
-     HOME ROUTE
+     HOME ROUTE (FIXED)
   ========================= */
   const getHomeRoute = () => {
-    if (ADMIN_ROLES.includes(role)) return "/admin-dashboard";
+    if (ADMIN_ROLES.includes(role)) return "/dashboard";
     if (role === "TREASURER") return "/treasurer-dashboard";
     return "/dashboard";
   };
@@ -81,7 +81,7 @@ export default function Navbar() {
 }
 
 /* =========================
-   MENU LINKS
+   MENU LINKS (FINAL)
 ========================= */
 function MenuLinks({ role, isActive, onClick }) {
   const ADMIN_ROLES = ["SUPER_ADMIN", "PRESIDENT"];
@@ -98,41 +98,87 @@ function MenuLinks({ role, isActive, onClick }) {
       {/* 👑 ADMIN / PRESIDENT */}
       {ADMIN_ROLES.includes(role) && (
         <>
-          <Link onClick={onClick} style={isActive("/admin-dashboard")} to="/admin-dashboard">Dashboard</Link>
-          <Link onClick={onClick} style={isActive("/members")} to="/members">Members</Link>
-          <Link onClick={onClick} style={isActive("/funds")} to="/funds">Funds</Link>
-          <Link onClick={onClick} style={isActive("/reports")} to="/reports">Reports</Link>
-          <Link onClick={onClick} style={isActive("/announcements")} to="/announcements">Announcements</Link>
+          <Link onClick={onClick} style={isActive("/dashboard")} to="/dashboard">
+            Dashboard
+          </Link>
+          <Link onClick={onClick} style={isActive("/members")} to="/members">
+            Members
+          </Link>
+          <Link onClick={onClick} style={isActive("/funds")} to="/funds">
+            Funds
+          </Link>
+          <Link onClick={onClick} style={isActive("/expenses")} to="/expenses">
+            Expenses
+          </Link>
+          <Link onClick={onClick} style={isActive("/reports")} to="/reports">
+            Reports
+          </Link>
         </>
       )}
 
       {/* 💰 TREASURER */}
       {role === "TREASURER" && (
         <>
-          <Link onClick={onClick} style={isActive("/treasurer-dashboard")} to="/treasurer-dashboard">Dashboard</Link>
-          <Link onClick={onClick} style={isActive("/treasurer/expense")} to="/treasurer/expense">Create Expense</Link>
-          <Link onClick={onClick} style={isActive("/reports")} to="/reports">Reports</Link>
+          <Link
+            onClick={onClick}
+            style={isActive("/treasurer-dashboard")}
+            to="/treasurer-dashboard"
+          >
+            Dashboard
+          </Link>
+          <Link
+            onClick={onClick}
+            style={isActive("/treasurer/expense")}
+            to="/treasurer/expense"
+          >
+            Create Expense
+          </Link>
+          <Link onClick={onClick} style={isActive("/reports")} to="/reports">
+            Reports
+          </Link>
         </>
       )}
 
       {/* 🧑‍💼 OFFICE */}
       {OFFICE_ROLES.includes(role) && (
-        <Link onClick={onClick} style={isActive("/dashboard")} to="/dashboard">Dashboard</Link>
+        <Link onClick={onClick} style={isActive("/dashboard")} to="/dashboard">
+          Dashboard
+        </Link>
       )}
 
       {/* 👤 MEMBER */}
       {MEMBER_ROLES.includes(role) && (
         <>
-          <Link onClick={onClick} style={isActive("/dashboard")} to="/dashboard">Dashboard</Link>
-          <Link onClick={onClick} style={isActive("/contributions")} to="/contributions">Contributions</Link>
+          <Link onClick={onClick} style={isActive("/dashboard")} to="/dashboard">
+            Dashboard
+          </Link>
+          <Link
+            onClick={onClick}
+            style={isActive("/contributions")}
+            to="/contributions"
+          >
+            Contributions
+          </Link>
         </>
       )}
 
-      {/* 🔁 COMMON (ALL LOGGED USERS) */}
-      <Link onClick={onClick} style={isActive("/meetings")} to="/meetings">Meetings</Link>
-      <Link onClick={onClick} style={isActive("/complaints")} to="/complaints">Complaints</Link>
-      <Link onClick={onClick} style={isActive("/suggestions")} to="/suggestions">Suggestions</Link>
-      <Link onClick={onClick} style={isActive("/change-password")} to="/change-password">Change Password</Link>
+      {/* 🔁 COMMON */}
+      <Link onClick={onClick} style={isActive("/meetings")} to="/meetings">
+        Meetings
+      </Link>
+      <Link onClick={onClick} style={isActive("/complaints")} to="/complaints">
+        Complaints
+      </Link>
+      <Link onClick={onClick} style={isActive("/suggestions")} to="/suggestions">
+        Suggestions
+      </Link>
+      <Link
+        onClick={onClick}
+        style={isActive("/change-password")}
+        to="/change-password"
+      >
+        Change Password
+      </Link>
     </>
   );
 }
@@ -145,7 +191,9 @@ function UserInfo({ name, role, onLogout }) {
     <div style={userBox}>
       <span style={userName}>👤 {name}</span>
       <span style={roleBadge}>{role.replaceAll("_", " ")}</span>
-      <button onClick={onLogout} style={logoutBtn}>Logout</button>
+      <button onClick={onLogout} style={logoutBtn}>
+        Logout
+      </button>
     </div>
   );
 }

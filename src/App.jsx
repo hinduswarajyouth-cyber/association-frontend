@@ -35,6 +35,17 @@ import AuditLogs from "./pages/AuditLogs";
 import MemberContributions from "./pages/MemberContributions";
 
 /* =========================
+   EXPENSES
+========================= */
+import ExpenseList from "./pages/ExpenseList";
+import CreateExpense from "./pages/CreateExpense";
+
+/* =========================
+   TREASURER
+========================= */
+import TreasurerDashboard from "./pages/TreasurerDashboard";
+
+/* =========================
    AUTH GATE
 ========================= */
 function AuthGate({ children }) {
@@ -59,7 +70,7 @@ export default function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
 
-          {/* ================= DASHBOARD (ALL ROLES) ================= */}
+          {/* ================= DASHBOARD ================= */}
           <Route
             path="/dashboard"
             element={
@@ -81,7 +92,37 @@ export default function App() {
             }
           />
 
-          {/* ================= MEMBERS (ADMIN) ================= */}
+          {/* ================= TREASURER DASHBOARD ================= */}
+          <Route
+            path="/treasurer-dashboard"
+            element={
+              <PrivateRoute allowedRoles={["TREASURER"]}>
+                <TreasurerDashboard />
+              </PrivateRoute>
+            }
+          />
+
+          {/* ================= EXPENSE LIST (ADMIN) ================= */}
+          <Route
+            path="/expenses"
+            element={
+              <PrivateRoute allowedRoles={["SUPER_ADMIN", "PRESIDENT"]}>
+                <ExpenseList />
+              </PrivateRoute>
+            }
+          />
+
+          {/* ================= TREASURER CREATE EXPENSE ================= */}
+          <Route
+            path="/treasurer/expense"
+            element={
+              <PrivateRoute allowedRoles={["TREASURER"]}>
+                <CreateExpense />
+              </PrivateRoute>
+            }
+          />
+
+          {/* ================= MEMBERS ================= */}
           <Route
             path="/members"
             element={
@@ -132,7 +173,7 @@ export default function App() {
             }
           />
 
-          {/* ================= CONTRIBUTIONS (ALL ROLES) ================= */}
+          {/* ================= CONTRIBUTIONS ================= */}
           <Route
             path="/contributions"
             element={
