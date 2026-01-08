@@ -13,7 +13,7 @@ export default function Members() {
   const fetchMembers = async () => {
     try {
       setLoading(true);
-      const res = await api.get("/admin/members");
+      const res = await api.get("/members"); // ✅ FIXED
       setMembers(res.data || []);
     } catch (err) {
       console.error("FETCH MEMBERS ERROR 👉", err);
@@ -34,9 +34,9 @@ export default function Members() {
     if (!window.confirm("Change member status?")) return;
 
     try {
-      await api.patch(`/admin/members/${member.id}/status`, {
+      await api.patch(`/members/${member.id}/status`, {
         active: !member.active,
-      });
+      }); // ✅ FIXED
       fetchMembers();
     } catch (err) {
       alert("Failed to update status");
@@ -50,7 +50,7 @@ export default function Members() {
     if (!window.confirm("Delete member permanently?")) return;
 
     try {
-      await api.delete(`/admin/members/${id}`);
+      await api.delete(`/members/${id}`); // ✅ FIXED
       fetchMembers();
     } catch (err) {
       alert("Delete failed");
@@ -64,13 +64,13 @@ export default function Members() {
     if (!window.confirm("Update this member?")) return;
 
     try {
-      await api.put(`/admin/edit-member/${editing.id}`, {
+      await api.put(`/members/${editing.id}`, {
         name: editing.name,
         phone: editing.phone,
         address: editing.address,
         role: editing.role,
         active: editing.active,
-      });
+      }); // ✅ FIXED
 
       alert("Member updated successfully");
       setEditing(null);
@@ -242,49 +242,3 @@ export default function Members() {
     </>
   );
 }
-
-/* =========================
-   STYLES
-========================= */
-const container = { padding: 30, background: "#f4f6f8", minHeight: "100vh" };
-const title = { marginBottom: 20 };
-const table = { width: "100%", borderCollapse: "collapse", background: "#fff", minWidth: 1100 };
-const rowAlt = { background: "#f9fafb" };
-const statusBadge = { padding: "4px 12px", borderRadius: 999, color: "#fff", fontSize: 12 };
-const roleBadge = { padding: "4px 10px", borderRadius: 6, background: "#e0e7ff", color: "#1e3a8a", fontSize: 12 };
-const idBadge = { background: "#ecfeff", color: "#155e75", padding: "4px 10px", borderRadius: 6, fontSize: 12 };
-
-const baseBtn = { padding: "5px 10px", borderRadius: 6, border: "none", fontSize: 12, cursor: "pointer", marginRight: 6 };
-const editBtn = { ...baseBtn, background: "#2563eb", color: "#fff" };
-const blockBtn = { ...baseBtn, background: "#f97316", color: "#fff" };
-const unblockBtn = { ...baseBtn, background: "#16a34a", color: "#fff" };
-const deleteBtn = { ...baseBtn, background: "#dc2626", color: "#fff" };
-const saveBtn = { ...baseBtn, background: "#16a34a", color: "#fff" };
-const cancelBtn = { ...baseBtn, background: "#6b7280", color: "#fff" };
-
-const modalBg = {
-  position: "fixed",
-  inset: 0,
-  background: "rgba(0,0,0,0.5)",
-  display: "flex",
-  justifyContent: "center",
-  alignItems: "center",
-};
-
-const modal = {
-  background: "#fff",
-  padding: 20,
-  borderRadius: 10,
-  width: 420,
-  display: "flex",
-  flexDirection: "column",
-  gap: 10,
-};
-
-const label = { fontSize: 12, fontWeight: 600 };
-const readonlyBox = {
-  padding: "10px 12px",
-  borderRadius: 8,
-  background: "#f1f5f9",
-  border: "1px solid #cbd5e1",
-};
