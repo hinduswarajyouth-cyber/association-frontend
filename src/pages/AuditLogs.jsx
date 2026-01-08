@@ -6,42 +6,65 @@ export default function AuditLogs() {
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [search, setSearch] = useState("");
 
+  /* =========================
+     LOAD AUDIT LOGS
+  ========================= */
   useEffect(() => {
     api
-      .get("/admin/audit-logs") // ✅ FINAL & CORRECT
+      .get("/admin/audit-logs") // ✅ FINAL
       .then((res) => {
         const data = Array.isArray(res.data)
           ? res.data
-          : Array.isArray(res.data.logs)
+          : Array.isArray(res.data?.logs)
           ? res.data.logs
           : [];
 
         setLogs(data);
       })
       .catch((err) => {
-        console.error("Audit logs error:", err);
+        console.error("Audit logs error 👉", err);
         setError("Failed to load audit logs");
       })
       .finally(() => setLoading(false));
   }, []);
+
+  /* =========================
+     SEARCH FILTER
+  ========================= */
+  const filteredLogs = logs.filter((l) => {
+    const q = search.toLowerCase();
+    return (
+      l.action?.toLowerCase().includes(q) ||
+      l.entity?.toLowerCase().includes(q) ||
+      l.performed_by?.toLowerCase().includes(q)
+    );
+  });
 
   return (
     <>
       <Navbar />
 
       <div style={page}>
-        <h1 style={title}>Audit Logs</h1>
+        <h1 style={title}>🛡 Audit Logs</h1>
+
+        {/* SEARCH */}
+        <input
+          style={searchInput}
+          placeholder="Search action / entity / user..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
 
         {loading && <p style={infoText}>Loading audit logs...</p>}
-
         {error && <p style={errorText}>{error}</p>}
 
-        {!loading && !error && logs.length === 0 && (
+        {!loading && !error && filteredLogs.length === 0 && (
           <p style={infoText}>No audit logs found</p>
         )}
 
-        {!loading && logs.length > 0 && (
+        {!loading && filteredLogs.length > 0 && (
           <div style={tableWrapper}>
             <table style={table}>
               <thead>
@@ -49,16 +72,18 @@ export default function AuditLogs() {
                   <th>Date</th>
                   <th>Action</th>
                   <th>Entity</th>
-                  <th>ID</th>
+                  <th>Entity ID</th>
                   <th>Performed By</th>
-                  <th>Details</th>
+                  <th>Metadata</th>
                 </tr>
               </thead>
 
               <tbody>
-                {logs.map((l, i) => (
-                  <tr key={l.id || i}>
-                    <td>{new Date(l.created_at).toLocaleString()}</td>
+                {filteredLogs.map((l) => (
+                  <tr key={l.id}>
+                    <td>
+                      {new Date(l.created_at).toLocaleString()}
+                    </td>
 
                     <td>
                       <span style={actionBadge(l.action)}>
@@ -67,13 +92,17 @@ export default function AuditLogs() {
                     </td>
 
                     <td>{l.entity || "-"}</td>
-                    <td>{l.entity_id || "-"}</td>
+                    <td>{l.entity_id ?? "-"}</td>
                     <td>{l.performed_by || "System"}</td>
 
                     <td>
-                      {l.metadata ? (
+                      {l.meta || l.metadata ? (
                         <pre style={metaStyle}>
-                          {JSON.stringify(l.metadata, null, 2)}
+                          {JSON.stringify(
+                            l.meta || l.metadata,
+                            null,
+                            2
+                          )}
                         </pre>
                       ) : (
                         "-"
@@ -91,7 +120,7 @@ export default function AuditLogs() {
 }
 
 /* =========================
-   🎨 STYLES – ENTERPRISE
+   🎨 STYLES (POLISHED)
 ========================= */
 
 const page = {
@@ -102,14 +131,23 @@ const page = {
 };
 
 const title = {
-  fontSize: "26px",
+  fontSize: 26,
   fontWeight: 700,
-  marginBottom: "18px",
+  marginBottom: 16,
   color: "#0f172a",
 };
 
+const searchInput = {
+  width: 320,
+  padding: 10,
+  marginBottom: 20,
+  borderRadius: 8,
+  border: "1px solid #cbd5f5",
+  outline: "none",
+};
+
 const infoText = {
-  fontSize: "14px",
+  fontSize: 14,
   fontWeight: 500,
   color: "#475569",
 };
@@ -121,7 +159,7 @@ const errorText = {
 
 const tableWrapper = {
   background: "#ffffff",
-  borderRadius: "12px",
+  borderRadius: 12,
   overflow: "auto",
   maxHeight: "72vh",
   boxShadow: "0 10px 25px rgba(0,0,0,0.08)",
@@ -132,28 +170,32 @@ const table = {
   borderCollapse: "collapse",
 };
 
-const actionBadge = (action) => ({
-  padding: "4px 10px",
-  borderRadius: "20px",
-  fontSize: "12px",
+const actionBadge = (action = "") => ({
+  padding: "4px 12px",
+  borderRadius: 20,
+  fontSize: 12,
   fontWeight: 700,
   color: "#fff",
   background:
-    action?.includes("CREATE")
+    action.includes("DELETE")
+      ? "#dc2626"
+      : action.includes("UPDATE")
+      ? "#f59e0b"
+      : action.includes("APPROVE")
       ? "#16a34a"
-      : action?.includes("EDIT")
-      ? "#2563eb"
-      : action?.includes("APPROVE")
-      ? "#9333ea"
+      : action.includes("LOGIN")
+      ? "#0ea5e9"
       : "#475569",
 });
 
 const metaStyle = {
-  fontSize: "11px",
+  fontSize: 11,
   background: "#f1f5f9",
-  padding: "6px",
-  borderRadius: "6px",
-  maxWidth: "320px",
+  padding: 8,
+  borderRadius: 6,
+  maxWidth: 320,
+  maxHeight: 120,
+  overflow: "auto",
   whiteSpace: "pre-wrap",
   color: "#334155",
 };
