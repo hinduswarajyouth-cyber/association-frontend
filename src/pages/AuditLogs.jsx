@@ -13,15 +13,10 @@ export default function AuditLogs() {
   ========================= */
   useEffect(() => {
     api
-      .get("/admin/audit-logs") // ✅ FINAL
+      .get("/api/admin/audit-logs") // ✅ FINAL & CORRECT
       .then((res) => {
-        const data = Array.isArray(res.data)
-          ? res.data
-          : Array.isArray(res.data?.logs)
-          ? res.data.logs
-          : [];
-
-        setLogs(data);
+        setLogs(Array.isArray(res.data) ? res.data : []);
+        setError("");
       })
       .catch((err) => {
         console.error("Audit logs error 👉", err);
@@ -49,7 +44,6 @@ export default function AuditLogs() {
       <div style={page}>
         <h1 style={title}>🛡 Audit Logs</h1>
 
-        {/* SEARCH */}
         <input
           style={searchInput}
           placeholder="Search action / entity / user..."
@@ -81,9 +75,7 @@ export default function AuditLogs() {
               <tbody>
                 {filteredLogs.map((l) => (
                   <tr key={l.id}>
-                    <td>
-                      {new Date(l.created_at).toLocaleString()}
-                    </td>
+                    <td>{new Date(l.created_at).toLocaleString()}</td>
 
                     <td>
                       <span style={actionBadge(l.action)}>
@@ -96,13 +88,9 @@ export default function AuditLogs() {
                     <td>{l.performed_by || "System"}</td>
 
                     <td>
-                      {l.meta || l.metadata ? (
+                      {l.metadata ? (
                         <pre style={metaStyle}>
-                          {JSON.stringify(
-                            l.meta || l.metadata,
-                            null,
-                            2
-                          )}
+                          {JSON.stringify(l.metadata, null, 2)}
                         </pre>
                       ) : (
                         "-"
@@ -120,21 +108,19 @@ export default function AuditLogs() {
 }
 
 /* =========================
-   🎨 STYLES (POLISHED)
+   🎨 STYLES
 ========================= */
 
 const page = {
   padding: "28px 40px",
   background: "#f4f6fa",
   minHeight: "100vh",
-  fontFamily: "Inter, Segoe UI, sans-serif",
 };
 
 const title = {
   fontSize: 26,
   fontWeight: 700,
   marginBottom: 16,
-  color: "#0f172a",
 };
 
 const searchInput = {
@@ -143,13 +129,11 @@ const searchInput = {
   marginBottom: 20,
   borderRadius: 8,
   border: "1px solid #cbd5f5",
-  outline: "none",
 };
 
 const infoText = {
-  fontSize: 14,
-  fontWeight: 500,
   color: "#475569",
+  fontWeight: 500,
 };
 
 const errorText = {
@@ -158,7 +142,7 @@ const errorText = {
 };
 
 const tableWrapper = {
-  background: "#ffffff",
+  background: "#fff",
   borderRadius: 12,
   overflow: "auto",
   maxHeight: "72vh",
@@ -197,5 +181,4 @@ const metaStyle = {
   maxHeight: 120,
   overflow: "auto",
   whiteSpace: "pre-wrap",
-  color: "#334155",
 };
