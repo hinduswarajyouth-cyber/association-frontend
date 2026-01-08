@@ -2,6 +2,12 @@ import { useEffect, useState } from "react";
 import api from "../api/api";
 import Navbar from "../components/Navbar";
 
+/* =========================
+   CONSTANTS
+========================= */
+const UPI_ID = "hinduswarajyouth@ybl";
+const PAYEE_NAME = "Hindu Swarajya Youth";
+
 export default function MemberContribution() {
   const [funds, setFunds] = useState([]);
   const [contributions, setContributions] = useState([]);
@@ -21,21 +27,33 @@ export default function MemberContribution() {
   }, []);
 
   const loadFunds = async () => {
-    try {
-      const res = await api.get("/funds/list");
-      setFunds(res.data || []); // ✅ FIX
-    } catch (err) {
-      console.error("LOAD FUNDS ERROR 👉", err);
-    }
+    const res = await api.get("/funds/list");
+    setFunds(res.data || []);
   };
 
   const loadContributions = async () => {
-    try {
-      const res = await api.get("/members/contributions");
-      setContributions(res.data || []); // ✅ FIX
-    } catch (err) {
-      console.error("LOAD CONTRIBUTIONS ERROR 👉", err);
+    const res = await api.get("/members/contributions");
+    setContributions(res.data || []);
+  };
+
+  /* =========================
+     UPI PAY NOW
+  ========================= */
+  const openUpiApp = () => {
+    if (!amount) {
+      alert("Enter amount first");
+      return;
     }
+
+    const note = "Association Contribution";
+    const upiUrl =
+      `upi://pay?pa=${UPI_ID}` +
+      `&pn=${encodeURIComponent(PAYEE_NAME)}` +
+      `&am=${amount}` +
+      `&cu=INR` +
+      `&tn=${encodeURIComponent(note)}`;
+
+    window.location.href = upiUrl;
   };
 
   /* =========================
@@ -43,7 +61,7 @@ export default function MemberContribution() {
   ========================= */
   const submit = async () => {
     if (!fundId || !amount) {
-      alert("Please fill all required fields");
+      alert("Please select fund and amount");
       return;
     }
 
@@ -80,27 +98,29 @@ export default function MemberContribution() {
      DOWNLOAD RECEIPT
   ========================= */
   const downloadReceipt = async (receiptNo) => {
-    try {
-      const res = await api.get(
-        `/receipts/pdf/${receiptNo}`,
-        { responseType: "blob" }
-      );
+    const res = await api.get(`/receipts/pdf/${receiptNo}`, {
+      responseType: "blob",
+    });
 
-      const blob = new Blob([res.data], { type: "application/pdf" });
-      const url = window.URL.createObjectURL(blob);
+    const blob = new Blob([res.data], { type: "application/pdf" });
+    const url = window.URL.createObjectURL(blob);
 
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${receiptNo}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${receiptNo}.pdf`;
+    a.click();
 
-      window.URL.revokeObjectURL(url);
-    } catch (err) {
-      alert("Failed to download receipt");
-    }
+    window.URL.revokeObjectURL(url);
   };
+
+  /* =========================
+     UPI QR
+  ========================= */
+  const upiQrUrl = amount
+    ? `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(
+        `upi://pay?pa=${UPI_ID}&pn=${PAYEE_NAME}&am=${amount}&cu=INR`
+      )}`
+    : null;
 
   return (
     <>
@@ -109,6 +129,7 @@ export default function MemberContribution() {
       <div style={container}>
         <h2>💰 New Contribution</h2>
 
+        {/* FUND */}
         <select
           value={fundId}
           onChange={(e) => setFundId(e.target.value)}
@@ -122,6 +143,20 @@ export default function MemberContribution() {
           ))}
         </select>
 
+        {/* QUICK AMOUNTS */}
+        <div style={quickRow}>
+          {[116, 216, 516].map((v) => (
+            <button
+              key={v}
+              onClick={() => setAmount(v)}
+              style={quickBtn}
+            >
+              ₹{v}
+            </button>
+          ))}
+        </div>
+
+        {/* AMOUNT */}
         <input
           type="number"
           placeholder="Amount"
@@ -130,29 +165,51 @@ export default function MemberContribution() {
           style={input}
         />
 
+        {/* PAYMENT MODE */}
         <select
           value={paymentMode}
           onChange={(e) => setPaymentMode(e.target.value)}
           style={input}
         >
           <option value="CASH">Cash</option>
-          <option value="UPI">UPI</option>
+          <option value="UPI">UPI (GPay / PhonePe)</option>
           <option value="BANK">Bank Transfer</option>
         </select>
 
+        {/* UPI PAY NOW */}
+        {paymentMode === "UPI" && (
+          <>
+            <button style={upiBtn} onClick={openUpiApp}>
+              📲 Pay Now via UPI
+            </button>
+
+            {upiQrUrl && (
+              <div style={{ textAlign: "center", marginBottom: 15 }}>
+                <p>Scan & Pay</p>
+                <img src={upiQrUrl} alt="UPI QR" />
+                <p style={{ fontSize: 12 }}>
+                  UPI ID: <b>{UPI_ID}</b>
+                </p>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* REFERENCE */}
         {paymentMode !== "CASH" && (
           <input
-            placeholder="Reference No"
+            placeholder="UPI / Bank Reference No"
             value={referenceNo}
             onChange={(e) => setReferenceNo(e.target.value)}
             style={input}
           />
         )}
 
-        <button onClick={submit} disabled={loading} style={btn}>
+        <button onClick={submit} disabled={loading} style={submitBtn}>
           {loading ? "Submitting..." : "Submit Contribution"}
         </button>
 
+        {/* HISTORY */}
         <h3 style={{ marginTop: 40 }}>📜 My Contributions</h3>
 
         {contributions.length === 0 ? (
@@ -198,7 +255,9 @@ export default function MemberContribution() {
                   </td>
                   <td>
                     {c.status === "APPROVED" ? (
-                      <button onClick={() => downloadReceipt(c.receipt_no)}>
+                      <button
+                        onClick={() => downloadReceipt(c.receipt_no)}
+                      >
                         Download PDF
                       </button>
                     ) : (
@@ -220,12 +279,44 @@ export default function MemberContribution() {
 ========================= */
 const container = { padding: 30, maxWidth: 800 };
 const input = { width: "100%", padding: 10, marginBottom: 12 };
-const btn = {
-  width: "100%",
-  padding: 12,
-  background: "#2e7d32",
-  color: "#fff",
-  border: "none",
+
+const quickRow = {
+  display: "flex",
+  gap: 10,
+  marginBottom: 10,
+};
+
+const quickBtn = {
+  padding: "6px 14px",
+  borderRadius: 20,
+  border: "1px solid #2563eb",
+  background: "#eff6ff",
   cursor: "pointer",
 };
-const table = { width: "100%", borderCollapse: "collapse", marginTop: 15 };
+
+const upiBtn = {
+  width: "100%",
+  padding: 12,
+  background: "#0f9d58",
+  color: "#fff",
+  border: "none",
+  borderRadius: 8,
+  marginBottom: 12,
+  cursor: "pointer",
+};
+
+const submitBtn = {
+  width: "100%",
+  padding: 12,
+  background: "#2563eb",
+  color: "#fff",
+  border: "none",
+  borderRadius: 8,
+  cursor: "pointer",
+};
+
+const table = {
+  width: "100%",
+  borderCollapse: "collapse",
+  marginTop: 15,
+};

@@ -3,13 +3,11 @@ import api from "../api/api";
 import Navbar from "../components/Navbar";
 
 /* =========================
-   🔐 GET ROLE FROM JWT
+   🔐 ROLE FROM STORAGE
 ========================= */
 const getRole = () => {
   try {
-    const token = localStorage.getItem("token");
-    if (!token) return null;
-    return JSON.parse(atob(token.split(".")[1])).role;
+    return JSON.parse(localStorage.getItem("user"))?.role || null;
   } catch {
     return null;
   }
@@ -18,7 +16,12 @@ const getRole = () => {
 const ROLE = getRole();
 
 const ADMIN_ROLES = ["SUPER_ADMIN", "PRESIDENT"];
-const OFFICE_ROLES = ["GENERAL_SECRETARY", "JOINT_SECRETARY", "EC_MEMBER"];
+const OFFICE_ROLES = [
+  "VICE_PRESIDENT",
+  "GENERAL_SECRETARY",
+  "JOINT_SECRETARY",
+  "EC_MEMBER",
+];
 
 const STATUS_COLORS = {
   OPEN: "#fde68a",
@@ -33,7 +36,6 @@ export default function Complaint() {
   const [dashboard, setDashboard] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  /* COMMENTS */
   const [comments, setComments] = useState({});
   const [commentInput, setCommentInput] = useState({});
 
@@ -54,7 +56,6 @@ export default function Complaint() {
         setDashboard(res.data);
       });
     }
-    // eslint-disable-next-line
   }, []);
 
   const loadComplaints = async () => {
@@ -68,8 +69,7 @@ export default function Complaint() {
         res = await api.get("/api/complaints/all");
       }
       setComplaints(res.data || []);
-    } catch (err) {
-      console.error("LOAD COMPLAINTS ERROR 👉", err);
+    } catch {
       alert("Failed to load complaints");
     } finally {
       setLoading(false);
@@ -77,7 +77,7 @@ export default function Complaint() {
   };
 
   /* =========================
-     CREATE COMPLAINT (MEMBER)
+     CREATE COMPLAINT
   ========================= */
   const submitComplaint = async () => {
     if (!form.subject || !form.description) {
@@ -91,10 +91,9 @@ export default function Complaint() {
   };
 
   /* =========================
-     ADMIN → ASSIGN
+     PRESIDENT → ASSIGN
   ========================= */
   const assignComplaint = async (id, role) => {
-    if (!role) return alert("Select role");
     await api.put(`/api/complaints/assign/${id}`, { assigned_role: role });
     loadComplaints();
   };
@@ -103,8 +102,16 @@ export default function Complaint() {
      OFFICE → UPDATE STATUS
   ========================= */
   const updateStatus = async (id, status) => {
-    if (!status) return;
     await api.put(`/api/complaints/update/${id}`, { status });
+    loadComplaints();
+  };
+
+  /* =========================
+     PRESIDENT → CLOSE
+  ========================= */
+  const closeComplaint = async (id) => {
+    if (!window.confirm("Close this complaint?")) return;
+    await api.put(`/api/complaints/close/${id}`);
     loadComplaints();
   };
 
@@ -113,17 +120,14 @@ export default function Complaint() {
   ========================= */
   const loadComments = async (id) => {
     const res = await api.get(`/api/complaints/${id}/comments`);
-    setComments((prev) => ({ ...prev, [id]: res.data || [] }));
+    setComments((p) => ({ ...p, [id]: res.data || [] }));
   };
 
   const addComment = async (id) => {
-    if (!commentInput[id]) return alert("Comment required");
-
-    await api.post(`/api/complaints/${id}/comment`, {
+    await api.post(`/api/complaints/comment/${id}`, {
       comment: commentInput[id],
     });
-
-    setCommentInput((prev) => ({ ...prev, [id]: "" }));
+    setCommentInput((p) => ({ ...p, [id]: "" }));
     loadComments(id);
   };
 
@@ -134,161 +138,101 @@ export default function Complaint() {
       <div style={page}>
         <h2>📮 Complaint Management</h2>
 
-        {/* ================= DASHBOARD ================= */}
+        {/* DASHBOARD */}
         {dashboard && (
           <div style={dashboardRow}>
             {Object.entries(dashboard).map(([k, v]) => (
               <div key={k} style={dashboardCard}>
-                <div style={{ fontSize: 13, color: "#64748b" }}>
-                  {k.replaceAll("_", " ")}
-                </div>
-                <strong style={{ fontSize: 22 }}>{v}</strong>
+                <small>{k.replace("_", " ")}</small>
+                <h2>{v}</h2>
               </div>
             ))}
           </div>
         )}
 
-        {/* ================= CREATE ================= */}
-        {ROLE === "MEMBER" && (
-          <div style={card}>
-            <h3>Create Complaint</h3>
+        {/* CREATE */}
+        <div style={card}>
+          <h3>Create Complaint</h3>
+          <input
+            style={input}
+            placeholder="Subject"
+            value={form.subject}
+            onChange={(e) => setForm({ ...form, subject: e.target.value })}
+          />
+          <textarea
+            style={textarea}
+            placeholder="Description"
+            value={form.description}
+            onChange={(e) => setForm({ ...form, description: e.target.value })}
+          />
+          <button style={btnPrimary} onClick={submitComplaint}>
+            Submit
+          </button>
+        </div>
 
-            <input
-              style={input}
-              placeholder="Subject"
-              value={form.subject}
-              onChange={(e) =>
-                setForm({ ...form, subject: e.target.value })
-              }
-            />
-
-            <textarea
-              style={textarea}
-              placeholder="Description"
-              value={form.description}
-              onChange={(e) =>
-                setForm({ ...form, description: e.target.value })
-              }
-            />
-
-            <select
-              style={input}
-              value={form.priority}
-              onChange={(e) =>
-                setForm({ ...form, priority: e.target.value })
-              }
-            >
-              <option value="NORMAL">Normal</option>
-              <option value="HIGH">High</option>
-            </select>
-
-            <button style={btnPrimary} onClick={submitComplaint}>
-              Submit Complaint
-            </button>
-          </div>
-        )}
-
-        {/* ================= LIST ================= */}
-        <h3>Complaints</h3>
-
-        {loading && <p>Loading complaints...</p>}
-        {!loading && complaints.length === 0 && <p>No complaints found</p>}
-
+        {/* LIST */}
+        {loading && <p>Loading...</p>}
         {complaints.map((c) => (
           <div key={c.id} style={card}>
             <div style={cardHeader}>
               <strong>{c.subject}</strong>
-              <span
-                style={{
-                  ...badge,
-                  background: STATUS_COLORS[c.status],
-                }}
-              >
+              <span style={{ ...badge, background: STATUS_COLORS[c.status] }}>
                 {c.status}
               </span>
             </div>
 
             <p>{c.description}</p>
 
-            {/* ADMIN ASSIGN */}
-            {ADMIN_ROLES.includes(ROLE) && (
-              <div style={actionRow}>
-                <select
-                  onChange={(e) =>
-                    assignComplaint(c.id, e.target.value)
-                  }
-                >
-                  <option value="">Assign to</option>
-                  {OFFICE_ROLES.map((r) => (
-                    <option key={r} value={r}>
-                      {r.replaceAll("_", " ")}
-                    </option>
-                  ))}
-                </select>
-              </div>
+            {/* ASSIGN */}
+            {ADMIN_ROLES.includes(ROLE) && c.status !== "CLOSED" && (
+              <select onChange={(e) => assignComplaint(c.id, e.target.value)}>
+                <option>Assign to</option>
+                {OFFICE_ROLES.map((r) => (
+                  <option key={r}>{r}</option>
+                ))}
+              </select>
             )}
 
-            {/* OFFICE UPDATE */}
+            {/* OFFICE STATUS */}
             {OFFICE_ROLES.includes(ROLE) && (
-              <div style={actionRow}>
-                <select
-                  onChange={(e) =>
-                    updateStatus(c.id, e.target.value)
-                  }
-                >
-                  <option value="">Update Status</option>
-                  <option value="IN_PROGRESS">In Progress</option>
-                  <option value="RESOLVED">Resolved</option>
-                </select>
-              </div>
+              <select onChange={(e) => updateStatus(c.id, e.target.value)}>
+                <option>Update status</option>
+                <option value="IN_PROGRESS">In Progress</option>
+                <option value="RESOLVED">Resolved</option>
+              </select>
             )}
 
-            {/* ================= COMMENTS ================= */}
-            <div style={{ marginTop: 12 }}>
-              <button
-                style={commentToggle}
-                onClick={() => loadComments(c.id)}
-              >
-                💬 View Comments
+            {/* PRESIDENT CLOSE */}
+            {ADMIN_ROLES.includes(ROLE) && c.status === "RESOLVED" && (
+              <button style={btnDanger} onClick={() => closeComplaint(c.id)}>
+                Close Complaint
               </button>
+            )}
 
-              {comments[c.id] && (
-                <div style={commentBox}>
-                  {comments[c.id].length === 0 && (
-                    <p style={{ fontSize: 13 }}>No comments yet</p>
-                  )}
+            {/* COMMENTS */}
+            <button style={commentToggle} onClick={() => loadComments(c.id)}>
+              💬 Comments
+            </button>
 
-                  {comments[c.id].map((cm, i) => (
-                    <div key={i} style={commentItem}>
-                      <strong>{cm.created_by}</strong>
-                      <p>{cm.comment}</p>
-                      <small>
-                        {new Date(cm.created_at).toLocaleString()}
-                      </small>
-                    </div>
-                  ))}
+            {comments[c.id]?.map((cm, i) => (
+              <div key={i} style={commentItem}>
+                <strong>{cm.created_by}</strong>
+                <p>{cm.comment}</p>
+              </div>
+            ))}
 
-                  <textarea
-                    style={commentInputStyle}
-                    placeholder="Add comment..."
-                    value={commentInput[c.id] || ""}
-                    onChange={(e) =>
-                      setCommentInput((prev) => ({
-                        ...prev,
-                        [c.id]: e.target.value,
-                      }))
-                    }
-                  />
-
-                  <button
-                    style={btnPrimary}
-                    onClick={() => addComment(c.id)}
-                  >
-                    Add Comment
-                  </button>
-                </div>
-              )}
-            </div>
+            {OFFICE_ROLES.includes(ROLE) && (
+              <>
+                <textarea
+                  style={commentInputStyle}
+                  value={commentInput[c.id] || ""}
+                  onChange={(e) =>
+                    setCommentInput({ ...commentInput, [c.id]: e.target.value })
+                  }
+                />
+                <button onClick={() => addComment(c.id)}>Add Comment</button>
+              </>
+            )}
           </div>
         ))}
       </div>
@@ -300,81 +244,15 @@ export default function Complaint() {
    🎨 STYLES
 ========================= */
 const page = { padding: 30, background: "#f1f5f9", minHeight: "100vh" };
-
-const dashboardRow = {
-  display: "grid",
-  gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))",
-  gap: 16,
-  marginBottom: 25,
-};
-
-const dashboardCard = {
-  background: "#fff",
-  padding: 16,
-  borderRadius: 12,
-  textAlign: "center",
-};
-
-const card = {
-  background: "#fff",
-  padding: 18,
-  borderRadius: 12,
-  marginBottom: 16,
-};
-
-const cardHeader = {
-  display: "flex",
-  justifyContent: "space-between",
-  alignItems: "center",
-};
-
-const badge = {
-  padding: "4px 10px",
-  borderRadius: 12,
-  fontSize: 12,
-  fontWeight: 600,
-};
-
-const actionRow = { display: "flex", gap: 10, marginTop: 12 };
-
-const input = { width: 320, padding: 8, marginBottom: 10 };
+const dashboardRow = { display: "flex", gap: 16 };
+const dashboardCard = { background: "#fff", padding: 16, borderRadius: 12 };
+const card = { background: "#fff", padding: 18, borderRadius: 12, marginBottom: 16 };
+const cardHeader = { display: "flex", justifyContent: "space-between" };
+const badge = { padding: "4px 10px", borderRadius: 12 };
+const input = { width: 320, padding: 8 };
 const textarea = { width: 320, height: 90, padding: 8 };
-
-const btnPrimary = {
-  background: "#2563eb",
-  color: "#fff",
-  border: "none",
-  padding: "8px 16px",
-  borderRadius: 8,
-  cursor: "pointer",
-};
-
-const commentToggle = {
-  background: "#e5e7eb",
-  border: "none",
-  padding: "6px 10px",
-  borderRadius: 6,
-  cursor: "pointer",
-};
-
-const commentBox = {
-  background: "#f8fafc",
-  padding: 12,
-  borderRadius: 10,
-  marginTop: 8,
-};
-
-const commentItem = {
-  borderBottom: "1px solid #e5e7eb",
-  paddingBottom: 6,
-  marginBottom: 6,
-};
-
-const commentInputStyle = {
-  width: "100%",
-  minHeight: 60,
-  padding: 8,
-  borderRadius: 6,
-  border: "1px solid #cbd5f5",
-  marginBottom: 8,
-};
+const btnPrimary = { background: "#2563eb", color: "#fff", padding: "8px 16px" };
+const btnDanger = { background: "#dc2626", color: "#fff", padding: "6px 12px" };
+const commentToggle = { marginTop: 10 };
+const commentItem = { borderTop: "1px solid #e5e7eb", marginTop: 6 };
+const commentInputStyle = { width: "100%", height: 60 };
