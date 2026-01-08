@@ -4,6 +4,9 @@ import { useAuth } from "../context/AuthContext";
 import api from "../api/api";
 import bg from "../assets/login-bg.png";
 
+/* =========================
+   FINAL LOGIN (NO FLICKER)
+========================= */
 export default function Login() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -13,6 +16,9 @@ export default function Login() {
   const navigate = useNavigate();
   const { login } = useAuth();
 
+  /* =========================
+     HANDLE LOGIN
+  ========================= */
   const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
@@ -25,7 +31,7 @@ export default function Login() {
       });
 
       /**
-       * Expected backend response:
+       * Backend response:
        * {
        *   token,
        *   user: { id, name, username },
@@ -35,36 +41,20 @@ export default function Login() {
        */
       const { token, user, role, isFirstLogin } = res.data;
 
-      // ✅ SAVE AUTH
+      // ✅ SAVE AUTH (updates context + localStorage)
       login(token, { ...user, role });
 
-      // 🔁 FORCE PASSWORD CHANGE
+      // 🔐 FIRST LOGIN → FORCE PASSWORD CHANGE
       if (isFirstLogin) {
         navigate("/change-password", { replace: true });
         return;
       }
 
-      // ✅ FINAL ROLE-BASED REDIRECT (FIXED)
-      if (["SUPER_ADMIN", "PRESIDENT"].includes(role)) {
+      // ✅ SINGLE DASHBOARD FOR ALL ROLES
+      // ⏳ Wait one tick to allow AuthContext to update
+      setTimeout(() => {
         navigate("/dashboard", { replace: true });
-
-      } else if (
-        [
-          "EC_MEMBER",
-          "VICE_PRESIDENT",
-          "GENERAL_SECRETARY",
-          "JOINT_SECRETARY",
-        ].includes(role)
-      ) {
-        navigate("/dashboard", { replace: true });
-
-      } else if (role === "TREASURER") {
-        navigate("/treasurer-dashboard", { replace: true });
-
-      } else {
-        // MEMBER / VOLUNTEER
-        navigate("/member", { replace: true });
-      }
+      }, 0);
 
     } catch (err) {
       console.error("LOGIN ERROR 👉", err);
@@ -74,6 +64,9 @@ export default function Login() {
     }
   };
 
+  /* =========================
+     UI
+  ========================= */
   return (
     <div style={page}>
       <img src={bg} alt="Background" style={bgImage} />
@@ -95,6 +88,7 @@ export default function Login() {
               onChange={(e) => setUsername(e.target.value)}
               required
               style={input}
+              autoComplete="username"
             />
 
             <input
@@ -104,6 +98,7 @@ export default function Login() {
               onChange={(e) => setPassword(e.target.value)}
               required
               style={input}
+              autoComplete="current-password"
             />
 
             <button type="submit" style={btn} disabled={loading}>

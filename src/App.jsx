@@ -3,32 +3,36 @@ import { useAuth } from "./context/AuthContext";
 import PrivateRoute from "./PrivateRoute";
 import Footer from "./components/Footer";
 
-/* PUBLIC */
+/* =========================
+   PUBLIC
+========================= */
 import Login from "./pages/Login";
 import ForgotPassword from "./pages/ForgotPassword";
 
-/* COMMON */
-import Complaint from "./pages/Complaint";
-import ChangePassword from "./pages/ChangePassword";
-import Profile from "./pages/Profile";
-import Meetings from "./pages/Meetings";
-
-/* DASHBOARD (SINGLE) */
+/* =========================
+   COMMON (ALL ROLES)
+========================= */
 import Dashboard from "./pages/Dashboard";
+import Complaint from "./pages/Complaint";
+import Meetings from "./pages/Meetings";
+import Announcements from "./pages/Announcements";
+import SuggestionBox from "./pages/SuggestionBox";
+import Profile from "./pages/Profile";
+import ChangePassword from "./pages/ChangePassword";
 
-/* ADMIN */
+/* =========================
+   ADMIN / OFFICE
+========================= */
 import Members from "./pages/Members";
 import AddMember from "./pages/AddMember";
 import Funds from "./pages/Funds";
 import Reports from "./pages/Reports";
 import AuditLogs from "./pages/AuditLogs";
 
-/* CONTRIBUTIONS */
+/* =========================
+   CONTRIBUTIONS
+========================= */
 import MemberContributions from "./pages/MemberContributions";
-
-/* EXTRA */
-import Announcements from "./pages/Announcements";
-import SuggestionBox from "./pages/SuggestionBox";
 
 /* =========================
    AUTH GATE
@@ -48,16 +52,14 @@ export default function App() {
     <>
       <AuthGate>
         <Routes>
-          {/* DEFAULT */}
+          {/* ================= DEFAULT ================= */}
           <Route path="/" element={<Navigate to="/login" replace />} />
 
-          {/* PUBLIC */}
+          {/* ================= PUBLIC ================= */}
           <Route path="/login" element={<Login />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
 
-          {/* =========================
-              ✅ SINGLE DASHBOARD (ALL ROLES)
-          ========================= */}
+          {/* ================= DASHBOARD (ALL ROLES) ================= */}
           <Route
             path="/dashboard"
             element={
@@ -65,12 +67,13 @@ export default function App() {
                 allowedRoles={[
                   "SUPER_ADMIN",
                   "PRESIDENT",
+                  "TREASURER",
                   "VICE_PRESIDENT",
                   "GENERAL_SECRETARY",
                   "JOINT_SECRETARY",
                   "EC_MEMBER",
-                  "TREASURER",
                   "MEMBER",
+                  "VOLUNTEER",
                 ]}
               >
                 <Dashboard />
@@ -78,7 +81,7 @@ export default function App() {
             }
           />
 
-          {/* ADMIN ONLY */}
+          {/* ================= MEMBERS (ADMIN) ================= */}
           <Route
             path="/members"
             element={
@@ -97,6 +100,7 @@ export default function App() {
             }
           />
 
+          {/* ================= FUNDS ================= */}
           <Route
             path="/funds"
             element={
@@ -106,6 +110,7 @@ export default function App() {
             }
           />
 
+          {/* ================= REPORTS ================= */}
           <Route
             path="/reports"
             element={
@@ -117,6 +122,7 @@ export default function App() {
             }
           />
 
+          {/* ================= AUDIT LOGS ================= */}
           <Route
             path="/audit-logs"
             element={
@@ -126,7 +132,7 @@ export default function App() {
             }
           />
 
-          {/* CONTRIBUTIONS – ALL ROLES */}
+          {/* ================= CONTRIBUTIONS (ALL ROLES) ================= */}
           <Route
             path="/contributions"
             element={
@@ -148,7 +154,7 @@ export default function App() {
             }
           />
 
-          {/* ANNOUNCEMENTS */}
+          {/* ================= ANNOUNCEMENTS ================= */}
           <Route
             path="/announcements"
             element={
@@ -170,7 +176,7 @@ export default function App() {
             }
           />
 
-          {/* SUGGESTIONS */}
+          {/* ================= SUGGESTIONS ================= */}
           <Route
             path="/suggestions"
             element={
@@ -192,7 +198,7 @@ export default function App() {
             }
           />
 
-          {/* COMPLAINTS */}
+          {/* ================= COMPLAINTS ================= */}
           <Route
             path="/complaints"
             element={
@@ -213,7 +219,7 @@ export default function App() {
             }
           />
 
-          {/* MEETINGS */}
+          {/* ================= MEETINGS ================= */}
           <Route
             path="/meetings"
             element={
@@ -235,7 +241,7 @@ export default function App() {
             }
           />
 
-          {/* PROFILE */}
+          {/* ================= PROFILE ================= */}
           <Route
             path="/profile"
             element={
@@ -253,7 +259,7 @@ export default function App() {
             }
           />
 
-          {/* CHANGE PASSWORD */}
+          {/* ================= CHANGE PASSWORD ================= */}
           <Route
             path="/change-password"
             element={
@@ -275,7 +281,7 @@ export default function App() {
             }
           />
 
-          {/* FALLBACK */}
+          {/* ================= FALLBACK ================= */}
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </AuthGate>
