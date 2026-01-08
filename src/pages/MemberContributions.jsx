@@ -9,20 +9,28 @@ const UPI_ID = "hinduswarajyouth@ybl";
 const PAYEE_NAME = "Hindu Swarajya Youth";
 
 export default function MemberContributions() {
+  const [funds, setFunds] = useState([]);
   const [contributions, setContributions] = useState([]);
 
-  const [fundName, setFundName] = useState("GENERAL");
+  const [fundId, setFundId] = useState("");
   const [amount, setAmount] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("CASH");
+  const [referenceNo, setReferenceNo] = useState("");
   const [note, setNote] = useState("");
   const [loading, setLoading] = useState(false);
 
   /* =========================
-     LOAD CONTRIBUTIONS
+     LOAD DATA
   ========================= */
   useEffect(() => {
+    loadFunds();
     loadContributions();
   }, []);
+
+  const loadFunds = async () => {
+    const res = await api.get("/funds/list");
+    setFunds(res.data?.funds || []);
+  };
 
   const loadContributions = async () => {
     const res = await api.get("/api/contributions/my");
@@ -50,23 +58,28 @@ export default function MemberContributions() {
      SUBMIT CONTRIBUTION
   ========================= */
   const submit = async () => {
-    if (!amount) return alert("Amount required");
+    if (!fundId || !amount) return alert("Fund & amount required");
+
+    if (paymentMethod !== "CASH" && !referenceNo)
+      return alert("Reference number required");
 
     setLoading(true);
     try {
-      await api.post("/api/contributions/submit", {
+      await api.post("/funds/contribute", {
+        fund_id: fundId,
         amount,
-        fund_name: fundName,
-        payment_method: paymentMethod,
+        payment_mode: paymentMethod,
+        reference_no: referenceNo || null,
         note,
       });
 
       alert("✅ Contribution submitted (Pending approval)");
 
       setAmount("");
+      setReferenceNo("");
       setNote("");
       setPaymentMethod("CASH");
-      setFundName("GENERAL");
+      setFundId("");
 
       loadContributions();
     } catch (err) {
@@ -77,13 +90,39 @@ export default function MemberContributions() {
   };
 
   /* =========================
+     RECEIPT DOWNLOAD
+  ========================= */
+  const downloadReceipt = async (receiptNo) => {
+    const res = await api.get(`/receipts/pdf/${receiptNo}`, {
+      responseType: "blob",
+    });
+
+    const blob = new Blob([res.data], { type: "application/pdf" });
+    const url = window.URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${receiptNo}.pdf`;
+    a.click();
+
+    window.URL.revokeObjectURL(url);
+  };
+
+  /* =========================
+     RECEIPT VERIFY (PUBLIC)
+  ========================= */
+  const verifyUrl = (receiptNo) =>
+    `https://api.hinduswarajyouth.online/receipts/verify/${receiptNo}`;
+
+  /* =========================
      UPI QR
   ========================= */
-  const upiQrUrl = amount
-    ? `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(
-        `upi://pay?pa=${UPI_ID}&pn=${PAYEE_NAME}&am=${amount}&cu=INR`
-      )}`
-    : null;
+  const upiQrUrl =
+    amount && paymentMethod === "UPI"
+      ? `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(
+          `upi://pay?pa=${UPI_ID}&pn=${PAYEE_NAME}&am=${amount}&cu=INR`
+        )}`
+      : null;
 
   return (
     <>
@@ -92,13 +131,15 @@ export default function MemberContributions() {
       <div style={container}>
         <h2>💰 Contribution</h2>
 
-        {/* FUND NAME */}
-        <input
-          placeholder="Fund Name (GENERAL)"
-          value={fundName}
-          onChange={(e) => setFundName(e.target.value)}
-          style={input}
-        />
+        {/* FUND */}
+        <select value={fundId} onChange={(e) => setFundId(e.target.value)} style={input}>
+          <option value="">Select Fund</option>
+          {funds.map((f) => (
+            <option key={f.id} value={f.id}>
+              {f.fund_name}
+            </option>
+          ))}
+        </select>
 
         {/* QUICK AMOUNTS */}
         <div style={quickRow}>
@@ -118,7 +159,7 @@ export default function MemberContributions() {
           style={input}
         />
 
-        {/* PAYMENT METHOD */}
+        {/* PAYMENT MODE */}
         <select
           value={paymentMethod}
           onChange={(e) => setPaymentMethod(e.target.value)}
@@ -135,9 +176,8 @@ export default function MemberContributions() {
             <button style={upiBtn} onClick={openUpiApp}>
               📲 Pay via UPI
             </button>
-
             {upiQrUrl && (
-              <div style={{ textAlign: "center", marginBottom: 12 }}>
+              <div style={{ textAlign: "center" }}>
                 <img src={upiQrUrl} alt="UPI QR" />
                 <p style={{ fontSize: 12 }}>UPI ID: {UPI_ID}</p>
               </div>
@@ -145,7 +185,16 @@ export default function MemberContributions() {
           </>
         )}
 
-        {/* NOTE */}
+        {/* REF */}
+        {paymentMethod !== "CASH" && (
+          <input
+            placeholder="Reference No"
+            value={referenceNo}
+            onChange={(e) => setReferenceNo(e.target.value)}
+            style={input}
+          />
+        )}
+
         <textarea
           placeholder="Note (optional)"
           value={note}
@@ -163,7 +212,7 @@ export default function MemberContributions() {
         {contributions.length === 0 ? (
           <p>No contributions yet</p>
         ) : (
-          <table style={table}>
+          <table style={table} border="1" cellPadding="8">
             <thead>
               <tr>
                 <th>Fund</th>
@@ -171,6 +220,7 @@ export default function MemberContributions() {
                 <th>Method</th>
                 <th>Status</th>
                 <th>Date</th>
+                <th>Receipt</th>
               </tr>
             </thead>
             <tbody>
@@ -185,6 +235,8 @@ export default function MemberContributions() {
                         color:
                           c.payment_status === "APPROVED"
                             ? "green"
+                            : c.payment_status === "REJECTED"
+                            ? "red"
                             : "orange",
                       }}
                     >
@@ -192,6 +244,24 @@ export default function MemberContributions() {
                     </b>
                   </td>
                   <td>{new Date(c.created_at).toLocaleDateString()}</td>
+                  <td>
+                    {c.payment_status === "APPROVED" ? (
+                      <>
+                        <button onClick={() => downloadReceipt(c.receipt_no)}>
+                          PDF
+                        </button>{" "}
+                        <a
+                          href={verifyUrl(c.receipt_no)}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          Verify
+                        </a>
+                      </>
+                    ) : (
+                      "-"
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -205,40 +275,28 @@ export default function MemberContributions() {
 /* =========================
    STYLES
 ========================= */
-const container = { padding: 30, maxWidth: 800 };
+const container = { padding: 30, maxWidth: 850 };
 const input = { width: "100%", padding: 10, marginBottom: 12 };
-
 const quickRow = { display: "flex", gap: 10, marginBottom: 10 };
-
 const quickBtn = {
   padding: "6px 14px",
   borderRadius: 20,
   border: "1px solid #2563eb",
   background: "#eff6ff",
-  cursor: "pointer",
 };
-
 const upiBtn = {
   width: "100%",
   padding: 12,
   background: "#0f9d58",
   color: "#fff",
-  border: "none",
   borderRadius: 8,
   marginBottom: 12,
 };
-
 const submitBtn = {
   width: "100%",
   padding: 12,
   background: "#2563eb",
   color: "#fff",
-  border: "none",
   borderRadius: 8,
 };
-
-const table = {
-  width: "100%",
-  borderCollapse: "collapse",
-  marginTop: 15,
-};
+const table = { width: "100%", marginTop: 15 };
