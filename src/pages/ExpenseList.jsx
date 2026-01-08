@@ -13,7 +13,7 @@ export default function ExpenseList() {
   const loadExpenses = async () => {
     try {
       setLoading(true);
-      const res = await api.get("/expenses");
+      const res = await api.get("/api/expenses");
       setExpenses(res.data || []);
       setError("");
     } catch (err) {
@@ -34,7 +34,7 @@ export default function ExpenseList() {
     if (!window.confirm("Approve this expense?")) return;
 
     try {
-      await api.put(`/expenses/${id}/approve`);
+      await api.put(`/api/expenses/${id}/approve`);
       alert("✅ Expense approved");
       loadExpenses();
     } catch (err) {
@@ -50,7 +50,7 @@ export default function ExpenseList() {
     if (!reason) return;
 
     try {
-      await api.put(`/expenses/${id}/cancel`, { reason });
+      await api.put(`/api/expenses/${id}/cancel`, { reason });
       alert("❌ Expense cancelled");
       loadExpenses();
     } catch (err) {
@@ -63,7 +63,7 @@ export default function ExpenseList() {
       <Navbar />
 
       <div style={page}>
-        <h2 style={title}>📉 Expenses</h2>
+        <h2 style={title}>📊 Expense Dashboard</h2>
 
         {/* LOADING */}
         {loading && <p>Loading expenses…</p>}
@@ -99,12 +99,10 @@ export default function ExpenseList() {
 
                     <td>{e.fund_name || `Fund #${e.fund_id}`}</td>
 
-                    <td>
-                      ₹{Number(e.amount).toLocaleString("en-IN")}
-                    </td>
+                    <td>₹{Number(e.amount).toLocaleString("en-IN")}</td>
 
                     <td>
-                      {new Date(e.expense_date).toLocaleDateString()}
+                      {new Date(e.expense_date).toLocaleDateString("en-IN")}
                     </td>
 
                     <td>
@@ -147,7 +145,7 @@ export default function ExpenseList() {
 }
 
 /* =========================
-   STYLES
+   🎨 STYLES
 ========================= */
 const page = {
   padding: 30,
@@ -157,6 +155,7 @@ const page = {
 
 const title = {
   marginBottom: 20,
+  fontWeight: 700,
 };
 
 const card = {
@@ -180,28 +179,30 @@ const approveBtn = {
   background: "#16a34a",
   color: "#fff",
   border: "none",
-  padding: "6px 10px",
+  padding: "6px 12px",
   borderRadius: 6,
   cursor: "pointer",
+  fontWeight: 600,
 };
 
 const cancelBtn = {
   background: "#dc2626",
   color: "#fff",
   border: "none",
-  padding: "6px 10px",
+  padding: "6px 12px",
   borderRadius: 6,
   cursor: "pointer",
+  fontWeight: 600,
 };
 
 /* =========================
    STATUS BADGE
 ========================= */
 const statusBadge = (status) => ({
-  padding: "4px 10px",
+  padding: "4px 12px",
   borderRadius: 20,
   fontSize: 12,
-  fontWeight: 600,
+  fontWeight: 700,
   color: "#fff",
   background:
     status === "APPROVED"
