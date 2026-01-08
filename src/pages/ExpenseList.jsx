@@ -7,10 +7,13 @@ export default function ExpenseList() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  /* =========================
+     LOAD EXPENSES
+  ========================= */
   const loadExpenses = async () => {
     try {
       setLoading(true);
-      const res = await api.get("/expenses");
+      const res = await api.get("/api/expenses"); // ✅ FIXED
       setExpenses(res.data || []);
       setError("");
     } catch (err) {
@@ -25,13 +28,13 @@ export default function ExpenseList() {
   }, []);
 
   /* =========================
-     APPROVE
+     APPROVE EXPENSE
   ========================= */
   const approve = async (id) => {
     if (!window.confirm("Approve this expense?")) return;
 
     try {
-      await api.put(`/expenses/${id}/approve`);
+      await api.put(`/api/expenses/${id}/approve`); // ✅ FIXED
       alert("✅ Expense approved");
       loadExpenses();
     } catch (err) {
@@ -40,14 +43,14 @@ export default function ExpenseList() {
   };
 
   /* =========================
-     CANCEL
+     CANCEL EXPENSE
   ========================= */
   const cancel = async (id) => {
     const reason = prompt("Enter cancel reason");
     if (!reason) return;
 
     try {
-      await api.put(`/expenses/${id}/cancel`, { reason });
+      await api.put(`/api/expenses/${id}/cancel`, { reason }); // ✅ FIXED
       alert("❌ Expense cancelled");
       loadExpenses();
     } catch (err) {
@@ -85,8 +88,8 @@ export default function ExpenseList() {
               {expenses.map((e) => (
                 <tr key={e.id}>
                   <td>{e.title}</td>
-                  <td>{e.fund_id}</td>
-                  <td>₹{e.amount}</td>
+                  <td>{e.fund_name || e.fund_id}</td>
+                  <td>₹{Number(e.amount).toLocaleString("en-IN")}</td>
                   <td>
                     {new Date(e.expense_date).toLocaleDateString()}
                   </td>
@@ -158,6 +161,7 @@ const approveBtn = {
   border: "none",
   padding: "6px 10px",
   borderRadius: 6,
+  cursor: "pointer",
 };
 
 const cancelBtn = {
@@ -166,4 +170,5 @@ const cancelBtn = {
   border: "none",
   padding: "6px 10px",
   borderRadius: 6,
+  cursor: "pointer",
 };

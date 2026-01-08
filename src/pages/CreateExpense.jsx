@@ -16,36 +16,26 @@ export default function TreasurerExpenseCreate() {
     description: "",
   });
 
-  /* =========================
-     LOAD ACTIVE FUNDS
-  ========================= */
+  /* LOAD FUNDS */
   useEffect(() => {
     const loadFunds = async () => {
       try {
         const res = await api.get("/funds/list");
         setFunds(res.data?.funds || []);
-      } catch (err) {
+      } catch {
         alert("Failed to load funds");
       } finally {
         setLoading(false);
       }
     };
-
     loadFunds();
   }, []);
 
-  /* =========================
-     SUBMIT EXPENSE
-  ========================= */
+  /* SUBMIT EXPENSE */
   const submitExpense = async (e) => {
     e.preventDefault();
 
-    if (
-      !form.title ||
-      !form.amount ||
-      !form.expense_date ||
-      !form.fund_id
-    ) {
+    if (!form.title || !form.amount || !form.expense_date || !form.fund_id) {
       return alert("Please fill all required fields");
     }
 
@@ -54,7 +44,7 @@ export default function TreasurerExpenseCreate() {
     try {
       setSubmitting(true);
 
-      await api.post("/expenses", {
+      await api.post("/api/expenses", {
         title: form.title,
         category: form.category || null,
         amount: Number(form.amount),
@@ -83,11 +73,10 @@ export default function TreasurerExpenseCreate() {
   return (
     <>
       <Navbar />
-
       <div style={page}>
         <div style={card}>
-          <h2 style={title}>💸 Create Expense</h2>
-          <p style={subtitle}>
+          <h2>💸 Create Expense</h2>
+          <p style={{ color: "#64748b" }}>
             Expense will be sent for approval before deduction
           </p>
 
@@ -95,30 +84,25 @@ export default function TreasurerExpenseCreate() {
             <p>Loading funds…</p>
           ) : (
             <form onSubmit={submitExpense}>
-              {/* TITLE */}
               <Field label="Expense Title *">
                 <input
                   value={form.title}
                   onChange={(e) =>
                     setForm({ ...form, title: e.target.value })
                   }
-                  placeholder="Example: Banner Printing"
                   required
                 />
               </Field>
 
-              {/* CATEGORY */}
               <Field label="Category">
                 <input
                   value={form.category}
                   onChange={(e) =>
                     setForm({ ...form, category: e.target.value })
                   }
-                  placeholder="Travel / Event / Printing"
                 />
               </Field>
 
-              {/* FUND */}
               <Field label="Fund *">
                 <select
                   value={form.fund_id}
@@ -137,7 +121,6 @@ export default function TreasurerExpenseCreate() {
                 </select>
               </Field>
 
-              {/* AMOUNT */}
               <Field label="Amount (₹) *">
                 <input
                   type="number"
@@ -150,41 +133,28 @@ export default function TreasurerExpenseCreate() {
                 />
               </Field>
 
-              {/* DATE */}
               <Field label="Expense Date *">
                 <input
                   type="date"
                   value={form.expense_date}
                   onChange={(e) =>
-                    setForm({
-                      ...form,
-                      expense_date: e.target.value,
-                    })
+                    setForm({ ...form, expense_date: e.target.value })
                   }
                   required
                 />
               </Field>
 
-              {/* DESCRIPTION */}
               <Field label="Description">
                 <textarea
                   rows="3"
                   value={form.description}
                   onChange={(e) =>
-                    setForm({
-                      ...form,
-                      description: e.target.value,
-                    })
+                    setForm({ ...form, description: e.target.value })
                   }
-                  placeholder="Optional notes"
                 />
               </Field>
 
-              <button
-                type="submit"
-                disabled={submitting}
-                style={submitBtn}
-              >
+              <button disabled={submitting} style={submitBtn}>
                 {submitting ? "Submitting…" : "Submit Expense"}
               </button>
             </form>
@@ -195,57 +165,27 @@ export default function TreasurerExpenseCreate() {
   );
 }
 
-/* =========================
-   SMALL FIELD COMPONENT
-========================= */
 function Field({ label, children }) {
   return (
-    <div style={field}>
-      <label style={labelStyle}>{label}</label>
+    <div style={{ marginBottom: 14 }}>
+      <label style={{ fontWeight: 600 }}>{label}</label>
       {children}
     </div>
   );
 }
 
-/* =========================
-   STYLES
-========================= */
-const page = {
-  padding: 30,
-  background: "#f1f5f9",
-  minHeight: "100vh",
-};
-
+const page = { padding: 30, background: "#f1f5f9", minHeight: "100vh" };
 const card = {
   maxWidth: 620,
   background: "#fff",
   padding: 24,
   borderRadius: 14,
-  boxShadow: "0 10px 30px rgba(0,0,0,.08)",
 };
-
-const title = { marginBottom: 6 };
-const subtitle = { color: "#64748b", marginBottom: 20 };
-
-const field = {
-  marginBottom: 14,
-  display: "flex",
-  flexDirection: "column",
-  gap: 6,
-};
-
-const labelStyle = {
-  fontSize: 13,
-  fontWeight: 600,
-};
-
 const submitBtn = {
   width: "100%",
-  padding: "12px 16px",
+  padding: 12,
   background: "#2563eb",
   color: "#fff",
-  border: "none",
   borderRadius: 8,
-  fontWeight: 600,
-  cursor: "pointer",
+  border: "none",
 };
