@@ -45,7 +45,7 @@ export default function Meetings() {
   ========================= */
   const loadMeetings = async () => {
     try {
-      const res = await api.get("/meetings");
+      const res = await api.get("/api/meetings");
       setMeetings(res.data || []);
     } catch (e) {
       console.error(e);
