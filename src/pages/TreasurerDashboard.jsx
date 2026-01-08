@@ -4,32 +4,39 @@ import Navbar from "../components/Navbar";
 
 export default function TreasurerDashboard() {
   const [pending, setPending] = useState([]);
+  const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   /* =========================
-     LOAD PENDING CONTRIBUTIONS
+     LOAD SUMMARY + PENDING
   ========================= */
-  const loadPending = async () => {
+  const loadAll = async () => {
     try {
       setLoading(true);
-      const res = await api.get("/treasurer/pending");
-      setPending(res.data.pending || []);
+
+      const [pRes, sRes] = await Promise.all([
+        api.get("/treasurer/pending"),
+        api.get("/treasurer/summary"),
+      ]);
+
+      setPending(pRes.data.pending || []);
+      setSummary(sRes.data || null);
       setError("");
     } catch (err) {
-      console.error("Pending load error 👉", err);
-      setError(err.response?.data?.error || "Failed to load pending");
+      console.error("Load error 👉", err);
+      setError(err.response?.data?.error || "Failed to load data");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadPending();
+    loadAll();
   }, []);
 
   /* =========================
-     APPROVE CONTRIBUTION
+     APPROVE
   ========================= */
   const approve = async (id) => {
     if (!window.confirm("Approve this contribution?")) return;
@@ -38,11 +45,8 @@ export default function TreasurerDashboard() {
       setLoading(true);
       const res = await api.patch(`/treasurer/approve/${id}`);
 
-      alert(
-        `✅ Contribution approved\nReceipt No: ${res.data.receipt_no}`
-      );
-
-      loadPending();
+      alert(`✅ Approved\nReceipt No: ${res.data.receipt_no}`);
+      loadAll();
     } catch (err) {
       console.error("Approve error 👉", err);
       alert(err.response?.data?.error || "Approve failed");
@@ -52,7 +56,7 @@ export default function TreasurerDashboard() {
   };
 
   /* =========================
-     REJECT CONTRIBUTION
+     REJECT
   ========================= */
   const reject = async (id) => {
     const reason = prompt("Enter rejection reason");
@@ -63,7 +67,7 @@ export default function TreasurerDashboard() {
       await api.patch(`/treasurer/reject/${id}`, { reason });
 
       alert("❌ Contribution rejected");
-      loadPending();
+      loadAll();
     } catch (err) {
       console.error("Reject error 👉", err);
       alert(err.response?.data?.error || "Reject failed");
@@ -77,20 +81,39 @@ export default function TreasurerDashboard() {
       <Navbar />
 
       <div style={page}>
-        <h2 style={title}>💼 Treasurer – Pending Contributions</h2>
+        <h2 style={title}>💼 Treasurer Dashboard</h2>
 
-        {/* LOADING */}
+        {/* ===== SUMMARY ===== */}
+        {summary && (
+          <div style={cardRow}>
+            <div style={card}>
+              <h4>Pending</h4>
+              <p style={cardNum}>{summary.pending_count}</p>
+            </div>
+
+            <div style={card}>
+              <h4>Approved</h4>
+              <p style={cardNum}>{summary.approved_count}</p>
+            </div>
+
+            <div style={card}>
+              <h4>Total Collection</h4>
+              <p style={cardNum}>
+                ₹{Number(summary.total_collection).toLocaleString("en-IN")}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* ===== STATUS ===== */}
         {loading && <p>Loading...</p>}
-
-        {/* ERROR */}
         {!loading && error && <p style={errorStyle}>{error}</p>}
 
-        {/* EMPTY */}
         {!loading && !error && pending.length === 0 && (
           <p>No pending contributions 🎉</p>
         )}
 
-        {/* TABLE */}
+        {/* ===== TABLE ===== */}
         {!loading && pending.length > 0 && (
           <table style={table}>
             <thead>
@@ -155,6 +178,25 @@ const page = {
 const title = { marginBottom: 20 };
 
 const errorStyle = { color: "red" };
+
+const cardRow = {
+  display: "flex",
+  gap: 20,
+  marginBottom: 25,
+};
+
+const card = {
+  flex: 1,
+  background: "#fff",
+  padding: 20,
+  borderRadius: 10,
+  boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+};
+
+const cardNum = {
+  fontSize: 22,
+  fontWeight: "bold",
+};
 
 const table = {
   width: "100%",
