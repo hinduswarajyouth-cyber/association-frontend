@@ -109,7 +109,7 @@ export default function MemberContributions() {
   };
 
   /* =========================
-     RECEIPT VERIFY (PUBLIC)
+     PUBLIC VERIFY URL
   ========================= */
   const verifyUrl = (receiptNo) =>
     `https://api.hinduswarajyouth.online/receipts/verify/${receiptNo}`;
@@ -132,7 +132,11 @@ export default function MemberContributions() {
         <h2>💰 Contribution</h2>
 
         {/* FUND */}
-        <select value={fundId} onChange={(e) => setFundId(e.target.value)} style={input}>
+        <select
+          value={fundId}
+          onChange={(e) => setFundId(e.target.value)}
+          style={input}
+        >
           <option value="">Select Fund</option>
           {funds.map((f) => (
             <option key={f.id} value={f.id}>
@@ -176,6 +180,7 @@ export default function MemberContributions() {
             <button style={upiBtn} onClick={openUpiApp}>
               📲 Pay via UPI
             </button>
+
             {upiQrUrl && (
               <div style={{ textAlign: "center" }}>
                 <img src={upiQrUrl} alt="UPI QR" />
@@ -185,7 +190,7 @@ export default function MemberContributions() {
           </>
         )}
 
-        {/* REF */}
+        {/* REFERENCE */}
         {paymentMethod !== "CASH" && (
           <input
             placeholder="Reference No"
@@ -228,26 +233,30 @@ export default function MemberContributions() {
                 <tr key={c.id}>
                   <td>{c.fund_name}</td>
                   <td>₹{c.amount}</td>
-                  <td>{c.payment_method}</td>
+                  <td>{c.payment_mode}</td>
                   <td>
                     <b
                       style={{
                         color:
-                          c.payment_status === "APPROVED"
+                          c.status === "APPROVED"
                             ? "green"
-                            : c.payment_status === "REJECTED"
+                            : c.status === "REJECTED"
                             ? "red"
                             : "orange",
                       }}
                     >
-                      {c.payment_status}
+                      {c.status}
                     </b>
                   </td>
-                  <td>{new Date(c.created_at).toLocaleDateString()}</td>
                   <td>
-                    {c.payment_status === "APPROVED" ? (
+                    {new Date(c.created_at).toLocaleDateString()}
+                  </td>
+                  <td>
+                    {c.status === "APPROVED" && c.receipt_no ? (
                       <>
-                        <button onClick={() => downloadReceipt(c.receipt_no)}>
+                        <button
+                          onClick={() => downloadReceipt(c.receipt_no)}
+                        >
                           PDF
                         </button>{" "}
                         <a
