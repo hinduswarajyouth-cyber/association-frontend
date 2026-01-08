@@ -13,7 +13,7 @@ export default function ExpenseList() {
   const loadExpenses = async () => {
     try {
       setLoading(true);
-      const res = await api.get("/api/expenses"); // ✅ FIXED
+      const res = await api.get("/expenses");
       setExpenses(res.data || []);
       setError("");
     } catch (err) {
@@ -28,13 +28,13 @@ export default function ExpenseList() {
   }, []);
 
   /* =========================
-     APPROVE EXPENSE
+     APPROVE
   ========================= */
   const approve = async (id) => {
     if (!window.confirm("Approve this expense?")) return;
 
     try {
-      await api.put(`/api/expenses/${id}/approve`); // ✅ FIXED
+      await api.put(`/expenses/${id}/approve`);
       alert("✅ Expense approved");
       loadExpenses();
     } catch (err) {
@@ -43,14 +43,14 @@ export default function ExpenseList() {
   };
 
   /* =========================
-     CANCEL EXPENSE
+     CANCEL
   ========================= */
   const cancel = async (id) => {
     const reason = prompt("Enter cancel reason");
     if (!reason) return;
 
     try {
-      await api.put(`/api/expenses/${id}/cancel`, { reason }); // ✅ FIXED
+      await api.put(`/expenses/${id}/cancel`, { reason });
       alert("❌ Expense cancelled");
       loadExpenses();
     } catch (err) {
@@ -61,77 +61,85 @@ export default function ExpenseList() {
   return (
     <>
       <Navbar />
-      <div style={page}>
-        <h2>📉 Expenses</h2>
 
-        {loading && <p>Loading...</p>}
+      <div style={page}>
+        <h2 style={title}>📉 Expenses</h2>
+
+        {/* LOADING */}
+        {loading && <p>Loading expenses…</p>}
+
+        {/* ERROR */}
         {!loading && error && <p style={errorStyle}>{error}</p>}
 
-        {!loading && expenses.length === 0 && (
+        {/* EMPTY */}
+        {!loading && !error && expenses.length === 0 && (
           <p>No expenses found</p>
         )}
 
+        {/* TABLE */}
         {!loading && expenses.length > 0 && (
-          <table style={table}>
-            <thead>
-              <tr>
-                <th>Title</th>
-                <th>Fund</th>
-                <th>Amount</th>
-                <th>Date</th>
-                <th>Status</th>
-                <th>Requested By</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {expenses.map((e) => (
-                <tr key={e.id}>
-                  <td>{e.title}</td>
-                  <td>{e.fund_name || e.fund_id}</td>
-                  <td>₹{Number(e.amount).toLocaleString("en-IN")}</td>
-                  <td>
-                    {new Date(e.expense_date).toLocaleDateString()}
-                  </td>
-                  <td>
-                    <b
-                      style={{
-                        color:
-                          e.status === "APPROVED"
-                            ? "green"
-                            : e.status === "CANCELLED"
-                            ? "red"
-                            : "orange",
-                      }}
-                    >
-                      {e.status}
-                    </b>
-                  </td>
-                  <td>{e.requested_by_name}</td>
-                  <td>
-                    {e.status === "PENDING" ? (
-                      <>
-                        <button
-                          style={approveBtn}
-                          onClick={() => approve(e.id)}
-                        >
-                          Approve
-                        </button>{" "}
-                        <button
-                          style={cancelBtn}
-                          onClick={() => cancel(e.id)}
-                        >
-                          Cancel
-                        </button>
-                      </>
-                    ) : (
-                      "-"
-                    )}
-                  </td>
+          <div style={card}>
+            <table style={table}>
+              <thead>
+                <tr>
+                  <th>Title</th>
+                  <th>Fund</th>
+                  <th>Amount</th>
+                  <th>Date</th>
+                  <th>Status</th>
+                  <th>Requested By</th>
+                  <th>Action</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+
+              <tbody>
+                {expenses.map((e) => (
+                  <tr key={e.id}>
+                    <td>{e.title}</td>
+
+                    <td>{e.fund_name || `Fund #${e.fund_id}`}</td>
+
+                    <td>
+                      ₹{Number(e.amount).toLocaleString("en-IN")}
+                    </td>
+
+                    <td>
+                      {new Date(e.expense_date).toLocaleDateString()}
+                    </td>
+
+                    <td>
+                      <span style={statusBadge(e.status)}>
+                        {e.status}
+                      </span>
+                    </td>
+
+                    <td>{e.requested_by_name}</td>
+
+                    <td>
+                      {e.status === "PENDING" ? (
+                        <>
+                          <button
+                            style={approveBtn}
+                            onClick={() => approve(e.id)}
+                          >
+                            Approve
+                          </button>{" "}
+                          <button
+                            style={cancelBtn}
+                            onClick={() => cancel(e.id)}
+                          >
+                            Cancel
+                          </button>
+                        </>
+                      ) : (
+                        <span style={{ color: "#64748b" }}>—</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
     </>
@@ -143,17 +151,30 @@ export default function ExpenseList() {
 ========================= */
 const page = {
   padding: 30,
-  background: "#f8fafc",
+  background: "#f1f5f9",
   minHeight: "100vh",
+};
+
+const title = {
+  marginBottom: 20,
+};
+
+const card = {
+  background: "#fff",
+  borderRadius: 14,
+  padding: 20,
+  boxShadow: "0 10px 30px rgba(0,0,0,.08)",
+  overflowX: "auto",
 };
 
 const table = {
   width: "100%",
   borderCollapse: "collapse",
-  background: "#fff",
 };
 
-const errorStyle = { color: "red" };
+const errorStyle = {
+  color: "red",
+};
 
 const approveBtn = {
   background: "#16a34a",
@@ -172,3 +193,20 @@ const cancelBtn = {
   borderRadius: 6,
   cursor: "pointer",
 };
+
+/* =========================
+   STATUS BADGE
+========================= */
+const statusBadge = (status) => ({
+  padding: "4px 10px",
+  borderRadius: 20,
+  fontSize: 12,
+  fontWeight: 600,
+  color: "#fff",
+  background:
+    status === "APPROVED"
+      ? "#16a34a"
+      : status === "CANCELLED"
+      ? "#dc2626"
+      : "#f59e0b",
+});
