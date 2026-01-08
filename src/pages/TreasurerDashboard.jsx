@@ -4,7 +4,7 @@ import Navbar from "../components/Navbar";
 
 export default function TreasurerDashboard() {
   const [pending, setPending] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   /* =========================
@@ -18,7 +18,7 @@ export default function TreasurerDashboard() {
       setError("");
     } catch (err) {
       console.error("Pending load error 👉", err);
-      setError("Failed to load pending contributions");
+      setError(err.response?.data?.error || "Failed to load pending");
     } finally {
       setLoading(false);
     }
@@ -35,12 +35,19 @@ export default function TreasurerDashboard() {
     if (!window.confirm("Approve this contribution?")) return;
 
     try {
-      await api.patch(`/treasurer/approve/${id}`);
-      alert("Contribution approved successfully");
+      setLoading(true);
+      const res = await api.patch(`/treasurer/approve/${id}`);
+
+      alert(
+        `✅ Contribution approved\nReceipt No: ${res.data.receipt_no}`
+      );
+
       loadPending();
     } catch (err) {
       console.error("Approve error 👉", err);
       alert(err.response?.data?.error || "Approve failed");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -52,12 +59,16 @@ export default function TreasurerDashboard() {
     if (!reason) return;
 
     try {
+      setLoading(true);
       await api.patch(`/treasurer/reject/${id}`, { reason });
-      alert("Contribution rejected");
+
+      alert("❌ Contribution rejected");
       loadPending();
     } catch (err) {
       console.error("Reject error 👉", err);
       alert(err.response?.data?.error || "Reject failed");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -66,20 +77,20 @@ export default function TreasurerDashboard() {
       <Navbar />
 
       <div style={page}>
-        <h2 style={title}>Treasurer – Pending Contributions</h2>
+        <h2 style={title}>💼 Treasurer – Pending Contributions</h2>
 
-        {/* ===== LOADING ===== */}
+        {/* LOADING */}
         {loading && <p>Loading...</p>}
 
-        {/* ===== ERROR ===== */}
+        {/* ERROR */}
         {!loading && error && <p style={errorStyle}>{error}</p>}
 
-        {/* ===== EMPTY ===== */}
+        {/* EMPTY */}
         {!loading && !error && pending.length === 0 && (
           <p>No pending contributions 🎉</p>
         )}
 
-        {/* ===== TABLE ===== */}
+        {/* TABLE */}
         {!loading && pending.length > 0 && (
           <table style={table}>
             <thead>
@@ -98,7 +109,9 @@ export default function TreasurerDashboard() {
                 <tr key={p.id}>
                   <td style={td}>{p.member_name}</td>
                   <td style={td}>{p.fund_name}</td>
-                  <td style={td}>₹{Number(p.amount).toLocaleString("en-IN")}</td>
+                  <td style={td}>
+                    ₹{Number(p.amount).toLocaleString("en-IN")}
+                  </td>
                   <td style={td}>{p.payment_mode}</td>
                   <td style={td}>{p.reference_no || "-"}</td>
                   <td style={td}>
@@ -107,12 +120,14 @@ export default function TreasurerDashboard() {
                   <td style={td}>
                     <button
                       style={approveBtn}
+                      disabled={loading}
                       onClick={() => approve(p.id)}
                     >
                       Approve
                     </button>{" "}
                     <button
                       style={rejectBtn}
+                      disabled={loading}
                       onClick={() => reject(p.id)}
                     >
                       Reject
@@ -137,13 +152,9 @@ const page = {
   minHeight: "100vh",
 };
 
-const title = {
-  marginBottom: 20,
-};
+const title = { marginBottom: 20 };
 
-const errorStyle = {
-  color: "red",
-};
+const errorStyle = { color: "red" };
 
 const table = {
   width: "100%",
