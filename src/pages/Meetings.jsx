@@ -1,22 +1,7 @@
 import React, { useEffect, useState } from "react";
 import api from "../api/api";
 import Navbar from "../components/Navbar";
-
-/* =========================
-   🔐 USER FROM JWT
-========================= */
-const getUser = () => {
-  try {
-    const token = localStorage.getItem("token");
-    if (!token) return {};
-    return JSON.parse(atob(token.split(".")[1]));
-  } catch {
-    return {};
-  }
-};
-
-const { role: ROLE } = getUser();
-const ADMIN_ROLES = ["SUPER_ADMIN", "PRESIDENT"];
+import { useAuth } from "../context/AuthContext";
 
 /* =========================
    DATE FIX
@@ -31,6 +16,10 @@ const toDateTimeLocal = (value) => {
 };
 
 export default function Meetings() {
+  const { user } = useAuth(); // ✅ FIX
+  const ROLE = user?.role;
+  const ADMIN_ROLES = ["SUPER_ADMIN", "PRESIDENT"];
+
   const [meetings, setMeetings] = useState([]);
   const [selected, setSelected] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -53,16 +42,21 @@ export default function Meetings() {
   const [resolutions, setResolutions] = useState([]);
   const [resolutionTitle, setResolutionTitle] = useState("");
 
-  /* ================= FILE UPLOAD & DOWNLOAD ================= */
+  /* ================= FILES ================= */
   const [file, setFile] = useState(null);
   const [fileType, setFileType] = useState("AGENDA");
   const [files, setFiles] = useState([]);
 
   /* ================= LOAD MEETINGS ================= */
   const loadMeetings = async () => {
-    const res = await api.get("/meetings/my");
-    setMeetings(res.data || []);
-    setLoading(false);
+    try {
+      const res = await api.get("/meetings"); // ✅ FIX
+      setMeetings(res.data || []);
+    } catch (err) {
+      console.error("LOAD MEETINGS ERROR:", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -76,12 +70,16 @@ export default function Meetings() {
       return;
     }
 
-    selected
-      ? await api.put(`/meetings/${selected.id}`, form)
-      : await api.post("/meetings/create", form);
+    try {
+      selected
+        ? await api.put(`/meetings/${selected.id}`, form)
+        : await api.post("/meetings/create", form);
 
-    resetForm();
-    loadMeetings();
+      resetForm();
+      loadMeetings();
+    } catch (err) {
+      alert("Failed to save meeting");
+    }
   };
 
   const resetForm = () => {
@@ -116,6 +114,7 @@ export default function Meetings() {
   };
 
   const createResolution = async () => {
+    if (!resolutionTitle) return;
     await api.post(`/meetings/resolution/${selected.id}`, {
       title: resolutionTitle,
     });
@@ -123,12 +122,7 @@ export default function Meetings() {
     loadResolutions(selected.id);
   };
 
-  const vote = async (rid, vote) => {
-    await api.post(`/meetings/vote/${rid}`, { vote });
-    alert("Vote submitted");
-  };
-
-  /* ================= FILE UPLOAD ================= */
+  /* ================= FILES ================= */
   const uploadFile = async () => {
     if (!file) return;
     const fd = new FormData();
@@ -136,12 +130,10 @@ export default function Meetings() {
     fd.append("type", fileType);
 
     await api.post(`/meetings/files/${selected.id}`, fd);
-    alert("File uploaded");
     setFile(null);
     loadFiles(selected.id);
   };
 
-  /* ================= FILE DOWNLOAD ================= */
   const loadFiles = async (id) => {
     const res = await api.get(`/meetings/files/${id}`);
     setFiles(res.data || []);
@@ -150,10 +142,7 @@ export default function Meetings() {
   /* ================= OPEN MEETING ================= */
   const openMeeting = async (m) => {
     setSelected(m);
-    setForm({
-      ...m,
-      meeting_date: toDateTimeLocal(m.meeting_date),
-    });
+    setForm({ ...m, meeting_date: toDateTimeLocal(m.meeting_date) });
     loadChat(m.id);
     loadResolutions(m.id);
     loadFiles(m.id);
@@ -172,30 +161,52 @@ export default function Meetings() {
             <h3>{selected ? "Edit Meeting" : "Create Meeting"}</h3>
 
             <div style={grid2}>
-              <input style={input} placeholder="Title"
+              <input
+                style={input}
+                placeholder="Title"
                 value={form.title}
-                onChange={e => setForm({ ...form, title: e.target.value })} />
-              <input type="datetime-local" style={input}
+                onChange={(e) =>
+                  setForm({ ...form, title: e.target.value })
+                }
+              />
+              <input
+                type="datetime-local"
+                style={input}
                 value={form.meeting_date}
-                onChange={e => setForm({ ...form, meeting_date: e.target.value })} />
+                onChange={(e) =>
+                  setForm({ ...form, meeting_date: e.target.value })
+                }
+              />
             </div>
 
-            <textarea style={textarea} placeholder="Description"
+            <textarea
+              style={textarea}
+              placeholder="Description"
               value={form.description}
-              onChange={e => setForm({ ...form, description: e.target.value })} />
+              onChange={(e) =>
+                setForm({ ...form, description: e.target.value })
+              }
+            />
 
-            <button style={btnPrimary} onClick={saveMeeting}>Save</button>
+            <button style={btnPrimary} onClick={saveMeeting}>
+              Save
+            </button>
           </div>
         )}
 
         {/* LIST */}
         {loading && <p>Loading...</p>}
         <div style={grid}>
-          {meetings.map(m => (
+          {meetings.map((m) => (
             <div key={m.id} style={card}>
               <h4>{m.title}</h4>
               <p>{new Date(m.meeting_date).toLocaleString()}</p>
-              <button style={btnSecondary} onClick={() => openMeeting(m)}>Open</button>
+              <button
+                style={btnSecondary}
+                onClick={() => openMeeting(m)}
+              >
+                Open
+              </button>
             </div>
           ))}
         </div>
@@ -209,18 +220,26 @@ export default function Meetings() {
 
             {ADMIN_ROLES.includes(ROLE) && (
               <>
-                <input type="file" onChange={e => setFile(e.target.files[0])} />
-                <select onChange={e => setFileType(e.target.value)}>
+                <input
+                  type="file"
+                  onChange={(e) => setFile(e.target.files[0])}
+                />
+                <select
+                  value={fileType}
+                  onChange={(e) => setFileType(e.target.value)}
+                >
                   <option value="AGENDA">Agenda</option>
                   <option value="MINUTES">Minutes</option>
                 </select>
-                <button style={btnPrimary} onClick={uploadFile}>Upload</button>
+                <button style={btnPrimary} onClick={uploadFile}>
+                  Upload
+                </button>
               </>
             )}
 
             {files.length === 0 && <p>No files uploaded</p>}
 
-            {files.map(f => (
+            {files.map((f) => (
               <div key={f.id} style={fileRow}>
                 <div>
                   <b>{f.file_type}</b>
@@ -248,13 +267,49 @@ export default function Meetings() {
 /* ================= STYLES ================= */
 const page = { padding: 30, background: "#f1f5f9", minHeight: "100vh" };
 const title = { fontSize: 26, fontWeight: 700 };
-const grid = { display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(320px,1fr))", gap: 16 };
-const grid2 = { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 };
-const card = { background: "#fff", padding: 20, borderRadius: 12, marginBottom: 20 };
-const input = { padding: 10, borderRadius: 8, border: "1px solid #cbd5f5", width: "100%" };
-const textarea = { width: "100%", height: 80, padding: 10, borderRadius: 8, border: "1px solid #cbd5f5" };
-const btnPrimary = { background: "#2563eb", color: "#fff", padding: "8px 14px", border: "none", borderRadius: 6 };
-const btnSecondary = { background: "#0f172a", color: "#fff", padding: "8px 14px", border: "none", borderRadius: 6 };
+const grid = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit,minmax(320px,1fr))",
+  gap: 16,
+};
+const grid2 = {
+  display: "grid",
+  gridTemplateColumns: "1fr 1fr",
+  gap: 12,
+};
+const card = {
+  background: "#fff",
+  padding: 20,
+  borderRadius: 12,
+  marginBottom: 20,
+};
+const input = {
+  padding: 10,
+  borderRadius: 8,
+  border: "1px solid #cbd5f5",
+  width: "100%",
+};
+const textarea = {
+  width: "100%",
+  height: 80,
+  padding: 10,
+  borderRadius: 8,
+  border: "1px solid #cbd5f5",
+};
+const btnPrimary = {
+  background: "#2563eb",
+  color: "#fff",
+  padding: "8px 14px",
+  border: "none",
+  borderRadius: 6,
+};
+const btnSecondary = {
+  background: "#0f172a",
+  color: "#fff",
+  padding: "8px 14px",
+  border: "none",
+  borderRadius: 6,
+};
 
 const fileRow = {
   display: "flex",
