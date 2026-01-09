@@ -2,42 +2,35 @@ import { useEffect, useState } from "react";
 import api from "../api/api";
 import Footer from "../components/Footer";
 import PublicNavbar from "../components/PublicNavbar";
+import { useNavigate } from "react-router-dom";
 
 export default function PublicAssociation() {
   const [association, setAssociation] = useState(null);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
-  /* =========================
-     LOAD PUBLIC ASSOCIATION
-  ========================= */
   useEffect(() => {
     api
-      .get("/public/association-info") // ✅ CORRECT ENDPOINT
+      .get("/public/association-info") // ✅ ONLY CORRECT ENDPOINT
       .then((res) => {
-        setAssociation(res.data.data.association || null); // ✅ CORRECT DATA
+        setAssociation(res.data.data.association);
       })
       .catch((err) => {
         console.error("PUBLIC ASSOCIATION ERROR 👉", err);
-        setAssociation(null);
       })
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading) {
-    return <div style={{ padding: 60 }}>Loading...</div>;
-  }
+  if (loading) return <div style={{ padding: 60 }}>Loading...</div>;
 
-  if (!association) {
+  if (!association)
     return <div style={{ padding: 60 }}>No association info found</div>;
-  }
 
   return (
     <>
-      {/* ✅ PUBLIC NAVBAR */}
       <PublicNavbar />
 
       <div style={page}>
-        {/* LOGO */}
         {association.logo && (
           <img
             src={import.meta.env.VITE_API_BASE_URL + association.logo}
@@ -54,10 +47,9 @@ export default function PublicAssociation() {
         <p><b>Phone:</b> {association.phone}</p>
         <p><b>Email:</b> {association.email}</p>
 
-        {/* 👉 DONATE */}
-        <a href="/donate">
-          <button style={btn}>🙏 Donate Now</button>
-        </a>
+        <button style={btn} onClick={() => navigate("/donate")}>
+          🙏 Donate Now
+        </button>
       </div>
 
       <Footer />

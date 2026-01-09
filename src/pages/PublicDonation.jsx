@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import api from "../api/api";
+import Footer from "../components/Footer";
 import PublicNavbar from "../components/PublicNavbar";
 
 export default function PublicDonation() {
+  const [funds, setFunds] = useState([]);
   const [form, setForm] = useState({
     donor_name: "",
     donor_phone: "",
@@ -11,77 +13,68 @@ export default function PublicDonation() {
     payment_mode: "UPI",
     reference_no: "",
   });
+  const [msg, setMsg] = useState("");
 
-  const [association, setAssociation] = useState(null);
-  const [funds, setFunds] = useState([]);
-  const [success, setSuccess] = useState(false);
-
-  /* =========================
-     LOAD ASSOCIATION INFO
-  ========================= */
   useEffect(() => {
-    api.get("/public/association").then((res) => {
-      setAssociation(res.data);
-    });
-
-    api.get("/public/funds").then((res) => {
-      setFunds(res.data || []);
+    api.get("/public/association-info").then((res) => {
+      setFunds(res.data.data.funds || []);
     });
   }, []);
 
-  const handleChange = (e) =>
-    setForm({ ...form, [e.target.name]: e.target.value });
-
   const submit = async (e) => {
     e.preventDefault();
+    setMsg("");
 
-    await api.post("/public/donate", form);
-    setSuccess(true);
-
-    setForm({
-      donor_name: "",
-      donor_phone: "",
-      fund_id: "",
-      amount: "",
-      payment_mode: "UPI",
-      reference_no: "",
-    });
+    try {
+      await api.post("/public/donate", form);
+      setMsg("🙏 Thank you! Donation submitted successfully");
+      setForm({
+        donor_name: "",
+        donor_phone: "",
+        fund_id: "",
+        amount: "",
+        payment_mode: "UPI",
+        reference_no: "",
+      });
+    } catch (err) {
+      alert("Donation failed");
+    }
   };
 
   return (
     <>
-      {/* ✅ PUBLIC NAVBAR */}
       <PublicNavbar />
 
       <div style={page}>
         <h2>🙏 Donate to Our Association</h2>
 
-        {success && (
-          <p style={{ color: "green" }}>
-            Thank you! Donation submitted successfully 🙏
-          </p>
-        )}
+        {msg && <p style={{ color: "green" }}>{msg}</p>}
 
-        <form onSubmit={submit} style={card}>
+        <form onSubmit={submit} style={box}>
           <input
-            name="donor_name"
             placeholder="Your Name (optional)"
             value={form.donor_name}
-            onChange={handleChange}
+            onChange={(e) =>
+              setForm({ ...form, donor_name: e.target.value })
+            }
+            style={input}
           />
 
           <input
-            name="donor_phone"
             placeholder="Phone (optional)"
             value={form.donor_phone}
-            onChange={handleChange}
+            onChange={(e) =>
+              setForm({ ...form, donor_phone: e.target.value })
+            }
+            style={input}
           />
 
-          {/* FUND SELECT */}
           <select
-            name="fund_id"
             value={form.fund_id}
-            onChange={handleChange}
+            onChange={(e) =>
+              setForm({ ...form, fund_id: e.target.value })
+            }
+            style={input}
             required
           >
             <option value="">Select Fund</option>
@@ -94,89 +87,76 @@ export default function PublicDonation() {
 
           <input
             type="number"
-            name="amount"
             placeholder="Amount"
             value={form.amount}
+            onChange={(e) =>
+              setForm({ ...form, amount: e.target.value })
+            }
+            style={input}
             required
-            onChange={handleChange}
           />
 
           <select
-            name="payment_mode"
             value={form.payment_mode}
-            onChange={handleChange}
+            onChange={(e) =>
+              setForm({ ...form, payment_mode: e.target.value })
+            }
+            style={input}
           >
             <option value="UPI">UPI</option>
             <option value="CASH">Cash</option>
             <option value="BANK">Bank Transfer</option>
           </select>
 
-          {/* 🔥 UPI SECTION */}
-          {form.payment_mode === "UPI" && association && (
-            <div style={upiBox}>
-              {association.upi_id && (
-                <p>
-                  <b>UPI ID:</b> {association.upi_id}
-                </p>
-              )}
+          <input
+            placeholder="Transaction Reference"
+            value={form.reference_no}
+            onChange={(e) =>
+              setForm({ ...form, reference_no: e.target.value })
+            }
+            style={input}
+          />
 
-              {association.upi_qr_url && (
-                <img
-                  src={association.upi_qr_url}
-                  alt="UPI QR"
-                  style={{ width: 180 }}
-                />
-              )}
-
-              <p style={{ fontSize: 12 }}>
-                Scan & pay → Enter transaction reference below
-              </p>
-            </div>
-          )}
-
-          {form.payment_mode === "UPI" && (
-            <input
-              name="reference_no"
-              placeholder="Transaction Reference"
-              value={form.reference_no}
-              required
-              onChange={handleChange}
-            />
-          )}
-
-          <button style={btn}>Donate</button>
+          <button style={btn} type="submit">
+            Donate
+          </button>
         </form>
       </div>
+
+      <Footer />
     </>
   );
 }
 
 /* ================= STYLES ================= */
 
-const page = { padding: 40, textAlign: "center" };
-
-const card = {
-  maxWidth: 360,
-  margin: "auto",
+const page = {
+  maxWidth: 500,
+  margin: "60px auto",
   padding: 20,
-  background: "#fff",
-  borderRadius: 12,
-  display: "flex",
-  flexDirection: "column",
-  gap: 10,
+  textAlign: "center",
 };
 
-const upiBox = {
-  background: "#f1f5f9",
+const box = {
+  background: "#fff",
+  padding: 20,
+  borderRadius: 12,
+  boxShadow: "0 2px 10px rgba(0,0,0,0.1)",
+};
+
+const input = {
+  width: "100%",
   padding: 12,
-  borderRadius: 10,
+  marginBottom: 12,
 };
 
 const btn = {
-  padding: "12px",
+  width: "100%",
+  padding: 14,
   background: "#2563eb",
   color: "#fff",
   border: "none",
   borderRadius: 8,
+  fontSize: 16,
   cursor: "pointer",
 };
