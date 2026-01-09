@@ -68,9 +68,9 @@ export default function Meetings() {
     }
 
     if (selected) {
-      await api.put(`/api/meetings/${selected.id}`, form);
+      await api.put(`/meetings/${selected.id}`, form);
     } else {
-      await api.post("/api/meetings/create", form);
+      await api.post("/meetings/create", form);
     }
 
     resetForm();
@@ -94,7 +94,7 @@ export default function Meetings() {
   ========================= */
   const deleteMeeting = async (id) => {
     if (!window.confirm("Delete this meeting?")) return;
-    await api.delete(`/api/meetings/${id}`);
+    await api.delete(`/meetings/${id}`);
     loadMeetings();
   };
 
@@ -102,7 +102,7 @@ export default function Meetings() {
      ATTENDANCE
   ========================= */
   const markAttendance = async (id, status) => {
-    await api.post(`/api/meetings/attendance/${id}`, { status });
+    await api.post(`/meetings/attendance/${id}`, { status });
     alert("Attendance recorded");
   };
 
@@ -110,13 +110,13 @@ export default function Meetings() {
      CHAT
   ========================= */
   const loadChat = async (id) => {
-    const res = await api.get(`/api/meetings/chat/${id}`);
+    const res = await api.get(`/meetings/chat/${id}`);
     setChat(res.data || []);
   };
 
   const sendChat = async () => {
     if (!chatMsg) return;
-    await api.post(`/api/meetings/chat/${selected.id}`, { message: chatMsg });
+    await api.post(`/meetings/chat/${selected.id}`, { message: chatMsg });
     setChatMsg("");
     loadChat(selected.id);
   };
@@ -125,12 +125,12 @@ export default function Meetings() {
      RESOLUTIONS / VOTING
   ========================= */
   const loadResolutions = async (id) => {
-    const res = await api.get(`/api/meetings/resolution/${id}`);
+    const res = await api.get(`/meetings/resolution/${id}`);
     setResolutions(res.data || []);
   };
 
   const createResolution = async () => {
-    await api.post(`/api/meetings/resolution/${selected.id}`, {
+    await api.post(`/meetings/resolution/${selected.id}`, {
       title: resolutionTitle,
     });
     setResolutionTitle("");
@@ -138,7 +138,7 @@ export default function Meetings() {
   };
 
   const vote = async (rid, vote) => {
-    await api.post(`/api/meetings/vote/${rid}`, { vote });
+    await api.post(`/meetings/vote/${rid}`, { vote });
     alert("Vote submitted");
   };
 
@@ -146,12 +146,12 @@ export default function Meetings() {
      TASKS
   ========================= */
   const loadTasks = async (id) => {
-    const res = await api.get(`/api/meetings/tasks/${id}`);
+    const res = await api.get(`/meetings/tasks/${id}`);
     setTasks(res.data || []);
   };
 
   const updateTask = async (tid, status) => {
-    await api.put(`/api/meetings/tasks/status/${tid}`, { status });
+    await api.put(`/meetings/tasks/status/${tid}`, { status });
     loadTasks(selected.id);
   };
 

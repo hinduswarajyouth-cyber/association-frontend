@@ -62,11 +62,11 @@ export default function Complaint() {
     try {
       let res;
       if (ROLE === "MEMBER") {
-        res = await api.get("/api/complaints/my");
+        res = await api.get("/complaints/my");
       } else if (OFFICE_ROLES.includes(ROLE)) {
-        res = await api.get("/api/complaints/assigned");
+        res = await api.get("/complaints/assigned");
       } else {
-        res = await api.get("/api/complaints/all");
+        res = await api.get("/complaints/all");
       }
       setComplaints(res.data || []);
     } catch {
@@ -85,7 +85,7 @@ export default function Complaint() {
       return;
     }
 
-    await api.post("/api/complaints/create", form);
+    await api.post("/complaints/create", form);
     setForm({ subject: "", description: "", priority: "NORMAL" });
     loadComplaints();
   };
@@ -94,7 +94,7 @@ export default function Complaint() {
      PRESIDENT → ASSIGN
   ========================= */
   const assignComplaint = async (id, role) => {
-    await api.put(`/api/complaints/assign/${id}`, { assigned_role: role });
+    await api.put(`/complaints/assign/${id}`, { assigned_role: role });
     loadComplaints();
   };
 
@@ -102,7 +102,7 @@ export default function Complaint() {
      OFFICE → UPDATE STATUS
   ========================= */
   const updateStatus = async (id, status) => {
-    await api.put(`/api/complaints/update/${id}`, { status });
+    await api.put(`/complaints/update/${id}`, { status });
     loadComplaints();
   };
 
@@ -111,7 +111,7 @@ export default function Complaint() {
   ========================= */
   const closeComplaint = async (id) => {
     if (!window.confirm("Close this complaint?")) return;
-    await api.put(`/api/complaints/close/${id}`);
+    await api.put(`/complaints/close/${id}`);
     loadComplaints();
   };
 
@@ -119,12 +119,12 @@ export default function Complaint() {
      COMMENTS
   ========================= */
   const loadComments = async (id) => {
-    const res = await api.get(`/api/complaints/${id}/comments`);
+    const res = await api.get(`/complaints/${id}/comments`);
     setComments((p) => ({ ...p, [id]: res.data || [] }));
   };
 
   const addComment = async (id) => {
-    await api.post(`/api/complaints/comment/${id}`, {
+    await api.post(`/complaints/comment/${id}`, {
       comment: commentInput[id],
     });
     setCommentInput((p) => ({ ...p, [id]: "" }));
