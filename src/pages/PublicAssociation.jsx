@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import api from "../api/api";
 import Footer from "../components/Footer";
+import PublicNavbar from "../components/PublicNavbar";
 
 export default function PublicAssociation() {
   const [association, setAssociation] = useState(null);
@@ -8,9 +9,9 @@ export default function PublicAssociation() {
 
   useEffect(() => {
     api
-      .get("/public/association-info")
+      .get("/public/association") // ✅ FIXED ENDPOINT
       .then((res) => {
-        setAssociation(res.data.data.association);
+        setAssociation(res.data || null);
       })
       .catch((err) => {
         console.error("PUBLIC ASSOCIATION ERROR 👉", err);
@@ -28,6 +29,9 @@ export default function PublicAssociation() {
 
   return (
     <>
+      {/* ✅ PUBLIC NAVBAR */}
+      <PublicNavbar />
+
       <div style={page}>
         {/* LOGO */}
         {association.logo && (
@@ -40,12 +44,23 @@ export default function PublicAssociation() {
 
         <h1>{association.name}</h1>
 
-        <p><b>Registration No:</b> {association.registration_no}</p>
-        <p><b>Established:</b> {association.established_year}</p>
-        <p><b>Address:</b> {association.address}</p>
-        <p><b>Phone:</b> {association.phone}</p>
-        <p><b>Email:</b> {association.email}</p>
+        <p>
+          <b>Registration No:</b> {association.registration_no}
+        </p>
+        <p>
+          <b>Established:</b> {association.established_year}
+        </p>
+        <p>
+          <b>Address:</b> {association.address}
+        </p>
+        <p>
+          <b>Phone:</b> {association.phone}
+        </p>
+        <p>
+          <b>Email:</b> {association.email}
+        </p>
 
+        {/* 👉 DONATE */}
         <a href="/donate">
           <button style={btn}>🙏 Donate Now</button>
         </a>
