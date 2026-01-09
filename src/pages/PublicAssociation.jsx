@@ -5,7 +5,7 @@ export default function PublicAssociation() {
   const [data, setData] = useState(null);
 
   useEffect(() => {
-    api.get("/public/association").then((res) => setData(res.data));
+    api.get("/public/association-info").then((res) => setData(res.data));
   }, []);
 
   if (!data) return <p>Loading...</p>;
