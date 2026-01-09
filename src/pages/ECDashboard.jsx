@@ -9,16 +9,28 @@ export default function ECDashboard() {
   const [error, setError] = useState("");
 
   useEffect(() => {
+    let mounted = true;
+
     api
       .get("/dashboard/admin-summary")
       .then((res) => {
-        setSummary(res.data.data); // ✅ CORRECT
+        if (mounted) {
+          setSummary(res.data.data);
+        }
       })
       .catch((err) => {
         console.error("EC DASHBOARD ERROR 👉", err);
-        setError("Failed to load EC dashboard");
+        if (mounted) {
+          setError("Failed to load EC dashboard");
+        }
       })
-      .finally(() => setLoading(false));
+      .finally(() => {
+        if (mounted) setLoading(false);
+      });
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   return (
@@ -45,16 +57,10 @@ export default function ECDashboard() {
           <p style={{ color: "red", marginTop: 20 }}>{error}</p>
         )}
 
-        {!loading && summary && (
+        {!loading && !error && summary && (
           <div style={grid}>
-            <Stat
-              title="Total Members"
-              value={summary.total_members}
-            />
-            <Stat
-              title="Approved Receipts"
-              value={summary.approved_receipts}
-            />
+            <Stat title="Total Members" value={summary.total_members} />
+            <Stat title="Approved Receipts" value={summary.approved_receipts} />
             <Stat
               title="Total Collection"
               value={`₹${Number(summary.total_collection).toLocaleString(

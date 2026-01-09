@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import api from "../api/api"; // ✅ FIXED IMPORT
+import api from "../api/api";
 
 const AuthContext = createContext(null);
 
@@ -9,7 +9,7 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   /* =========================
-     INIT AUTH (ON APP LOAD)
+     🔁 INIT AUTH (ON APP LOAD)
   ========================= */
   useEffect(() => {
     const initAuth = async () => {
@@ -21,19 +21,27 @@ export const AuthProvider = ({ children }) => {
         return;
       }
 
-      // Optimistic restore
+      // ✅ Optimistic restore (fast UI)
       if (storedUser) {
-        setUser(JSON.parse(storedUser));
+        const parsedUser = JSON.parse(storedUser);
+        setUser(normalizeUser(parsedUser));
         setToken(storedToken);
       }
 
       try {
+        // 🔐 Verify token with backend
         const res = await api.get("/auth/verify");
-        setUser(res.data.user);
+
+        const verifiedUser = normalizeUser(res.data.user);
+
+        setUser(verifiedUser);
         setToken(storedToken);
-        localStorage.setItem("user", JSON.stringify(res.data.user));
-      } catch {
-        localStorage.clear();
+
+        localStorage.setItem("user", JSON.stringify(verifiedUser));
+      } catch (err) {
+        // ❌ Invalid / expired token
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
         setUser(null);
         setToken(null);
       } finally {
@@ -45,20 +53,25 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   /* =========================
-     LOGIN
+     🔑 LOGIN
   ========================= */
-  const login = (token, userData) => {
-    localStorage.setItem("token", token);
-    localStorage.setItem("user", JSON.stringify(userData));
-    setToken(token);
-    setUser(userData);
+  const login = (authToken, userData) => {
+    const normalized = normalizeUser(userData);
+
+    localStorage.setItem("token", authToken);
+    localStorage.setItem("user", JSON.stringify(normalized));
+
+    setToken(authToken);
+    setUser(normalized);
   };
 
   /* =========================
-     LOGOUT
+     🚪 LOGOUT
   ========================= */
   const logout = (redirect = true) => {
-    localStorage.clear();
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+
     setUser(null);
     setToken(null);
 
@@ -82,5 +95,17 @@ export const AuthProvider = ({ children }) => {
     </AuthContext.Provider>
   );
 };
+
+/* =========================
+   🧠 ROLE NORMALIZER (CRITICAL)
+========================= */
+function normalizeUser(user) {
+  if (!user) return null;
+
+  return {
+    ...user,
+    role: user.role?.replaceAll(" ", "_"), // 🔥 EC MEMBER → EC_MEMBER
+  };
+}
 
 export const useAuth = () => useContext(AuthContext);

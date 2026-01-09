@@ -17,11 +17,20 @@ export default function TreasurerDashboard() {
 
       const [pRes, sRes] = await Promise.all([
         api.get("/treasurer/pending"),
-        api.get("/treasurer/summary"),
+        api.get("/dashboard/treasurer-summary"),
       ]);
 
-      setPending(pRes.data.pending || []);
-      setSummary(sRes.data || null);
+      // ✅ FIXED: backend → success + data
+      setPending(pRes.data.data || []);
+
+      const s = sRes.data.data || {};
+
+      setSummary({
+        pending_count: Number(s.pending_contributions || 0),
+        approved_count: Number(s.approved_contributions || 0),
+        total_collection: Number(s.total_collection || 0), // if backend adds later
+      });
+
       setError("");
     } catch (err) {
       console.error("Load error 👉", err);
@@ -99,7 +108,7 @@ export default function TreasurerDashboard() {
             <div style={card}>
               <h4>Total Collection</h4>
               <p style={cardNum}>
-                ₹{Number(summary.total_collection).toLocaleString("en-IN")}
+                ₹{summary.total_collection.toLocaleString("en-IN")}
               </p>
             </div>
           </div>

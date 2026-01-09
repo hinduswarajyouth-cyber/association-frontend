@@ -6,14 +6,29 @@ import DashboardHeader from "../components/DashboardHeader";
 export default function MemberDashboard() {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
+    let mounted = true;
+
     api
       .get("/dashboard/member")
       .then((res) => {
-        setRows(res.data.contributions || []);
+        if (mounted) {
+          setRows(res.data.data || []); // ✅ FIXED
+        }
       })
-      .finally(() => setLoading(false));
+      .catch((err) => {
+        console.error("MEMBER DASHBOARD ERROR 👉", err);
+        if (mounted) setError("Failed to load contributions");
+      })
+      .finally(() => {
+        if (mounted) setLoading(false);
+      });
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   /* =========================
@@ -27,14 +42,12 @@ export default function MemberDashboard() {
 
   return (
     <>
-      {/* TOP NAVBAR */}
       <Navbar />
 
-      {/* MAIN CONTAINER */}
       <div style={container}>
         <DashboardHeader />
 
-        {/* ===== SUMMARY CARDS ===== */}
+        {/* ===== SUMMARY ===== */}
         <div style={cardsRow}>
           <div style={card}>
             <h4>Total Contributions</h4>
@@ -43,18 +56,24 @@ export default function MemberDashboard() {
 
           <div style={card}>
             <h4>Approved Amount</h4>
-            <h2>₹{totalAmount}</h2>
+            <h2>₹{totalAmount.toLocaleString("en-IN")}</h2>
           </div>
         </div>
 
-        {/* ===== CONTRIBUTIONS TABLE ===== */}
+        {/* ===== CONTRIBUTIONS ===== */}
         <h3 style={{ marginTop: 20 }}>My Contributions</h3>
 
-        {loading ? (
-          <p>Loading...</p>
-        ) : rows.length === 0 ? (
+        {loading && <p>Loading...</p>}
+
+        {!loading && error && (
+          <p style={{ color: "red", marginTop: 10 }}>{error}</p>
+        )}
+
+        {!loading && !error && rows.length === 0 && (
           <p>No contributions yet</p>
-        ) : (
+        )}
+
+        {!loading && !error && rows.length > 0 && (
           <div style={{ overflowX: "auto" }}>
             <table style={table}>
               <thead>
@@ -69,12 +88,16 @@ export default function MemberDashboard() {
                 {rows.map((r) => (
                   <tr key={r.receipt_no}>
                     <td style={td}>{r.receipt_no}</td>
-                    <td style={td}>₹{r.amount}</td>
                     <td style={td}>
-                      <span style={statusBadge(r.status)}>{r.status}</span>
+                      ₹{Number(r.amount).toLocaleString("en-IN")}
                     </td>
                     <td style={td}>
-                      {r.receipt_date?.slice(0, 10)}
+                      <span style={statusBadge(r.status)}>
+                        {r.status}
+                      </span>
+                    </td>
+                    <td style={td}>
+                      {new Date(r.receipt_date).toLocaleDateString()}
                     </td>
                   </tr>
                 ))}

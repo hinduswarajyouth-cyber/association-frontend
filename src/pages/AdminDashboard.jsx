@@ -43,16 +43,18 @@ export default function AdminDashboard() {
     ])
       .then(
         ([summaryRes, recentRes, fundsRes, annRes, cashRes]) => {
-          setSummary(summaryRes.data);
-          setRecentReceipts(recentRes.data || []);
-          setFunds(fundsRes.data || []);
+          // ✅ FIXED: success → data
+          setSummary(summaryRes.data.data);
+
+          setRecentReceipts(recentRes.data.data || []);
+          setFunds(fundsRes.data.data || []);
           setAnnouncements((annRes.data || []).slice(0, 5));
 
           setCashflow([
             {
               name: now.toLocaleString("default", { month: "short" }),
-              credit: Number(cashRes.data?.total_credit || 0),
-              debit: Number(cashRes.data?.total_debit || 0),
+              credit: Number(cashRes.data.data?.total_credit || 0),
+              debit: Number(cashRes.data.data?.total_debit || 0),
             },
           ]);
         }
@@ -79,7 +81,9 @@ export default function AdminDashboard() {
     return (
       <>
         <Navbar />
-        <div style={{ ...page, color: "red" }}>{error}</div>
+        <div style={{ ...page, color: "red" }}>
+          {error || "No data available"}
+        </div>
       </>
     );
   }
@@ -118,14 +122,19 @@ export default function AdminDashboard() {
         {/* ===== FUND BALANCES ===== */}
         <div style={card}>
           <h3>💰 Fund Balances</h3>
-          <ul>
-            {funds.map((f) => (
-              <li key={f.id}>
-                <b>{f.fund_name}</b> — ₹
-                {Number(f.balance).toLocaleString("en-IN")}
-              </li>
-            ))}
-          </ul>
+
+          {funds.length === 0 ? (
+            <p>No funds found</p>
+          ) : (
+            <ul>
+              {funds.map((f) => (
+                <li key={f.id}>
+                  <b>{f.fund_name}</b> — ₹
+                  {Number(f.balance).toLocaleString("en-IN")}
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
 
         {/* ===== CHARTS ===== */}
@@ -167,6 +176,7 @@ export default function AdminDashboard() {
         {/* ===== ANNOUNCEMENTS ===== */}
         <div style={card}>
           <h3>📢 Latest Announcements</h3>
+
           {announcements.length === 0 ? (
             <p>No announcements</p>
           ) : (
@@ -183,30 +193,35 @@ export default function AdminDashboard() {
         {/* ===== RECENT RECEIPTS ===== */}
         <div style={tableCard}>
           <h3>🧾 Recent Contributions</h3>
-          <table style={table}>
-            <thead>
-              <tr>
-                <th style={th}>Receipt No</th>
-                <th style={th}>Member</th>
-                <th style={th}>Amount</th>
-                <th style={th}>Date</th>
-              </tr>
-            </thead>
-            <tbody>
-              {recentReceipts.map((r, i) => (
-                <tr key={i}>
-                  <td style={td}>{r.receipt_no}</td>
-                  <td style={td}>{r.member_name}</td>
-                  <td style={td}>
-                    ₹{Number(r.amount).toLocaleString("en-IN")}
-                  </td>
-                  <td style={td}>
-                    {new Date(r.receipt_date).toLocaleDateString()}
-                  </td>
+
+          {recentReceipts.length === 0 ? (
+            <p>No recent contributions</p>
+          ) : (
+            <table style={table}>
+              <thead>
+                <tr>
+                  <th style={th}>Receipt No</th>
+                  <th style={th}>Member</th>
+                  <th style={th}>Amount</th>
+                  <th style={th}>Date</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {recentReceipts.map((r, i) => (
+                  <tr key={i}>
+                    <td style={td}>{r.receipt_no}</td>
+                    <td style={td}>{r.member_name}</td>
+                    <td style={td}>
+                      ₹{Number(r.amount).toLocaleString("en-IN")}
+                    </td>
+                    <td style={td}>
+                      {new Date(r.receipt_date).toLocaleDateString()}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
     </>

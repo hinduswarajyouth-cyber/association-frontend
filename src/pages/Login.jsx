@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import api from "../api/api";
 import bg from "../assets/login-bg.png";
@@ -16,11 +16,16 @@ export default function Login() {
   const navigate = useNavigate();
   const { login } = useAuth();
 
+  const [params] = useSearchParams();
+  const expired = params.get("expired");
+
   /* =========================
      HANDLE LOGIN
   ========================= */
   const handleLogin = async (e) => {
     e.preventDefault();
+    if (loading) return; // 🔒 prevent double submit
+
     setError("");
     setLoading(true);
 
@@ -41,7 +46,7 @@ export default function Login() {
        */
       const { token, user, role, isFirstLogin } = res.data;
 
-      // ✅ SAVE AUTH (updates context + localStorage)
+      // ✅ SAVE AUTH
       login(token, { ...user, role });
 
       // 🔐 FIRST LOGIN → FORCE PASSWORD CHANGE
@@ -51,11 +56,7 @@ export default function Login() {
       }
 
       // ✅ SINGLE DASHBOARD FOR ALL ROLES
-      // ⏳ Wait one tick to allow AuthContext to update
-      setTimeout(() => {
-        navigate("/dashboard", { replace: true });
-      }, 0);
-
+      navigate("/dashboard", { replace: true });
     } catch (err) {
       console.error("LOGIN ERROR 👉", err);
       setError(err.response?.data?.error || "Invalid username or password");
@@ -78,6 +79,13 @@ export default function Login() {
 
           <form onSubmit={handleLogin} style={box}>
             <h3 style={{ marginBottom: 15 }}>Login</h3>
+
+            {/* 🔁 SESSION EXPIRED MESSAGE */}
+            {expired && (
+              <p style={expiredText}>
+                Session expired. Please login again.
+              </p>
+            )}
 
             {error && <p style={errorText}>{error}</p>}
 
@@ -181,10 +189,17 @@ const btn = {
   fontWeight: "bold",
   fontSize: 16,
   cursor: "pointer",
+  opacity: 1,
 };
 
 const errorText = {
   color: "#ffb4b4",
+  fontSize: 13,
+  marginBottom: 10,
+};
+
+const expiredText = {
+  color: "#ffe08a",
   fontSize: 13,
   marginBottom: 10,
 };
