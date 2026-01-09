@@ -58,7 +58,7 @@ export default function SuggestionBox() {
     }
 
     try {
-      await api.post("/api/suggestions", form);
+      await api.post("/suggestions", form);
       setSuccess("✅ Suggestion submitted successfully");
       setForm({ title: "", type: "GENERAL", message: "" });
       loadSuggestions();
@@ -73,7 +73,7 @@ export default function SuggestionBox() {
   ========================= */
   const updateStatus = async (id, status) => {
     try {
-      await api.put(`/api/suggestions/${id}/status`, { status });
+      await api.put(`/suggestions/${id}/status`, { status });
       loadSuggestions();
     } catch {
       alert("Failed to update status");
