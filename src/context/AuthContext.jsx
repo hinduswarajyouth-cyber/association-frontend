@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import api from "../api/api";
+import api from "../api/api"; // ✅ FIXED IMPORT
 
 const AuthContext = createContext(null);
 
@@ -21,7 +21,7 @@ export const AuthProvider = ({ children }) => {
         return;
       }
 
-      // Optimistic restore (avoids UI flicker)
+      // Optimistic restore
       if (storedUser) {
         setUser(JSON.parse(storedUser));
         setToken(storedToken);
@@ -32,7 +32,7 @@ export const AuthProvider = ({ children }) => {
         setUser(res.data.user);
         setToken(storedToken);
         localStorage.setItem("user", JSON.stringify(res.data.user));
-      } catch (error) {
+      } catch {
         localStorage.clear();
         setUser(null);
         setToken(null);
