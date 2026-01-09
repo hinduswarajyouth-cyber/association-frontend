@@ -1,48 +1,37 @@
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { useNotifications } from "../context/NotificationContext";
+import NotificationPanel from "./NotificationPanel";
 import { useState } from "react";
 
 export default function Navbar() {
   const { user, logout } = useAuth();
+  const { notifications } = useNotifications();
   const navigate = useNavigate();
   const location = useLocation();
+
   const [open, setOpen] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
 
   if (!user) return null;
 
   const role = user.role;
   const name = user.name || "User";
 
-  /* =========================
-     ROLE GROUPS
-  ========================= */
-  const ADMIN_ROLES = ["SUPER_ADMIN", "PRESIDENT"];
-  const OFFICE_ROLES = [
-    "VICE_PRESIDENT",
-    "GENERAL_SECRETARY",
-    "JOINT_SECRETARY",
-    "EC_MEMBER",
-  ];
-  const MEMBER_ROLES = ["MEMBER", "VOLUNTEER"];
+  const unreadCount = notifications.filter(n => !n.is_read).length;
 
-  /* =========================
-     HOME ROUTE
-  ========================= */
+  /* ================= HOME ROUTE ================= */
   const getHomeRoute = () => {
-    if (ADMIN_ROLES.includes(role)) return "/dashboard";
+    if (["SUPER_ADMIN", "PRESIDENT"].includes(role)) return "/dashboard";
     if (role === "TREASURER") return "/treasurer-dashboard";
     return "/dashboard";
   };
 
-  /* =========================
-     ACTIVE LINK STYLE
-  ========================= */
+  /* ================= ACTIVE LINK ================= */
   const isActive = (path) =>
     location.pathname.startsWith(path)
       ? { ...link, ...activeLink }
       : link;
-
-  const closeMenu = () => setOpen(false);
 
   const doLogout = () => {
     logout();
@@ -64,26 +53,56 @@ export default function Navbar() {
 
         {/* ===== DESKTOP MENU ===== */}
         <div style={menuDesktop}>
-          <MenuLinks role={role} isActive={isActive} onClick={closeMenu} />
-          <UserInfo name={name} role={role} onLogout={doLogout} />
+          <MenuLinks role={role} isActive={isActive} />
+
+          {/* 🔔 NOTIFICATIONS */}
+          <div style={bellWrap}>
+            <span onClick={() => setShowNotifications(!showNotifications)}>
+              🔔
+              {unreadCount > 0 && (
+                <span style={badge}>{unreadCount}</span>
+              )}
+            </span>
+
+            {showNotifications && (
+              <NotificationPanel
+                onClose={() => setShowNotifications(false)}
+              />
+            )}
+          </div>
+
+          {/* 👤 USER INFO */}
+          <div style={userBox}>
+            <span style={userName}>👤 {name}</span>
+            <span style={roleBadge}>
+              {role.replaceAll("_", " ")}
+            </span>
+            <button onClick={doLogout} style={logoutBtn}>
+              Logout
+            </button>
+          </div>
         </div>
       </div>
 
       {/* ===== MOBILE MENU ===== */}
       {open && (
         <div style={menuMobile}>
-          <MenuLinks role={role} isActive={isActive} onClick={closeMenu} />
-          <UserInfo name={name} role={role} onLogout={doLogout} />
+          <MenuLinks
+            role={role}
+            isActive={isActive}
+            onClick={() => setOpen(false)}
+          />
+          <button onClick={doLogout} style={logoutBtn}>
+            Logout
+          </button>
         </div>
       )}
     </>
   );
 }
 
-/* =========================
-   MENU LINKS (FINAL)
-========================= */
-function MenuLinks({ role, isActive, onClick }) {
+/* ================= MENU LINKS ================= */
+function MenuLinks({ role, isActive, onClick = () => {} }) {
   const ADMIN_ROLES = ["SUPER_ADMIN", "PRESIDENT"];
   const OFFICE_ROLES = [
     "VICE_PRESIDENT",
@@ -95,17 +114,19 @@ function MenuLinks({ role, isActive, onClick }) {
 
   return (
     <>
-      {/* 👑 ADMIN / PRESIDENT */}
+      {/* 👑 ADMIN */}
       {ADMIN_ROLES.includes(role) && (
         <>
           <Link onClick={onClick} style={isActive("/dashboard")} to="/dashboard">
             Dashboard
           </Link>
-
-          <Link onClick={onClick} style={isActive("/association-info")} to="/association-info">
+          <Link
+            onClick={onClick}
+            style={isActive("/association-info")}
+            to="/association-info"
+          >
             Association Info
           </Link>
-
           <Link onClick={onClick} style={isActive("/members")} to="/members">
             Members
           </Link>
@@ -188,24 +209,7 @@ function MenuLinks({ role, isActive, onClick }) {
   );
 }
 
-/* =========================
-   USER INFO
-========================= */
-function UserInfo({ name, role, onLogout }) {
-  return (
-    <div style={userBox}>
-      <span style={userName}>👤 {name}</span>
-      <span style={roleBadge}>{role.replaceAll("_", " ")}</span>
-      <button onClick={onLogout} style={logoutBtn}>
-        Logout
-      </button>
-    </div>
-  );
-}
-
-/* =========================
-   🎨 STYLES
-========================= */
+/* ================= STYLES ================= */
 const bar = {
   background: "#1e293b",
   padding: "14px 20px",
@@ -254,6 +258,23 @@ const link = {
 const activeLink = {
   color: "#38bdf8",
   borderBottom: "2px solid #38bdf8",
+};
+
+const bellWrap = {
+  position: "relative",
+  cursor: "pointer",
+  fontSize: 20,
+};
+
+const badge = {
+  position: "absolute",
+  top: -6,
+  right: -10,
+  background: "#dc2626",
+  color: "#fff",
+  borderRadius: "50%",
+  fontSize: 11,
+  padding: "2px 6px",
 };
 
 const userBox = {
