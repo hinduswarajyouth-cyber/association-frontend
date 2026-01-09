@@ -9,12 +9,18 @@ export default function Meetings() {
 
   /* ROLE GROUPS */
   const ADMIN_ROLES = ["SUPER_ADMIN", "PRESIDENT"];
-  const CAN_VOTE = ["EC_MEMBER"];
+  const CAN_VOTE = [
+    "EC_MEMBER",
+    "VICE_PRESIDENT",
+    "GENERAL_SECRETARY",
+    "JOINT_SECRETARY",
+  ];
   const CAN_DELETE = role === "SUPER_ADMIN";
 
   /* STATES */
   const [meetings, setMeetings] = useState([]);
   const [selected, setSelected] = useState(null);
+  const [editing, setEditing] = useState(false);
   const [resolutions, setResolutions] = useState([]);
 
   const [form, setForm] = useState({
@@ -41,21 +47,21 @@ export default function Meetings() {
   /* OPEN MEETING */
   const openMeeting = async (m) => {
     setSelected(m);
+    setEditing(false);
 
-    await api.post(`/meetings/join/${m.id}`);
-
+    await api.post(`/meetings/join/${m.id}`).catch(() => {});
     const r = await api.get(`/meetings/resolution/${m.id}`);
     setResolutions(r.data || []);
   };
 
-  /* CREATE / UPDATE MEETING */
+  /* CREATE / UPDATE */
   const saveMeeting = async () => {
     if (!form.title || !form.meeting_date) {
       alert("Title & Date required");
       return;
     }
 
-    if (selected && ADMIN_ROLES.includes(role)) {
+    if (editing) {
       await api.put(`/meetings/${selected.id}`, form);
       alert("Meeting updated");
     } else {
@@ -63,12 +69,17 @@ export default function Meetings() {
       alert("Meeting created");
     }
 
-    setForm({ title: "", meeting_date: "", description: "", join_link: "" });
-    setSelected(null);
+    resetForm();
     loadMeetings();
   };
 
-  /* DELETE MEETING */
+  const resetForm = () => {
+    setForm({ title: "", meeting_date: "", description: "", join_link: "" });
+    setSelected(null);
+    setEditing(false);
+  };
+
+  /* DELETE */
   const deleteMeeting = async (id) => {
     if (!window.confirm("Delete this meeting?")) return;
     await api.delete(`/meetings/${id}`);
@@ -79,7 +90,6 @@ export default function Meetings() {
   /* VOTE */
   const vote = async (rid, v) => {
     await api.post(`/meetings/vote/${rid}`, { vote: v });
-    alert("Vote submitted");
     const r = await api.get(`/meetings/resolution/${selected.id}`);
     setResolutions(r.data || []);
   };
@@ -111,10 +121,10 @@ export default function Meetings() {
       <div style={page}>
         <h2>📅 Meetings</h2>
 
-        {/* CREATE / EDIT MEETING */}
+        {/* CREATE / EDIT */}
         {ADMIN_ROLES.includes(role) && (
           <div style={card}>
-            <h3>{selected ? "✏️ Edit Meeting" : "➕ Create Meeting"}</h3>
+            <h3>{editing ? "✏️ Edit Meeting" : "➕ Create Meeting"}</h3>
 
             <input
               style={input}
@@ -151,12 +161,12 @@ export default function Meetings() {
             />
 
             <button style={btnPrimary} onClick={saveMeeting}>
-              {selected ? "Update" : "Create"}
+              {editing ? "Update" : "Create"}
             </button>
           </div>
         )}
 
-        {/* MEETINGS LIST */}
+        {/* MEETING LIST */}
         <div style={grid}>
           {meetings.map((m) => (
             <div key={m.id} style={card}>
@@ -172,9 +182,12 @@ export default function Meetings() {
                   style={btnSecondary}
                   onClick={() => {
                     setSelected(m);
+                    setEditing(true);
                     setForm({
                       title: m.title,
-                      meeting_date: m.meeting_date.slice(0, 16),
+                      meeting_date: m.meeting_date
+                        ? m.meeting_date.slice(0, 16)
+                        : "",
                       description: m.description || "",
                       join_link: m.join_link || "",
                     });
@@ -196,7 +209,7 @@ export default function Meetings() {
           ))}
         </div>
 
-        {/* SELECTED MEETING DETAILS */}
+        {/* MEETING DETAILS */}
         {selected && (
           <div style={card}>
             <h3>{selected.title}</h3>
@@ -244,7 +257,7 @@ export default function Meetings() {
               </div>
             )}
 
-            {/* RESOLUTIONS LIST */}
+            {/* RESOLUTIONS */}
             <h4>📜 Resolutions</h4>
 
             {resolutions.map((r) => (
@@ -305,122 +318,3 @@ export default function Meetings() {
     </>
   );
 }
-
-/* ================= STYLES ================= */
-
-const page = { padding: 30, background: "#f1f5f9", minHeight: "100vh" };
-
-const grid = {
-  display: "grid",
-  gridTemplateColumns: "repeat(auto-fit,minmax(260px,1fr))",
-  gap: 16,
-};
-
-const card = {
-  background: "#fff",
-  padding: 20,
-  borderRadius: 12,
-  marginBottom: 20,
-};
-
-const resolutionCard = {
-  border: "1px solid #e5e7eb",
-  padding: 15,
-  borderRadius: 10,
-  marginBottom: 15,
-};
-
-const box = {
-  background: "#f8fafc",
-  padding: 15,
-  borderRadius: 10,
-  marginBottom: 20,
-};
-
-const input = {
-  width: "100%",
-  padding: 10,
-  marginBottom: 10,
-  borderRadius: 8,
-  border: "1px solid #cbd5f5",
-};
-
-const textarea = {
-  width: "100%",
-  height: 80,
-  padding: 10,
-  marginBottom: 10,
-  borderRadius: 8,
-  border: "1px solid #cbd5f5",
-};
-
-const btnPrimary = {
-  background: "#2563eb",
-  color: "#fff",
-  padding: "8px 14px",
-  border: "none",
-  borderRadius: 6,
-};
-
-const btnDark = {
-  background: "#0f172a",
-  color: "#fff",
-  padding: "8px 14px",
-  border: "none",
-  borderRadius: 6,
-  marginRight: 6,
-};
-
-const btnSecondary = {
-  background: "#f59e0b",
-  color: "#fff",
-  padding: "8px 14px",
-  border: "none",
-  borderRadius: 6,
-  marginRight: 6,
-};
-
-const btnDanger = {
-  background: "#dc2626",
-  color: "#fff",
-  padding: "8px 14px",
-  border: "none",
-  borderRadius: 6,
-};
-
-const btnYes = {
-  background: "#16a34a",
-  color: "#fff",
-  padding: "6px 12px",
-  marginRight: 8,
-  border: "none",
-  borderRadius: 6,
-};
-
-const btnNo = {
-  background: "#dc2626",
-  color: "#fff",
-  padding: "6px 12px",
-  border: "none",
-  borderRadius: 6,
-};
-
-const joinBtn = {
-  display: "inline-block",
-  marginBottom: 15,
-  background: "#0ea5e9",
-  color: "#fff",
-  padding: "8px 14px",
-  borderRadius: 8,
-  textDecoration: "none",
-};
-
-const pdfBtn = {
-  display: "inline-block",
-  marginTop: 10,
-  background: "#16a34a",
-  color: "#fff",
-  padding: "6px 12px",
-  borderRadius: 6,
-  textDecoration: "none",
-};
