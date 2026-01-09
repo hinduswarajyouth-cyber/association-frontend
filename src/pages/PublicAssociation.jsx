@@ -7,14 +7,18 @@ export default function PublicAssociation() {
   const [association, setAssociation] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  /* =========================
+     LOAD PUBLIC ASSOCIATION
+  ========================= */
   useEffect(() => {
     api
-      .get("/public/association") // ✅ FIXED ENDPOINT
+      .get("/public/association-info") // ✅ CORRECT ENDPOINT
       .then((res) => {
-        setAssociation(res.data || null);
+        setAssociation(res.data.data.association || null); // ✅ CORRECT DATA
       })
       .catch((err) => {
         console.error("PUBLIC ASSOCIATION ERROR 👉", err);
+        setAssociation(null);
       })
       .finally(() => setLoading(false));
   }, []);
@@ -44,21 +48,11 @@ export default function PublicAssociation() {
 
         <h1>{association.name}</h1>
 
-        <p>
-          <b>Registration No:</b> {association.registration_no}
-        </p>
-        <p>
-          <b>Established:</b> {association.established_year}
-        </p>
-        <p>
-          <b>Address:</b> {association.address}
-        </p>
-        <p>
-          <b>Phone:</b> {association.phone}
-        </p>
-        <p>
-          <b>Email:</b> {association.email}
-        </p>
+        <p><b>Registration No:</b> {association.registration_no}</p>
+        <p><b>Established:</b> {association.established_year}</p>
+        <p><b>Address:</b> {association.address}</p>
+        <p><b>Phone:</b> {association.phone}</p>
+        <p><b>Email:</b> {association.email}</p>
 
         {/* 👉 DONATE */}
         <a href="/donate">
