@@ -318,3 +318,131 @@ export default function Meetings() {
     </>
   );
 }
+/* ================= STYLES ================= */
+
+const page = {
+  padding: 30,
+  background: "#f1f5f9",
+  minHeight: "100vh",
+};
+
+const grid = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit,minmax(260px,1fr))",
+  gap: 16,
+};
+
+const card = {
+  background: "#fff",
+  padding: 20,
+  borderRadius: 12,
+  marginBottom: 20,
+};
+
+const resolutionCard = {
+  border: "1px solid #e5e7eb",
+  padding: 15,
+  borderRadius: 10,
+  marginBottom: 15,
+};
+
+const box = {
+  background: "#f8fafc",
+  padding: 15,
+  borderRadius: 10,
+  marginBottom: 20,
+};
+
+const input = {
+  width: "100%",
+  padding: 10,
+  marginBottom: 10,
+  borderRadius: 8,
+  border: "1px solid #cbd5f5",
+};
+
+const textarea = {
+  width: "100%",
+  height: 80,
+  padding: 10,
+  marginBottom: 10,
+  borderRadius: 8,
+  border: "1px solid #cbd5f5",
+};
+
+const btnPrimary = {
+  background: "#2563eb",
+  color: "#fff",
+  padding: "8px 14px",
+  border: "none",
+  borderRadius: 6,
+  cursor: "pointer",
+};
+
+const btnDark = {
+  background: "#0f172a",
+  color: "#fff",
+  padding: "8px 14px",
+  border: "none",
+  borderRadius: 6,
+  marginRight: 6,
+  cursor: "pointer",
+};
+
+const btnSecondary = {
+  background: "#f59e0b",
+  color: "#fff",
+  padding: "8px 14px",
+  border: "none",
+  borderRadius: 6,
+  marginRight: 6,
+  cursor: "pointer",
+};
+
+const btnDanger = {
+  background: "#dc2626",
+  color: "#fff",
+  padding: "8px 14px",
+  border: "none",
+  borderRadius: 6,
+  cursor: "pointer",
+};
+
+const btnYes = {
+  background: "#16a34a",
+  color: "#fff",
+  padding: "6px 12px",
+  marginRight: 8,
+  border: "none",
+  borderRadius: 6,
+  cursor: "pointer",
+};
+
+const btnNo = {
+  background: "#dc2626",
+  color: "#fff",
+  padding: "6px 12px",
+  border: "none",
+  borderRadius: 6,
+  cursor: "pointer",
+};
+
+const joinBtn = {
+  display: "inline-block",
+  marginBottom: 15,
+  background: "#0ea5e9",
+  color: "#fff",
+  padding: "8px 14px",
+  borderRadius: 8,
+  textDecoration: "none",
+};
+
+const pdfBtn = {
+  display: "inline-block",
+  marginTop: 10,
+  background: "#16a34a",
+  color: "#fff",
+  padding: "6px 12px",
+  borderRadius: 6,
+  textDecoration: "none",
+};
