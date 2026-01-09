@@ -2,129 +2,107 @@ import { useEffect, useState } from "react";
 import api from "../api/api";
 
 export default function PublicDonation() {
-  const [funds, setFunds] = useState([]);
   const [form, setForm] = useState({
-    donor_name: "",
-    donor_phone: "",
-    fund_id: "",
+    name: "",
+    phone: "",
+    fund: "",
     amount: "",
-    payment_mode: "CASH",
-    reference_no: "",
+    payment_mode: "UPI",
+    reference: "",
   });
-  const [msg, setMsg] = useState("");
 
+  const [association, setAssociation] = useState(null);
+  const [success, setSuccess] = useState(false);
+
+  /* LOAD ASSOCIATION INFO */
   useEffect(() => {
-    api.get("/public/funds").then((res) => setFunds(res.data));
+    api.get("/public/association-info").then((res) => {
+      setAssociation(res.data.data);
+    });
   }, []);
+
+  const handleChange = (e) =>
+    setForm({ ...form, [e.target.name]: e.target.value });
 
   const submit = async (e) => {
     e.preventDefault();
-    setMsg("");
-
-    try {
-      await api.post("/public/donate", form);
-      setMsg("🙏 Thank you! Donation submitted");
-      setForm({
-        donor_name: "",
-        donor_phone: "",
-        fund_id: "",
-        amount: "",
-        payment_mode: "CASH",
-        reference_no: "",
-      });
-    } catch (err) {
-      alert("Donation failed");
-    }
+    await api.post("/public/donate", form);
+    setSuccess(true);
   };
 
   return (
     <div style={page}>
-      <h1>🙏 Donate to Our Association</h1>
+      <h2>🙏 Donate to Our Association</h2>
 
-      {msg && <p style={{ color: "green" }}>{msg}</p>}
+      {success && <p style={{ color: "green" }}>Thank you! Donation submitted</p>}
 
       <form onSubmit={submit} style={card}>
-        <input
-          placeholder="Your Name (optional)"
-          value={form.donor_name}
-          onChange={(e) =>
-            setForm({ ...form, donor_name: e.target.value })
-          }
-        />
+        <input name="name" placeholder="Your Name (optional)" onChange={handleChange} />
+        <input name="phone" placeholder="Phone (optional)" onChange={handleChange} />
 
-        <input
-          placeholder="Phone (optional)"
-          value={form.donor_phone}
-          onChange={(e) =>
-            setForm({ ...form, donor_phone: e.target.value })
-          }
-        />
-
-        <select
-          required
-          value={form.fund_id}
-          onChange={(e) =>
-            setForm({ ...form, fund_id: e.target.value })
-          }
-        >
+        <select name="fund" onChange={handleChange} required>
           <option value="">Select Fund</option>
-          {funds.map((f) => (
-            <option key={f.id} value={f.id}>
-              {f.fund_name}
-            </option>
-          ))}
+          <option value="Monthly Subscription">Monthly Subscription</option>
         </select>
 
         <input
-          required
           type="number"
+          name="amount"
           placeholder="Amount"
-          value={form.amount}
-          onChange={(e) =>
-            setForm({ ...form, amount: e.target.value })
-          }
+          required
+          onChange={handleChange}
         />
 
-        <select
-          value={form.payment_mode}
-          onChange={(e) =>
-            setForm({ ...form, payment_mode: e.target.value })
-          }
-        >
-          <option value="CASH">Cash</option>
+        <select name="payment_mode" onChange={handleChange}>
           <option value="UPI">UPI</option>
+          <option value="CASH">Cash</option>
           <option value="BANK">Bank Transfer</option>
         </select>
 
-        {form.payment_mode !== "CASH" && (
+        {/* 🔥 UPI QR SECTION */}
+        {form.payment_mode === "UPI" && association && (
+          <div style={upiBox}>
+            <p><b>UPI ID:</b> {association.upi_id}</p>
+            <img
+              src={association.upi_qr_url}
+              alt="UPI QR"
+              style={{ width: 180 }}
+            />
+            <p style={{ fontSize: 12 }}>
+              Scan & pay → Enter transaction reference below
+            </p>
+          </div>
+        )}
+
+        {form.payment_mode === "UPI" && (
           <input
+            name="reference"
             placeholder="Transaction Reference"
-            value={form.reference_no}
-            onChange={(e) =>
-              setForm({ ...form, reference_no: e.target.value })
-            }
+            required
+            onChange={handleChange}
           />
         )}
 
-        <button type="submit">Donate</button>
+        <button>Donate</button>
       </form>
     </div>
   );
 }
 
-const page = {
-  minHeight: "100vh",
-  background: "#f1f5f9",
-  padding: 40,
-};
-
+/* STYLES */
+const page = { padding: 40, textAlign: "center" };
 const card = {
-  maxWidth: 400,
+  maxWidth: 360,
   margin: "auto",
+  padding: 20,
   background: "#fff",
-  padding: 24,
   borderRadius: 12,
   display: "flex",
   flexDirection: "column",
-  gap: 12,
+  gap: 10,
+};
+const upiBox = {
+  background: "#f1f5f9",
+  padding: 12,
+  borderRadius: 10,
 };
