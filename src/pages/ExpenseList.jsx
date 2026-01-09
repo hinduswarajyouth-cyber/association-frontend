@@ -13,7 +13,7 @@ export default function ExpenseList() {
   const loadExpenses = async () => {
     try {
       setLoading(true);
-      const res = await api.get("/api/expenses");
+      const res = await api.get("/expenses");
       setExpenses(res.data || []);
       setError("");
     } catch (err) {

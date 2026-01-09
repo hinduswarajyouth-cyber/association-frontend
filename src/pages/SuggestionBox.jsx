@@ -33,8 +33,8 @@ export default function SuggestionBox() {
     setLoading(true);
     try {
       const res = isAdmin
-        ? await api.get("/api/suggestions/all")
-        : await api.get("/api/suggestions/my");
+        ? await api.get("/suggestions/all")
+        : await api.get("/suggestions/my");
 
       setSuggestions(res.data || []);
     } catch (err) {

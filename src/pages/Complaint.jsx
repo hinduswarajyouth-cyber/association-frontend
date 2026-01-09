@@ -52,7 +52,7 @@ export default function Complaint() {
     loadComplaints();
 
     if (ADMIN_ROLES.includes(ROLE)) {
-      api.get("/api/complaints/stats").then((res) => {
+      api.get("/complaints/stats").then((res) => {
         setDashboard(res.data);
       });
     }
