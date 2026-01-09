@@ -7,63 +7,420 @@ export default function Meetings() {
   const { user } = useAuth();
   const role = user.role;
 
+  /* ROLE GROUPS */
+  const ADMIN_ROLES = ["SUPER_ADMIN", "PRESIDENT"];
+  const CAN_VOTE = ["EC_MEMBER"];
+  const CAN_DELETE = role === "SUPER_ADMIN";
+
+  /* STATES */
   const [meetings, setMeetings] = useState([]);
   const [selected, setSelected] = useState(null);
   const [resolutions, setResolutions] = useState([]);
 
-  useEffect(() => {
-    api.get("/meetings").then(res => setMeetings(res.data));
-  }, []);
+  const [form, setForm] = useState({
+    title: "",
+    meeting_date: "",
+    description: "",
+    join_link: "",
+  });
 
-  const openMeeting = async m => {
-    setSelected(m);
-    await api.post(`/meetings/join/${m.id}`);
-    const r = await api.get(`/meetings/resolution/${m.id}`);
-    setResolutions(r.data);
+  const [newTitle, setNewTitle] = useState("");
+  const [newContent, setNewContent] = useState("");
+  const [deadline, setDeadline] = useState("");
+
+  /* LOAD MEETINGS */
+  const loadMeetings = async () => {
+    const res = await api.get("/meetings");
+    setMeetings(res.data || []);
   };
 
-  const vote = (id, v) =>
-    api.post(`/meetings/vote/${id}`, { vote: v }).then(() => alert("Voted"));
+  useEffect(() => {
+    loadMeetings();
+  }, []);
+
+  /* OPEN MEETING */
+  const openMeeting = async (m) => {
+    setSelected(m);
+
+    await api.post(`/meetings/join/${m.id}`);
+
+    const r = await api.get(`/meetings/resolution/${m.id}`);
+    setResolutions(r.data || []);
+  };
+
+  /* CREATE / UPDATE MEETING */
+  const saveMeeting = async () => {
+    if (!form.title || !form.meeting_date) {
+      alert("Title & Date required");
+      return;
+    }
+
+    if (selected && ADMIN_ROLES.includes(role)) {
+      await api.put(`/meetings/${selected.id}`, form);
+      alert("Meeting updated");
+    } else {
+      await api.post("/meetings/create", form);
+      alert("Meeting created");
+    }
+
+    setForm({ title: "", meeting_date: "", description: "", join_link: "" });
+    setSelected(null);
+    loadMeetings();
+  };
+
+  /* DELETE MEETING */
+  const deleteMeeting = async (id) => {
+    if (!window.confirm("Delete this meeting?")) return;
+    await api.delete(`/meetings/${id}`);
+    alert("Meeting deleted");
+    loadMeetings();
+  };
+
+  /* VOTE */
+  const vote = async (rid, v) => {
+    await api.post(`/meetings/vote/${rid}`, { vote: v });
+    alert("Vote submitted");
+    const r = await api.get(`/meetings/resolution/${selected.id}`);
+    setResolutions(r.data || []);
+  };
+
+  /* ADD RESOLUTION */
+  const addResolution = async () => {
+    if (!newTitle || !newContent) {
+      alert("Resolution title & content required");
+      return;
+    }
+
+    await api.post(`/meetings/resolution/${selected.id}`, {
+      title: newTitle,
+      content: newContent,
+      vote_deadline: deadline || null,
+    });
+
+    setNewTitle("");
+    setNewContent("");
+    setDeadline("");
+
+    const r = await api.get(`/meetings/resolution/${selected.id}`);
+    setResolutions(r.data || []);
+  };
 
   return (
     <>
       <Navbar />
-      <h2>Meetings</h2>
+      <div style={page}>
+        <h2>📅 Meetings</h2>
 
-      {meetings.map(m => (
-        <div key={m.id}>
-          <b>{m.title}</b>
-          <button onClick={() => openMeeting(m)}>Open</button>
-        </div>
-      ))}
+        {/* CREATE / EDIT MEETING */}
+        {ADMIN_ROLES.includes(role) && (
+          <div style={card}>
+            <h3>{selected ? "✏️ Edit Meeting" : "➕ Create Meeting"}</h3>
 
-      {selected && (
-        <>
-          <h3>{selected.title}</h3>
-          <a href={selected.join_link} target="_blank">Join (Zoom/Meet)</a>
+            <input
+              style={input}
+              placeholder="Meeting Title"
+              value={form.title}
+              onChange={(e) => setForm({ ...form, title: e.target.value })}
+            />
 
-          <h4>Resolutions</h4>
-          {resolutions.map(r => (
-            <div key={r.id}>
-              <p>{r.title}</p>
-              <p>Status: {r.status}</p>
+            <input
+              style={input}
+              type="datetime-local"
+              value={form.meeting_date}
+              onChange={(e) =>
+                setForm({ ...form, meeting_date: e.target.value })
+              }
+            />
 
-              {role === "EC_MEMBER" && !r.is_locked && (
-                <>
-                  <button onClick={() => vote(r.id,"YES")}>YES</button>
-                  <button onClick={() => vote(r.id,"NO")}>NO</button>
-                </>
+            <textarea
+              style={textarea}
+              placeholder="Description"
+              value={form.description}
+              onChange={(e) =>
+                setForm({ ...form, description: e.target.value })
+              }
+            />
+
+            <input
+              style={input}
+              placeholder="Zoom / Google Meet Link"
+              value={form.join_link}
+              onChange={(e) =>
+                setForm({ ...form, join_link: e.target.value })
+              }
+            />
+
+            <button style={btnPrimary} onClick={saveMeeting}>
+              {selected ? "Update" : "Create"}
+            </button>
+          </div>
+        )}
+
+        {/* MEETINGS LIST */}
+        <div style={grid}>
+          {meetings.map((m) => (
+            <div key={m.id} style={card}>
+              <h4>{m.title}</h4>
+              <p>{new Date(m.meeting_date).toLocaleString()}</p>
+
+              <button style={btnDark} onClick={() => openMeeting(m)}>
+                Open
+              </button>
+
+              {ADMIN_ROLES.includes(role) && (
+                <button
+                  style={btnSecondary}
+                  onClick={() => {
+                    setSelected(m);
+                    setForm({
+                      title: m.title,
+                      meeting_date: m.meeting_date.slice(0, 16),
+                      description: m.description || "",
+                      join_link: m.join_link || "",
+                    });
+                  }}
+                >
+                  Edit
+                </button>
               )}
 
-              {r.status === "APPROVED" && (
-                <a href={`${import.meta.env.VITE_API_BASE_URL}/${r.pdf_path}`} target="_blank">
-                  Download PDF
-                </a>
+              {CAN_DELETE && (
+                <button
+                  style={btnDanger}
+                  onClick={() => deleteMeeting(m.id)}
+                >
+                  Delete
+                </button>
               )}
             </div>
           ))}
-        </>
-      )}
+        </div>
+
+        {/* SELECTED MEETING DETAILS */}
+        {selected && (
+          <div style={card}>
+            <h3>{selected.title}</h3>
+
+            {selected.join_link && (
+              <a
+                href={selected.join_link}
+                target="_blank"
+                rel="noreferrer"
+                style={joinBtn}
+              >
+                🎥 Join Meeting
+              </a>
+            )}
+
+            {/* ADD RESOLUTION */}
+            {ADMIN_ROLES.includes(role) && (
+              <div style={box}>
+                <h4>➕ Add Resolution</h4>
+
+                <input
+                  style={input}
+                  placeholder="Resolution Title"
+                  value={newTitle}
+                  onChange={(e) => setNewTitle(e.target.value)}
+                />
+
+                <textarea
+                  style={textarea}
+                  placeholder="Resolution Content"
+                  value={newContent}
+                  onChange={(e) => setNewContent(e.target.value)}
+                />
+
+                <input
+                  style={input}
+                  type="datetime-local"
+                  value={deadline}
+                  onChange={(e) => setDeadline(e.target.value)}
+                />
+
+                <button style={btnPrimary} onClick={addResolution}>
+                  Save Resolution
+                </button>
+              </div>
+            )}
+
+            {/* RESOLUTIONS LIST */}
+            <h4>📜 Resolutions</h4>
+
+            {resolutions.map((r) => (
+              <div key={r.id} style={resolutionCard}>
+                <h5>{r.title}</h5>
+                <p>{r.content}</p>
+
+                <p>
+                  Status:{" "}
+                  <b
+                    style={{
+                      color:
+                        r.status === "APPROVED"
+                          ? "green"
+                          : r.status === "REJECTED"
+                          ? "red"
+                          : "orange",
+                    }}
+                  >
+                    {r.status}
+                  </b>
+                </p>
+
+                {r.is_locked && <p>🔒 Voting Closed</p>}
+
+                {CAN_VOTE.includes(role) && !r.is_locked && (
+                  <>
+                    <button
+                      style={btnYes}
+                      onClick={() => vote(r.id, "YES")}
+                    >
+                      👍 YES
+                    </button>
+                    <button
+                      style={btnNo}
+                      onClick={() => vote(r.id, "NO")}
+                    >
+                      👎 NO
+                    </button>
+                  </>
+                )}
+
+                {r.status === "APPROVED" && r.pdf_path && (
+                  <a
+                    href={`${import.meta.env.VITE_API_BASE_URL}/${r.pdf_path}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    style={pdfBtn}
+                  >
+                    📄 Download Resolution PDF
+                  </a>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </>
   );
 }
+
+/* ================= STYLES ================= */
+
+const page = { padding: 30, background: "#f1f5f9", minHeight: "100vh" };
+
+const grid = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit,minmax(260px,1fr))",
+  gap: 16,
+};
+
+const card = {
+  background: "#fff",
+  padding: 20,
+  borderRadius: 12,
+  marginBottom: 20,
+};
+
+const resolutionCard = {
+  border: "1px solid #e5e7eb",
+  padding: 15,
+  borderRadius: 10,
+  marginBottom: 15,
+};
+
+const box = {
+  background: "#f8fafc",
+  padding: 15,
+  borderRadius: 10,
+  marginBottom: 20,
+};
+
+const input = {
+  width: "100%",
+  padding: 10,
+  marginBottom: 10,
+  borderRadius: 8,
+  border: "1px solid #cbd5f5",
+};
+
+const textarea = {
+  width: "100%",
+  height: 80,
+  padding: 10,
+  marginBottom: 10,
+  borderRadius: 8,
+  border: "1px solid #cbd5f5",
+};
+
+const btnPrimary = {
+  background: "#2563eb",
+  color: "#fff",
+  padding: "8px 14px",
+  border: "none",
+  borderRadius: 6,
+};
+
+const btnDark = {
+  background: "#0f172a",
+  color: "#fff",
+  padding: "8px 14px",
+  border: "none",
+  borderRadius: 6,
+  marginRight: 6,
+};
+
+const btnSecondary = {
+  background: "#f59e0b",
+  color: "#fff",
+  padding: "8px 14px",
+  border: "none",
+  borderRadius: 6,
+  marginRight: 6,
+};
+
+const btnDanger = {
+  background: "#dc2626",
+  color: "#fff",
+  padding: "8px 14px",
+  border: "none",
+  borderRadius: 6,
+};
+
+const btnYes = {
+  background: "#16a34a",
+  color: "#fff",
+  padding: "6px 12px",
+  marginRight: 8,
+  border: "none",
+  borderRadius: 6,
+};
+
+const btnNo = {
+  background: "#dc2626",
+  color: "#fff",
+  padding: "6px 12px",
+  border: "none",
+  borderRadius: 6,
+};
+
+const joinBtn = {
+  display: "inline-block",
+  marginBottom: 15,
+  background: "#0ea5e9",
+  color: "#fff",
+  padding: "8px 14px",
+  borderRadius: 8,
+  textDecoration: "none",
+};
+
+const pdfBtn = {
+  display: "inline-block",
+  marginTop: 10,
+  background: "#16a34a",
+  color: "#fff",
+  padding: "6px 12px",
+  borderRadius: 6,
+  textDecoration: "none",
+};
