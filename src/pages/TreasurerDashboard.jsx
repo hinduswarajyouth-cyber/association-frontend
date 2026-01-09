@@ -7,6 +7,7 @@ export default function TreasurerDashboard() {
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [tab, setTab] = useState("MEMBER"); // MEMBER | PUBLIC
 
   /* =========================
      LOAD SUMMARY + PENDING
@@ -20,15 +21,13 @@ export default function TreasurerDashboard() {
         api.get("/dashboard/treasurer-summary"),
       ]);
 
-      // ✅ FIXED: backend → success + data
       setPending(pRes.data.data || []);
 
       const s = sRes.data.data || {};
-
       setSummary({
         pending_count: Number(s.pending_contributions || 0),
         approved_count: Number(s.approved_contributions || 0),
-        total_collection: Number(s.total_collection || 0), // if backend adds later
+        total_collection: Number(s.total_collection || 0),
       });
 
       setError("");
@@ -45,7 +44,7 @@ export default function TreasurerDashboard() {
   }, []);
 
   /* =========================
-     APPROVE
+     ACTIONS
   ========================= */
   const approve = async (id) => {
     if (!window.confirm("Approve this contribution?")) return;
@@ -53,20 +52,15 @@ export default function TreasurerDashboard() {
     try {
       setLoading(true);
       const res = await api.patch(`/treasurer/approve/${id}`);
-
       alert(`✅ Approved\nReceipt No: ${res.data.receipt_no}`);
       loadAll();
     } catch (err) {
-      console.error("Approve error 👉", err);
       alert(err.response?.data?.error || "Approve failed");
     } finally {
       setLoading(false);
     }
   };
 
-  /* =========================
-     REJECT
-  ========================= */
   const reject = async (id) => {
     const reason = prompt("Enter rejection reason");
     if (!reason) return;
@@ -74,16 +68,19 @@ export default function TreasurerDashboard() {
     try {
       setLoading(true);
       await api.patch(`/treasurer/reject/${id}`, { reason });
-
       alert("❌ Contribution rejected");
       loadAll();
     } catch (err) {
-      console.error("Reject error 👉", err);
       alert(err.response?.data?.error || "Reject failed");
     } finally {
       setLoading(false);
     }
   };
+
+  /* =========================
+     FILTER BY TAB
+  ========================= */
+  const filtered = pending.filter((p) => p.source === tab);
 
   return (
     <>
@@ -99,12 +96,10 @@ export default function TreasurerDashboard() {
               <h4>Pending</h4>
               <p style={cardNum}>{summary.pending_count}</p>
             </div>
-
             <div style={card}>
               <h4>Approved</h4>
               <p style={cardNum}>{summary.approved_count}</p>
             </div>
-
             <div style={card}>
               <h4>Total Collection</h4>
               <p style={cardNum}>
@@ -114,20 +109,37 @@ export default function TreasurerDashboard() {
           </div>
         )}
 
+        {/* ===== TABS ===== */}
+        <div style={tabs}>
+          <button
+            style={tab === "MEMBER" ? tabActive : tabBtn}
+            onClick={() => setTab("MEMBER")}
+          >
+            👤 Member Donations
+          </button>
+
+          <button
+            style={tab === "PUBLIC" ? tabActive : tabBtn}
+            onClick={() => setTab("PUBLIC")}
+          >
+            🌍 Public Donations
+          </button>
+        </div>
+
         {/* ===== STATUS ===== */}
         {loading && <p>Loading...</p>}
         {!loading && error && <p style={errorStyle}>{error}</p>}
 
-        {!loading && !error && pending.length === 0 && (
-          <p>No pending contributions 🎉</p>
+        {!loading && filtered.length === 0 && (
+          <p>No pending {tab.toLowerCase()} donations 🎉</p>
         )}
 
         {/* ===== TABLE ===== */}
-        {!loading && pending.length > 0 && (
+        {!loading && filtered.length > 0 && (
           <table style={table}>
             <thead>
               <tr>
-                <th style={th}>Member</th>
+                <th style={th}>Donor</th>
                 <th style={th}>Fund</th>
                 <th style={th}>Amount</th>
                 <th style={th}>Payment</th>
@@ -137,9 +149,13 @@ export default function TreasurerDashboard() {
               </tr>
             </thead>
             <tbody>
-              {pending.map((p) => (
+              {filtered.map((p) => (
                 <tr key={p.id}>
-                  <td style={td}>{p.member_name}</td>
+                  <td style={td}>
+                    {p.source === "PUBLIC"
+                      ? p.donor_name || "Public Donor"
+                      : p.member_name}
+                  </td>
                   <td style={td}>{p.fund_name}</td>
                   <td style={td}>
                     ₹{Number(p.amount).toLocaleString("en-IN")}
@@ -152,14 +168,12 @@ export default function TreasurerDashboard() {
                   <td style={td}>
                     <button
                       style={approveBtn}
-                      disabled={loading}
                       onClick={() => approve(p.id)}
                     >
                       Approve
                     </button>{" "}
                     <button
                       style={rejectBtn}
-                      disabled={loading}
                       onClick={() => reject(p.id)}
                     >
                       Reject
@@ -178,22 +192,11 @@ export default function TreasurerDashboard() {
 /* =========================
    STYLES
 ========================= */
-const page = {
-  padding: 30,
-  background: "#f8fafc",
-  minHeight: "100vh",
-};
-
+const page = { padding: 30, background: "#f8fafc", minHeight: "100vh" };
 const title = { marginBottom: 20 };
-
 const errorStyle = { color: "red" };
 
-const cardRow = {
-  display: "flex",
-  gap: 20,
-  marginBottom: 25,
-};
-
+const cardRow = { display: "flex", gap: 20, marginBottom: 25 };
 const card = {
   flex: 1,
   background: "#fff",
@@ -201,10 +204,20 @@ const card = {
   borderRadius: 10,
   boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
 };
+const cardNum = { fontSize: 22, fontWeight: "bold" };
 
-const cardNum = {
-  fontSize: 22,
-  fontWeight: "bold",
+const tabs = { display: "flex", gap: 10, marginBottom: 20 };
+const tabBtn = {
+  padding: "8px 16px",
+  border: "1px solid #cbd5f5",
+  background: "#fff",
+  borderRadius: 8,
+  cursor: "pointer",
+};
+const tabActive = {
+  ...tabBtn,
+  background: "#2563eb",
+  color: "#fff",
 };
 
 const table = {
@@ -212,13 +225,11 @@ const table = {
   borderCollapse: "collapse",
   background: "#fff",
 };
-
 const th = {
   padding: 10,
   borderBottom: "2px solid #e5e7eb",
   background: "#f1f5f9",
 };
-
 const td = {
   padding: 10,
   borderBottom: "1px solid #e5e7eb",
@@ -232,7 +243,6 @@ const approveBtn = {
   borderRadius: 6,
   cursor: "pointer",
 };
-
 const rejectBtn = {
   background: "#dc2626",
   color: "#fff",
