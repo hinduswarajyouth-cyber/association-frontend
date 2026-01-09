@@ -35,11 +35,11 @@ export default function AdminDashboard() {
     const month = now.getMonth() + 1;
 
     Promise.all([
-      api.get("/api/dashboard/admin-summary"),
-      api.get("/api/dashboard/recent-contributions"),
-      api.get("/api/dashboard/funds"),
-      api.get("/api/announcements"),
-      api.get(`/api/dashboard/cashflow?year=${year}&month=${month}`),
+      api.get("/dashboard/admin-summary"),
+      api.get("/dashboard/recent-contributions"),
+      api.get("/dashboard/funds"),
+      api.get("/announcements"),
+      api.get(`/dashboard/cashflow?year=${year}&month=${month}`),
     ])
       .then(
         ([summaryRes, recentRes, fundsRes, annRes, cashRes]) => {

@@ -9,7 +9,7 @@ export default function MemberDashboard() {
 
   useEffect(() => {
     api
-      .get("/api/dashboard/member")
+      .get("/dashboard/member")
       .then((res) => {
         setRows(res.data.contributions || []);
       })
