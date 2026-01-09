@@ -8,15 +8,22 @@ export default function AssociationInfo() {
   const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState("");
 
+  /* =========================
+     LOAD ASSOCIATION INFO (PUBLIC)
+  ========================= */
   useEffect(() => {
-    api.get("/association").then((res) => {
-      setData(res.data.data || {});
-      setLoading(false);
-    });
+    api.get("/public/association-info")
+      .then((res) => {
+        setData(res.data.data.association || {});
+      })
+      .catch((err) => {
+        console.error("LOAD ERROR 👉", err);
+      })
+      .finally(() => setLoading(false));
   }, []);
 
   /* =========================
-     SAVE (WITH LOGO)
+     SAVE (ADMIN ONLY)
   ========================= */
   const save = async () => {
     const formData = new FormData();
@@ -29,10 +36,7 @@ export default function AssociationInfo() {
 
     if (logo) formData.append("logo", logo);
 
-    await api.post("/association", formData, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
-
+    await api.post("/association", formData); // 🔐 protected admin route
     setMsg("Saved successfully");
   };
 
@@ -41,12 +45,12 @@ export default function AssociationInfo() {
   return (
     <>
       <Navbar />
+
       <div style={page}>
         <h2>🏛 Association Information</h2>
 
         {msg && <p style={{ color: "green" }}>{msg}</p>}
 
-        {/* TEXT FIELDS */}
         {fields.map((f) => (
           <input
             key={f.key}
@@ -60,18 +64,14 @@ export default function AssociationInfo() {
         ))}
 
         {/* LOGO UPLOAD */}
-        <label style={{ marginTop: 10, fontWeight: 600 }}>
-          Association Logo
-        </label>
-
+        <label style={{ fontWeight: 600 }}>Association Logo</label>
         <input
           type="file"
           accept="image/*"
           onChange={(e) => setLogo(e.target.files[0])}
-          style={{ marginBottom: 10 }}
         />
 
-        {/* EXISTING LOGO (FROM DB) */}
+        {/* EXISTING LOGO */}
         {data.logo && !logo && (
           <img
             src={import.meta.env.VITE_API_BASE_URL + data.logo}
@@ -80,7 +80,7 @@ export default function AssociationInfo() {
           />
         )}
 
-        {/* NEW LOGO PREVIEW */}
+        {/* PREVIEW */}
         {logo && (
           <img
             src={URL.createObjectURL(logo)}
@@ -90,7 +90,6 @@ export default function AssociationInfo() {
         )}
 
         <br />
-
         <button style={btn} onClick={save}>
           Save
         </button>
