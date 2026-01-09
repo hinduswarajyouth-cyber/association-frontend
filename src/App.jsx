@@ -8,6 +8,8 @@ import Footer from "./components/Footer";
 ========================= */
 import Login from "./pages/Login";
 import ForgotPassword from "./pages/ForgotPassword";
+import PublicAssociation from "./pages/PublicAssociation";
+import PublicDonation from "./pages/PublicDonation"; // ✅ ADD
 
 /* =========================
    COMMON (ALL ROLES)
@@ -64,11 +66,13 @@ export default function App() {
       <AuthGate>
         <Routes>
           {/* ================= DEFAULT ================= */}
-          <Route path="/" element={<Navigate to="/login" replace />} />
+          <Route path="/" element={<Navigate to="/association" replace />} />
 
           {/* ================= PUBLIC ================= */}
           <Route path="/login" element={<Login />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/association" element={<PublicAssociation />} />
+          <Route path="/donate" element={<PublicDonation />} /> {/* ✅ */}
 
           {/* ================= DASHBOARD ================= */}
           <Route
@@ -102,7 +106,7 @@ export default function App() {
             }
           />
 
-          {/* ================= EXPENSE LIST (ADMIN) ================= */}
+          {/* ================= EXPENSE LIST ================= */}
           <Route
             path="/expenses"
             element={
@@ -112,7 +116,7 @@ export default function App() {
             }
           />
 
-          {/* ================= TREASURER CREATE EXPENSE ================= */}
+          {/* ================= CREATE EXPENSE ================= */}
           <Route
             path="/treasurer/expense"
             element={
@@ -323,7 +327,7 @@ export default function App() {
           />
 
           {/* ================= FALLBACK ================= */}
-          <Route path="*" element={<Navigate to="/login" replace />} />
+          <Route path="*" element={<Navigate to="/association" replace />} />
         </Routes>
       </AuthGate>
 

@@ -26,7 +26,7 @@ export default function Navbar() {
   const MEMBER_ROLES = ["MEMBER", "VOLUNTEER"];
 
   /* =========================
-     HOME ROUTE (FIXED)
+     HOME ROUTE
   ========================= */
   const getHomeRoute = () => {
     if (ADMIN_ROLES.includes(role)) return "/dashboard";
@@ -101,6 +101,11 @@ function MenuLinks({ role, isActive, onClick }) {
           <Link onClick={onClick} style={isActive("/dashboard")} to="/dashboard">
             Dashboard
           </Link>
+
+          <Link onClick={onClick} style={isActive("/association-info")} to="/association-info">
+            Association Info
+          </Link>
+
           <Link onClick={onClick} style={isActive("/members")} to="/members">
             Members
           </Link>
