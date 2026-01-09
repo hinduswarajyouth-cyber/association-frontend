@@ -61,10 +61,10 @@ export default function Announcements() {
 
     try {
       if (editId) {
-        await api.put(`/api/announcements/${editId}`, payload);
+        await api.put(`/announcements/${editId}`, payload);
         setSuccess("Updated successfully");
       } else {
-        await api.post("/api/announcements", payload);
+        await api.post("/announcements", payload);
         setSuccess("Announcement published");
       }
 
@@ -77,7 +77,7 @@ export default function Announcements() {
 
   const deleteAnnouncement = async id => {
     if (!window.confirm("Delete announcement?")) return;
-    await api.delete(`/api/announcements/${id}`);
+    await api.delete(`/announcements/${id}`);
     loadAnnouncements();
   };
 
@@ -103,7 +103,7 @@ export default function Announcements() {
      MARK SEEN (ALL USERS)
   ========================= */
   const markAsSeen = async id => {
-    await api.post(`/api/announcements/${id}/seen`);
+    await api.post(`/announcements/${id}/seen`);
     setAnnouncements(prev =>
       prev.map(a =>
         a.id === id ? { ...a, seen: true } : a

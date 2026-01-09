@@ -44,7 +44,7 @@ export default function TreasurerExpenseCreate() {
     try {
       setSubmitting(true);
 
-      await api.post("/api/expenses", {
+      await api.post("/expenses", {
         title: form.title,
         category: form.category || null,
         amount: Number(form.amount),

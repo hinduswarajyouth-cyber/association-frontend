@@ -21,8 +21,8 @@ export default function DashboardSummary() {
       setLoading(true);
 
       const [summaryRes, fundsRes] = await Promise.all([
-        api.get("/api/dashboard/admin-summary"),
-        api.get("/api/dashboard/funds"),
+        api.get("/dashboard/admin-summary"),
+        api.get("/dashboard/funds"),
       ]);
 
       setSummary(summaryRes.data);

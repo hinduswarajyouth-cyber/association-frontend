@@ -23,9 +23,7 @@ export default function SuggestionBox() {
      LOAD SUGGESTIONS
   ========================= */
   useEffect(() => {
-    if (user) {
-      loadSuggestions();
-    }
+    if (user) loadSuggestions();
     // eslint-disable-next-line
   }, [user, isAdmin]);
 
@@ -36,7 +34,7 @@ export default function SuggestionBox() {
         ? await api.get("/suggestions/all")
         : await api.get("/suggestions/my");
 
-      setSuggestions(res.data || []);
+      setSuggestions(res.data?.data || []);
     } catch (err) {
       console.error("LOAD SUGGESTIONS ERROR 👉", err);
       alert("Failed to load suggestions");
@@ -62,6 +60,8 @@ export default function SuggestionBox() {
       setSuccess("✅ Suggestion submitted successfully");
       setForm({ title: "", type: "GENERAL", message: "" });
       loadSuggestions();
+
+      setTimeout(() => setSuccess(""), 3000);
     } catch (err) {
       console.error("SUBMIT ERROR 👉", err);
       alert("Failed to submit suggestion");
@@ -80,14 +80,23 @@ export default function SuggestionBox() {
     }
   };
 
+  const statusColor = {
+    APPROVED: "#86efac",
+    REJECTED: "#fca5a5",
+    PENDING: "#fde68a",
+  };
+
   return (
     <>
       <Navbar />
 
       <div style={page}>
-        <h2>💡 Suggestion Box</h2>
+        <h2 style={{ marginBottom: 6 }}>💡 Suggestion Box</h2>
+        <p style={{ color: "#64748b", marginBottom: 20 }}>
+          Share ideas, improvements, or concerns with the association.
+        </p>
 
-        {/* ================= CREATE (ALL USERS) ================= */}
+        {/* ================= CREATE ================= */}
         {!isAdmin && (
           <div style={card}>
             <h3>Submit Suggestion</h3>
@@ -141,8 +150,13 @@ export default function SuggestionBox() {
         </h3>
 
         {loading && <p>Loading suggestions...</p>}
+
         {!loading && suggestions.length === 0 && (
-          <p>No suggestions found</p>
+          <p style={{ color: "#64748b" }}>
+            {isAdmin
+              ? "No suggestions submitted yet."
+              : "You haven’t submitted any suggestions yet."}
+          </p>
         )}
 
         {suggestions.map((s) => (
@@ -152,12 +166,7 @@ export default function SuggestionBox() {
               <span
                 style={{
                   ...badge,
-                  background:
-                    s.status === "APPROVED"
-                      ? "#86efac"
-                      : s.status === "REJECTED"
-                      ? "#fca5a5"
-                      : "#fde68a",
+                  background: statusColor[s.status] || "#e5e7eb",
                 }}
               >
                 {s.status}
@@ -171,22 +180,17 @@ export default function SuggestionBox() {
               {new Date(s.created_at).toLocaleString()}
             </small>
 
-            {/* ADMIN ACTIONS */}
             {isAdmin && s.status === "PENDING" && (
               <div style={actionRow}>
                 <button
                   style={btnSuccess}
-                  onClick={() =>
-                    updateStatus(s.id, "APPROVED")
-                  }
+                  onClick={() => updateStatus(s.id, "APPROVED")}
                 >
                   Approve
                 </button>
                 <button
                   style={btnDanger}
-                  onClick={() =>
-                    updateStatus(s.id, "REJECTED")
-                  }
+                  onClick={() => updateStatus(s.id, "REJECTED")}
                 >
                   Reject
                 </button>

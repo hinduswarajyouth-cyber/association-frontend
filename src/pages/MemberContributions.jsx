@@ -6,7 +6,7 @@ import Navbar from "../components/Navbar";
    CONSTANTS
 ========================= */
 const UPI_ID = "hinduswarajyouth@ybl";
-const PAYEE_NAME = "Hindu Swarajya Youth";
+const PAYEE_NAME = "Hindu Swaraj Youth";
 
 export default function MemberContributions() {
   const [funds, setFunds] = useState([]);
@@ -33,7 +33,7 @@ export default function MemberContributions() {
   };
 
   const loadContributions = async () => {
-    const res = await api.get("/api/contributions/my");
+    const res = await api.get("/contributions/my");
     setContributions(res.data || []);
   };
 

@@ -34,7 +34,7 @@ export default function ExpenseList() {
     if (!window.confirm("Approve this expense?")) return;
 
     try {
-      await api.put(`/api/expenses/${id}/approve`);
+      await api.put(`/expenses/${id}/approve`);
       alert("✅ Expense approved");
       loadExpenses();
     } catch (err) {
@@ -50,7 +50,7 @@ export default function ExpenseList() {
     if (!reason) return;
 
     try {
-      await api.put(`/api/expenses/${id}/cancel`, { reason });
+      await api.put(`/expenses/${id}/cancel`, { reason });
       alert("❌ Expense cancelled");
       loadExpenses();
     } catch (err) {
