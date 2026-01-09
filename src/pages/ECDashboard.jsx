@@ -6,10 +6,18 @@ import DashboardHeader from "../components/DashboardHeader";
 export default function ECDashboard() {
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    api.get("/api/dashboard/admin-summary")
-      .then((res) => setSummary(res.data))
+    api
+      .get("/dashboard/admin-summary")
+      .then((res) => {
+        setSummary(res.data.data); // ✅ CORRECT
+      })
+      .catch((err) => {
+        console.error("EC DASHBOARD ERROR 👉", err);
+        setError("Failed to load EC dashboard");
+      })
       .finally(() => setLoading(false));
   }, []);
 
@@ -25,13 +33,19 @@ export default function ECDashboard() {
           <span style={badge}>Read Only</span>
         </div>
 
-        {loading ? (
+        {loading && (
           <div style={grid}>
             {[1, 2, 3].map((i) => (
               <SkeletonCard key={i} />
             ))}
           </div>
-        ) : (
+        )}
+
+        {!loading && error && (
+          <p style={{ color: "red", marginTop: 20 }}>{error}</p>
+        )}
+
+        {!loading && summary && (
           <div style={grid}>
             <Stat
               title="Total Members"
@@ -43,7 +57,9 @@ export default function ECDashboard() {
             />
             <Stat
               title="Total Collection"
-              value={`₹${Number(summary.total_collection).toLocaleString("en-IN")}`}
+              value={`₹${Number(summary.total_collection).toLocaleString(
+                "en-IN"
+              )}`}
             />
           </div>
         )}
@@ -52,9 +68,8 @@ export default function ECDashboard() {
   );
 }
 
-/* =========================
-   STAT CARD
-========================= */
+/* ================= COMPONENTS ================= */
+
 function Stat({ title, value }) {
   return (
     <div style={card}>
@@ -64,9 +79,6 @@ function Stat({ title, value }) {
   );
 }
 
-/* =========================
-   SKELETON
-========================= */
 function SkeletonCard() {
   return (
     <div style={{ ...card, background: "#f8fafc" }}>
@@ -76,9 +88,7 @@ function SkeletonCard() {
   );
 }
 
-/* =========================
-   STYLES
-========================= */
+/* ================= STYLES ================= */
 
 const container = {
   maxWidth: 1200,
@@ -88,15 +98,12 @@ const container = {
 
 const headerRow = {
   display: "flex",
-  alignItems: "center",
   justifyContent: "space-between",
+  alignItems: "center",
   marginTop: 30,
 };
 
-const title = {
-  fontSize: 20,
-  fontWeight: 600,
-};
+const title = { fontSize: 20, fontWeight: 600 };
 
 const badge = {
   fontSize: 12,
@@ -118,11 +125,6 @@ const card = {
   padding: 24,
   borderRadius: 16,
   boxShadow: "0 10px 25px rgba(0,0,0,0.08)",
-  transition: "transform 0.2s ease, box-shadow 0.2s ease",
-};
-
-card[":hover"] = {
-  transform: "translateY(-4px)",
 };
 
 const cardTitle = {
@@ -137,9 +139,6 @@ const cardValue = {
   color: "#0f172a",
 };
 
-/* =========================
-   SKELETON STYLES
-========================= */
 const skeletonTitle = {
   width: "60%",
   height: 14,
