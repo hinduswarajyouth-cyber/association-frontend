@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import api from "../api/api";
 import Navbar from "../components/Navbar";
 
+/* ================= ROLES ================= */
 const USER = JSON.parse(localStorage.getItem("user")) || {};
 const ROLE = USER?.role || "MEMBER";
 
@@ -13,19 +14,20 @@ const OFFICE = [
   "EC_MEMBER",
 ];
 
+/* ================= COMPONENT ================= */
 export default function Complaint() {
   const [complaints, setComplaints] = useState([]);
   const [comments, setComments] = useState({});
   const [text, setText] = useState({});
   const [stats, setStats] = useState(null);
 
-  // CREATE FORM STATE
   const [form, setForm] = useState({
     subject: "",
     description: "",
     comment: "",
   });
 
+  /* ================= LOAD ================= */
   useEffect(() => {
     load();
     if (ADMIN.includes(ROLE)) {
@@ -33,13 +35,11 @@ export default function Complaint() {
     }
   }, []);
 
-  /* ================= LOAD ================= */
   const load = async () => {
     let r;
     if (ROLE === "MEMBER") r = await api.get("/complaints/my");
     else if (OFFICE.includes(ROLE)) r = await api.get("/complaints/assigned");
     else r = await api.get("/complaints/all");
-
     setComplaints(r.data || []);
   };
 
@@ -47,10 +47,8 @@ export default function Complaint() {
 
   /* ================= CREATE ================= */
   const createComplaint = async () => {
-    if (!form.subject || !form.description || !form.comment) {
-      alert("All fields required");
-      return;
-    }
+    if (!form.subject || !form.description || !form.comment)
+      return alert("All fields required");
 
     await api.post("/complaints/create", form);
     setForm({ subject: "", description: "", comment: "" });
@@ -61,69 +59,74 @@ export default function Complaint() {
   return (
     <>
       <Navbar />
-      <div style={{ padding: 30 }}>
+      <div style={page}>
+
         <h2>📮 Complaint Management</h2>
 
-        {/* DASHBOARD (ADMIN) */}
+        {/* DASHBOARD */}
         {stats && (
-          <div style={{ display: "flex", gap: 12, marginBottom: 20 }}>
+          <div style={dashRow}>
             {Object.entries(stats).map(([k, v]) => (
-              <div key={k} style={{ padding: 16, background: "#fff", borderRadius: 10 }}>
-                <b>{k.toUpperCase()}</b>
-                <h3>{v}</h3>
+              <div key={k} style={dashCard}>
+                <small>{k.replace("_", " ")}</small>
+                <h2>{v}</h2>
+                <div style={{
+                  height: 6,
+                  width: `${Math.min(v * 20, 100)}%`,
+                  background: "#2563eb",
+                  borderRadius: 4,
+                  transition: "width .5s"
+                }} />
               </div>
             ))}
           </div>
         )}
 
-        {/* CREATE COMPLAINT (MEMBER + OFFICE) */}
+        {/* CREATE */}
         {(ROLE === "MEMBER" || OFFICE.includes(ROLE)) && (
-          <div style={{ background: "#fff", padding: 20, marginBottom: 20 }}>
+          <div style={card}>
             <h3>Create Complaint</h3>
-
             <input
+              style={input}
               placeholder="Subject"
               value={form.subject}
               onChange={e => setForm({ ...form, subject: e.target.value })}
-              style={{ width: "100%", marginBottom: 8 }}
             />
-
             <textarea
+              style={textarea}
               placeholder="Description"
               value={form.description}
               onChange={e => setForm({ ...form, description: e.target.value })}
-              style={{ width: "100%", marginBottom: 8 }}
             />
-
             <textarea
+              style={textarea}
               placeholder="Initial Comment (mandatory)"
               value={form.comment}
               onChange={e => setForm({ ...form, comment: e.target.value })}
-              style={{ width: "100%", marginBottom: 8 }}
             />
-
-            <button onClick={createComplaint}>Submit Complaint</button>
+            <button style={btnPrimary} onClick={createComplaint}>
+              Submit Complaint
+            </button>
           </div>
         )}
 
-        {/* EMPTY STATE */}
-        {complaints.length === 0 && (
-          <p style={{ color: "#666" }}>No complaints found.</p>
-        )}
-
-        {/* COMPLAINT LIST */}
+        {/* LIST */}
         {complaints.map(c => (
-          <div key={c.id} style={{ background: "#fff", marginBottom: 16, padding: 16 }}>
-            <b>{c.complaint_no}</b> — {c.subject}
+          <div key={c.id} style={cardAnimated}>
+            <div style={cardHeader}>
+              <b>{c.complaint_no} — {c.subject}</b>
+              <span style={badge(c.status)}>{c.status}</span>
+            </div>
+
             <p>{c.description}</p>
-            <p>Status: <b>{c.status}</b></p>
-            <p>Assigned To: {c.assigned_role || "Not Assigned"}</p>
+            <p>Assigned To: <b>{c.assigned_role || "Not Assigned"}</b></p>
 
             {/* ADMIN ASSIGN */}
             {ADMIN.includes(ROLE) && c.status === "OPEN" && (
               <>
                 <textarea
-                  placeholder="Instruction (mandatory)"
+                  style={textareaSmall}
+                  placeholder="Instruction"
                   onChange={e => setText({ ...text, [c.id]: e.target.value })}
                 />
                 <select
@@ -134,10 +137,8 @@ export default function Complaint() {
                     })
                   }
                 >
-                  <option value="">Assign Office</option>
-                  {OFFICE.map(r => (
-                    <option key={r}>{r}</option>
-                  ))}
+                  <option>Assign Office</option>
+                  {OFFICE.map(r => <option key={r}>{r}</option>)}
                 </select>
               </>
             )}
@@ -148,16 +149,14 @@ export default function Complaint() {
               c.status === "FORWARDED" && (
                 <>
                   <textarea
+                    style={textareaSmall}
                     placeholder="Acceptance comment"
                     onChange={e => setText({ ...text, [c.id]: e.target.value })}
                   />
-                  <button
+                  <button style={btnPrimary}
                     onClick={() =>
-                      post(`/complaints/accept/${c.id}`, {
-                        comment: text[c.id],
-                      })
-                    }
-                  >
+                      post(`/complaints/accept/${c.id}`, { comment: text[c.id] })
+                    }>
                     Accept
                   </button>
                 </>
@@ -167,35 +166,31 @@ export default function Complaint() {
             {OFFICE.includes(ROLE) && c.status === "IN_PROGRESS" && (
               <>
                 <textarea
-                  placeholder="Resolution comment"
+                  style={textareaSmall}
+                  placeholder="Resolution"
                   onChange={e => setText({ ...text, [c.id]: e.target.value })}
                 />
-                <button
+                <button style={btnSuccess}
                   onClick={() =>
-                    post(`/complaints/resolve/${c.id}`, {
-                      comment: text[c.id],
-                    })
-                  }
-                >
+                    post(`/complaints/resolve/${c.id}`, { comment: text[c.id] })
+                  }>
                   Resolve
                 </button>
               </>
             )}
 
             {/* PRESIDENT CLOSE */}
-            {ADMIN.includes(ROLE) && c.status === "PRESIDENT_REVIEW" && (
+            {ROLE === "PRESIDENT" && c.status === "RESOLVED" && (
               <>
                 <textarea
-                  placeholder="Closing comment"
+                  style={textareaSmall}
+                  placeholder="Closing remark"
                   onChange={e => setText({ ...text, [c.id]: e.target.value })}
                 />
-                <button
+                <button style={btnDanger}
                   onClick={() =>
-                    post(`/complaints/close/${c.id}`, {
-                      comment: text[c.id],
-                    })
-                  }
-                >
+                    post(`/complaints/close/${c.id}`, { comment: text[c.id] })
+                  }>
                   Close Complaint
                 </button>
               </>
@@ -205,16 +200,14 @@ export default function Complaint() {
             {ROLE === "MEMBER" && c.status === "CLOSED" && (
               <>
                 <textarea
+                  style={textareaSmall}
                   placeholder="Reopen reason"
                   onChange={e => setText({ ...text, [c.id]: e.target.value })}
                 />
-                <button
+                <button style={btnPrimary}
                   onClick={() =>
-                    post(`/complaints/reopen/${c.id}`, {
-                      comment: text[c.id],
-                    })
-                  }
-                >
+                    post(`/complaints/reopen/${c.id}`, { comment: text[c.id] })
+                  }>
                   Reopen
                 </button>
               </>
@@ -222,19 +215,16 @@ export default function Complaint() {
 
             {/* TIMELINE */}
             <button
+              style={btnGhost}
               onClick={() =>
-                api
-                  .get(`/complaints/comments/${c.id}`)
-                  .then(r =>
-                    setComments(prev => ({ ...prev, [c.id]: r.data }))
-                  )
-              }
-            >
+                api.get(`/complaints/comments/${c.id}`)
+                  .then(r => setComments(p => ({ ...p, [c.id]: r.data })))
+              }>
               View Timeline
             </button>
 
             {comments[c.id]?.map((cm, i) => (
-              <div key={i} style={{ borderLeft: "3px solid #2563eb", paddingLeft: 8 }}>
+              <div key={i} style={timeline}>
                 <b>{cm.name}</b> ({cm.comment_type})
                 <p>{cm.comment}</p>
               </div>
@@ -245,3 +235,62 @@ export default function Complaint() {
     </>
   );
 }
+
+/* ================= STYLES ================= */
+
+const page = { padding: 30, background: "#f1f5f9", minHeight: "100vh" };
+
+const dashRow = { display: "flex", gap: 16, marginBottom: 20 };
+const dashCard = {
+  background: "#fff",
+  padding: 16,
+  borderRadius: 16,
+  minWidth: 120,
+  boxShadow: "0 6px 20px rgba(0,0,0,.08)",
+  transition: "transform .3s",
+};
+
+const card = {
+  background: "#fff",
+  padding: 20,
+  borderRadius: 18,
+  marginBottom: 20,
+  boxShadow: "0 10px 25px rgba(0,0,0,.08)",
+};
+
+const cardAnimated = {
+  ...card,
+  animation: "fadeIn .5s ease",
+};
+
+const cardHeader = {
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
+};
+
+const badge = status => ({
+  padding: "4px 12px",
+  borderRadius: 999,
+  background:
+    status === "OPEN" ? "#fde68a" :
+    status === "FORWARDED" ? "#bfdbfe" :
+    status === "IN_PROGRESS" ? "#93c5fd" :
+    status === "RESOLVED" ? "#86efac" :
+    "#e5e7eb",
+});
+
+const input = { width: "100%", padding: 10, marginBottom: 8 };
+const textarea = { width: "100%", height: 80, padding: 10, marginBottom: 8 };
+const textareaSmall = { width: "100%", height: 60, marginTop: 6 };
+
+const btnPrimary = { background: "#2563eb", color: "#fff", padding: "8px 16px", marginRight: 6 };
+const btnSuccess = { background: "#16a34a", color: "#fff", padding: "8px 16px", marginRight: 6 };
+const btnDanger = { background: "#dc2626", color: "#fff", padding: "8px 16px", marginRight: 6 };
+const btnGhost = { background: "#e5e7eb", padding: "6px 12px", marginTop: 6 };
+
+const timeline = {
+  borderLeft: "3px solid #2563eb",
+  paddingLeft: 10,
+  marginTop: 8,
+};
