@@ -174,8 +174,32 @@ export default function Association() {
           )}
         </div>
       </div>
-
-      
     </>
   );
 }
+
+/* ================= LANGUAGE TOGGLE STYLES ================= */
+
+const langToggle = {
+  position: "fixed",
+  top: 80,
+  right: 20,
+  zIndex: 1000,
+  display: "flex",
+  gap: 8,
+};
+
+const langBtn = {
+  padding: "6px 14px",
+  borderRadius: 20,
+  border: "1px solid #cbd5f5",
+  background: "#fff",
+  cursor: "pointer",
+  fontWeight: 600,
+};
+
+const langBtnActive = {
+  ...langBtn,
+  background: "#312e81",
+  color: "#fff",
+};
