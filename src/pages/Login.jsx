@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import api from "../api/api";
@@ -7,6 +7,7 @@ import bg from "../assets/login-bg.png";
 export default function Login() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [showPwd, setShowPwd] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -15,6 +16,17 @@ export default function Login() {
   const [params] = useSearchParams();
   const expired = params.get("expired");
 
+  /* =========================
+     PRELOAD BACKGROUND (NO FLICKER)
+  ========================= */
+  useEffect(() => {
+    const img = new Image();
+    img.src = bg;
+  }, []);
+
+  /* =========================
+     HANDLE LOGIN
+  ========================= */
   const handleLogin = async (e) => {
     e.preventDefault();
     if (loading) return;
@@ -47,18 +59,19 @@ export default function Login() {
 
   return (
     <div style={page}>
-      {/* preload image to avoid flicker */}
-      <img src={bg} alt="" style={{ display: "none" }} />
-
       <div style={overlay}>
         <div style={card}>
+          {/* ===== HEADER ===== */}
           <h1 style={title}>Association System</h1>
-          <p style={subtitle}>Hinduswaraj Youth Welfare Association</p>
+          <p style={subtitle}>
+            Hinduswaraj Youth Welfare Association
+          </p>
 
+          {/* ===== LOGIN FORM ===== */}
           <form onSubmit={handleLogin}>
             {expired && (
               <div style={infoBox}>
-                Session expired. Please login again.
+                🔒 Session expired. Please login again.
               </div>
             )}
 
@@ -70,18 +83,40 @@ export default function Login() {
               onChange={(e) => setUsername(e.target.value)}
               required
               style={input}
+              autoComplete="username"
             />
 
-            <input
-              type="password"
-              placeholder="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              style={input}
-            />
+            <div style={{ position: "relative" }}>
+              <input
+                type={showPwd ? "text" : "password"}
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                style={input}
+                autoComplete="current-password"
+              />
+              <span
+                style={eye}
+                onClick={() => setShowPwd(!showPwd)}
+                title={showPwd ? "Hide Password" : "Show Password"}
+              >
+                {showPwd ? "🙈" : "👁️"}
+              </span>
+            </div>
 
-            <button style={btn} disabled={loading}>
+            <button
+              type="submit"
+              style={btn}
+              disabled={loading}
+              onMouseOver={(e) =>
+                (e.currentTarget.style.boxShadow =
+                  "0 0 30px rgba(250,204,21,0.6)")
+              }
+              onMouseOut={(e) =>
+                (e.currentTarget.style.boxShadow = "none")
+              }
+            >
               {loading ? "Authenticating..." : "LOGIN"}
             </button>
 
@@ -95,14 +130,19 @@ export default function Login() {
   );
 }
 
-/* =========================
-   PREMIUM STYLES + ANIMATION
-========================= */
+/* =====================================================
+   🎨 PREMIUM STYLES
+===================================================== */
 
 const page = {
   minHeight: "100vh",
-  background:
-    "radial-gradient(circle at top, #111827 0%, #000 60%)",
+  backgroundImage: `
+    linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.85)),
+    url(${bg})
+  `,
+  backgroundSize: "cover",
+  backgroundPosition: "center",
+  backgroundRepeat: "no-repeat",
 };
 
 const overlay = {
@@ -116,10 +156,10 @@ const overlay = {
 const card = {
   width: 380,
   padding: "38px 32px",
-  borderRadius: 18,
+  borderRadius: 20,
   background: "rgba(255,255,255,0.12)",
   backdropFilter: "blur(18px)",
-  boxShadow: "0 30px 90px rgba(0,0,0,0.85)",
+  boxShadow: "0 35px 100px rgba(0,0,0,0.9)",
   textAlign: "center",
   animation: "fadeUp 0.7s ease-out",
 };
@@ -150,6 +190,14 @@ const input = {
   outline: "none",
 };
 
+const eye = {
+  position: "absolute",
+  right: 14,
+  top: 14,
+  cursor: "pointer",
+  fontSize: 18,
+};
+
 const btn = {
   width: "100%",
   padding: 14,
@@ -161,7 +209,7 @@ const btn = {
   fontSize: 16,
   border: "none",
   cursor: "pointer",
-  transition: "transform .15s ease, box-shadow .15s ease",
+  transition: "all .18s ease",
 };
 
 const forgot = {
@@ -173,7 +221,7 @@ const forgot = {
 };
 
 const infoBox = {
-  background: "rgba(234,179,8,0.2)",
+  background: "rgba(234,179,8,0.25)",
   color: "#fde68a",
   padding: 10,
   borderRadius: 8,
@@ -182,7 +230,7 @@ const infoBox = {
 };
 
 const errorBox = {
-  background: "rgba(220,38,38,0.2)",
+  background: "rgba(220,38,38,0.25)",
   color: "#fecaca",
   padding: 10,
   borderRadius: 8,
@@ -190,15 +238,15 @@ const errorBox = {
   marginBottom: 12,
 };
 
-/* =========================
-   KEYFRAME INJECTION
-========================= */
+/* =====================================================
+   🎬 ANIMATION
+===================================================== */
 const style = document.createElement("style");
 style.innerHTML = `
 @keyframes fadeUp {
   from {
     opacity: 0;
-    transform: translateY(20px) scale(0.98);
+    transform: translateY(24px) scale(0.97);
   }
   to {
     opacity: 1;
