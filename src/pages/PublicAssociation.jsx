@@ -4,7 +4,13 @@ import Navbar from "../components/Navbar";
 
 export default function Association() {
   const [settings, setSettings] = useState(null);
-  const [lang, setLang] = useState("EN");
+  const [lang, setLang] = useState(
+    localStorage.getItem("lang") || "EN"
+  );
+
+  useEffect(() => {
+    localStorage.setItem("lang", lang);
+  }, [lang]);
 
   useEffect(() => {
     api.get("/association-settings/public").then(r => {
@@ -14,7 +20,15 @@ export default function Association() {
 
   if (!settings) return <div style={{ padding: 50 }}>Loading...</div>;
 
-  const t = (en, te) => (lang === "EN" ? en : te);
+  const t = (en, te) => (lang === "EN" ? en : te || en);
+
+  const sectionTitle = {
+    textAlign: "center",
+    marginBottom: 24,
+    fontSize: 22,
+    fontWeight: 700,
+    color: settings.primary_color,
+  };
 
   return (
     <>
@@ -82,12 +96,18 @@ export default function Association() {
                 <h2 style={sectionTitle}>
                   🌱 {t("About the Association", "సంఘం గురించి")}
                 </h2>
-                <p>{t(settings.about_text, settings.about_text_te)}</p>
+                <p>
+                  {t(
+                    settings.about_text ||
+                      "Hinduswaraj Youth Welfare Association is a registered non-profit organization committed to youth empowerment, social service, and cultural preservation.",
+                    settings.about_text_te
+                  )}
+                </p>
               </div>
             </section>
           )}
 
-          {/* ================= MISSION / VISION ================= */}
+          {/* ================= MISSION & VISION ================= */}
           {(settings.show_mission || settings.show_values) && (
             <section style={section}>
               <div style={mvGrid}>
@@ -95,7 +115,11 @@ export default function Association() {
                   <div style={card}>
                     <h3>🎯 {t("Our Mission", "మా లక్ష్యం")}</h3>
                     <p>
-                      {t(settings.mission_text, settings.mission_text_te)}
+                      {t(
+                        settings.mission_text ||
+                          "To empower disciplined and socially responsible youth through education, leadership, welfare initiatives, and service-oriented activities rooted in Bharatiya values.",
+                        settings.mission_text_te
+                      )}
                     </p>
                   </div>
                 )}
@@ -104,7 +128,11 @@ export default function Association() {
                   <div style={card}>
                     <h3>🌍 {t("Our Vision", "మా దృష్టి")}</h3>
                     <p>
-                      {t(settings.vision_text, settings.vision_text_te)}
+                      {t(
+                        settings.vision_text ||
+                          "To build a strong, self-reliant, and culturally conscious generation that actively contributes to social harmony and national development.",
+                        settings.vision_text_te
+                      )}
                     </p>
                   </div>
                 )}
@@ -147,167 +175,7 @@ export default function Association() {
         </div>
       </div>
 
-      <footer style={footer}>
-        © 2026 Hinduswaraj Youth Welfare Association • Developed by
-        <b> Sreetech Technologies, Jagtial</b>
-      </footer>
+      
     </>
   );
 }
-
-/* ================= DATA ================= */
-
-const DEFAULT_ACTIVITIES = [
-  {
-    en: "👨‍🎓 Youth Leadership & Skill Development",
-    te: "👨‍🎓 యువ నాయకత్వం & నైపుణ్యాభివృద్ధి",
-  },
-  {
-    en: "🏥 Health, Welfare & Blood Donation Camps",
-    te: "🏥 ఆరోగ్య & రక్తదాన శిబిరాలు",
-  },
-  {
-    en: "🌳 Environmental & Cleanliness Drives",
-    te: "🌳 పర్యావరణ & పరిశుభ్రత కార్యక్రమాలు",
-  },
-  {
-    en: "📢 Social Awareness & Cultural Programs",
-    te: "📢 సామాజిక అవగాహన & సాంస్కృతిక కార్యక్రమాలు",
-  },
-  {
-    en: "🏫 Educational & Career Support",
-    te: "🏫 విద్య & ఉపాధి మద్దతు",
-  },
-  {
-    en: "🤲 Relief, Seva & Emergency Support",
-    te: "🤲 సహాయం, సేవ & అత్యవసర మద్దతు",
-  },
-];
-
-/* ================= STYLES ================= */
-
-const page = { minHeight: "100vh" };
-
-const content = {
-  maxWidth: 1200,
-  margin: "0 auto",
-  padding: "0 24px",
-};
-
-const section = { marginBottom: 80 };
-
-const hero = {
-  textAlign: "center",
-  padding: "90px 20px 80px",
-};
-
-const logo = { width: 140, marginBottom: 20 };
-
-const title = { fontSize: 40, fontWeight: 800 };
-
-const subtitle = { marginTop: 10, fontSize: 16 };
-
-const mantra = {
-  marginTop: 12,
-  fontSize: 14,
-  letterSpacing: 1,
-  color: "#78350f",
-};
-
-const ctaRow = {
-  display: "flex",
-  justifyContent: "center",
-  gap: 16,
-  marginTop: 30,
-  flexWrap: "wrap",
-};
-
-const btnPrimary = color => ({
-  background: `linear-gradient(135deg,${color},#000)`,
-  color: "#fff",
-  padding: "14px 32px",
-  borderRadius: 999,
-  textDecoration: "none",
-  fontWeight: 700,
-});
-
-const btnGhost = color => ({
-  border: `2px solid ${color}`,
-  color,
-  padding: "12px 28px",
-  borderRadius: 999,
-  textDecoration: "none",
-  fontWeight: 600,
-});
-
-const mvGrid = {
-  display: "grid",
-  gridTemplateColumns: "repeat(auto-fit,minmax(360px,1fr))",
-  gap: 24,
-};
-
-const card = {
-  background: "#fff",
-  padding: 26,
-  borderRadius: 22,
-  boxShadow: "0 20px 40px rgba(0,0,0,.08)",
-};
-
-const cardWide = {
-  background: "#fff",
-  padding: 36,
-  borderRadius: 26,
-  boxShadow: "0 20px 40px rgba(0,0,0,.08)",
-};
-
-const sectionTitle = {
-  textAlign: "center",
-  marginBottom: 20,
-  color: "#0f172a",
-};
-
-const activityGrid = {
-  display: "grid",
-  gridTemplateColumns: "repeat(auto-fit,minmax(260px,1fr))",
-  gap: 20,
-};
-
-const activityCard = {
-  background: "#fff",
-  padding: 22,
-  borderRadius: 18,
-  fontWeight: 600,
-  boxShadow: "0 12px 28px rgba(0,0,0,.08)",
-};
-
-const footer = {
-  textAlign: "center",
-  padding: 24,
-  color: "#475569",
-  fontSize: 13,
-};
-
-/* 🌐 LANGUAGE TOGGLE STYLES */
-
-const langToggle = {
-  position: "fixed",
-  top: 80,
-  right: 20,
-  zIndex: 1000,
-  display: "flex",
-  gap: 8,
-};
-
-const langBtn = {
-  padding: "6px 12px",
-  borderRadius: 20,
-  border: "1px solid #cbd5f5",
-  background: "#fff",
-  cursor: "pointer",
-};
-
-const langBtnActive = {
-  ...langBtn,
-  background: "#312e81",
-  color: "#fff",
-};
