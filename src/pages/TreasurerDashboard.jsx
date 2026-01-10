@@ -126,7 +126,7 @@ export default function TreasurerDashboard() {
               <tbody>
                 {rows.map((d) => (
                   <tr key={d.id}>
-                    <td>{d.member_name || d.donor_name || "Public"}</td>
+                   <td>{tab === "MEMBER" ? d.member_name : d.donor_name || "Public Donor"}</td>
                     <td>₹{Number(d.amount).toLocaleString("en-IN")}</td>
                     <td>{d.payment_mode}</td>
                     <td>{d.reference_no || "-"}</td>
