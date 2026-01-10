@@ -4,7 +4,7 @@ import axios from "axios";
    🌐 AXIOS INSTANCE (FINAL)
 ========================= */
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL, // ✅ NO /api
+  baseURL: import.meta.env.VITE_API_BASE_URL,
   headers: {
     "Content-Type": "application/json",
   },
@@ -22,7 +22,6 @@ api.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`;
     }
 
-    // ✅ Allow FormData (file uploads)
     if (config.data instanceof FormData) {
       delete config.headers["Content-Type"];
     }
@@ -33,18 +32,22 @@ api.interceptors.request.use(
 );
 
 /* =========================
-   🚨 RESPONSE INTERCEPTOR
+   🚨 RESPONSE INTERCEPTOR (FIXED)
 ========================= */
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
-      // 🔥 Session expired / invalid token
+    const status = error.response?.status;
+    const currentPath = window.location.pathname;
+
+    if (
+      status === 401 &&
+      !currentPath.startsWith("/login")
+    ) {
       localStorage.removeItem("token");
       localStorage.removeItem("user");
 
-      // ✅ Redirect with reason
-      window.location.href = "/login?expired=1";
+      window.location.replace("/login?expired=1");
     }
 
     return Promise.reject(error);

@@ -4,9 +4,6 @@ import { useAuth } from "../context/AuthContext";
 import api from "../api/api";
 import bg from "../assets/login-bg.png";
 
-/* =========================
-   FINAL LOGIN (NO FLICKER)
-========================= */
 export default function Login() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -15,16 +12,12 @@ export default function Login() {
 
   const navigate = useNavigate();
   const { login } = useAuth();
-
   const [params] = useSearchParams();
   const expired = params.get("expired");
 
-  /* =========================
-     HANDLE LOGIN
-  ========================= */
   const handleLogin = async (e) => {
     e.preventDefault();
-    if (loading) return; // 🔒 prevent double submit
+    if (loading) return;
 
     setError("");
     setLoading(true);
@@ -35,68 +28,48 @@ export default function Login() {
         password,
       });
 
-      /**
-       * Backend response:
-       * {
-       *   token,
-       *   user: { id, name, username },
-       *   role,
-       *   isFirstLogin
-       * }
-       */
       const { token, user, role, isFirstLogin } = res.data;
 
-      // ✅ SAVE AUTH
       login(token, { ...user, role });
 
-      // 🔐 FIRST LOGIN → FORCE PASSWORD CHANGE
-      if (isFirstLogin) {
-        navigate("/change-password", { replace: true });
-        return;
-      }
-
-      // ✅ SINGLE DASHBOARD FOR ALL ROLES
-      navigate("/dashboard", { replace: true });
+      navigate(
+        isFirstLogin ? "/change-password" : "/dashboard",
+        { replace: true }
+      );
     } catch (err) {
-      console.error("LOGIN ERROR 👉", err);
-      setError(err.response?.data?.error || "Invalid username or password");
+      setError(
+        err.response?.data?.error || "Invalid username or password"
+      );
     } finally {
       setLoading(false);
     }
   };
 
-  /* =========================
-     UI
-  ========================= */
   return (
     <div style={page}>
-      <img src={bg} alt="Background" style={bgImage} />
+      {/* preload image to avoid flicker */}
+      <img src={bg} alt="" style={{ display: "none" }} />
 
       <div style={overlay}>
-        <div style={content}>
-          <h1 style={welcome}>Hello Welcome</h1>
-          <p style={subtitle}>Association System</p>
+        <div style={card}>
+          <h1 style={title}>Association System</h1>
+          <p style={subtitle}>Hinduswaraj Youth Welfare Association</p>
 
-          <form onSubmit={handleLogin} style={box}>
-            <h3 style={{ marginBottom: 15 }}>Login</h3>
-
-            {/* 🔁 SESSION EXPIRED MESSAGE */}
+          <form onSubmit={handleLogin}>
             {expired && (
-              <p style={expiredText}>
+              <div style={infoBox}>
                 Session expired. Please login again.
-              </p>
+              </div>
             )}
 
-            {error && <p style={errorText}>{error}</p>}
+            {error && <div style={errorBox}>{error}</div>}
 
             <input
-              type="text"
               placeholder="Username / Member ID"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               required
               style={input}
-              autoComplete="username"
             />
 
             <input
@@ -106,18 +79,15 @@ export default function Login() {
               onChange={(e) => setPassword(e.target.value)}
               required
               style={input}
-              autoComplete="current-password"
             />
 
-            <button type="submit" style={btn} disabled={loading}>
-              {loading ? "Logging in..." : "LOGIN"}
+            <button style={btn} disabled={loading}>
+              {loading ? "Authenticating..." : "LOGIN"}
             </button>
 
-            <p style={{ marginTop: 12 }}>
-              <a href="/forgot-password" style={{ color: "#ffd700" }}>
-                Forgot Password?
-              </a>
-            </p>
+            <a href="/forgot-password" style={forgot}>
+              Forgot Password?
+            </a>
           </form>
         </div>
       </div>
@@ -126,80 +96,114 @@ export default function Login() {
 }
 
 /* =========================
-   STYLES
+   PREMIUM STYLES + ANIMATION
 ========================= */
 
 const page = {
   minHeight: "100vh",
-  position: "relative",
-  backgroundColor: "#000",
-};
-
-const bgImage = {
-  width: "100%",
-  height: "auto",
+  background:
+    "radial-gradient(circle at top, #111827 0%, #000 60%)",
 };
 
 const overlay = {
-  position: "absolute",
-  inset: 0,
-  background: "rgba(0,0,0,0.35)",
+  minHeight: "100vh",
   display: "flex",
-  justifyContent: "center",
   alignItems: "center",
-  padding: 16,
+  justifyContent: "center",
+  padding: 20,
 };
 
-const content = {
+const card = {
+  width: 380,
+  padding: "38px 32px",
+  borderRadius: 18,
+  background: "rgba(255,255,255,0.12)",
+  backdropFilter: "blur(18px)",
+  boxShadow: "0 30px 90px rgba(0,0,0,0.85)",
   textAlign: "center",
-  color: "#fff",
+  animation: "fadeUp 0.7s ease-out",
 };
 
-const welcome = {
-  fontSize: 32,
+const title = {
+  fontFamily: "Georgia, serif",
+  fontSize: 28,
   fontWeight: "bold",
+  color: "#facc15",
+  marginBottom: 6,
 };
 
 const subtitle = {
-  marginBottom: 25,
-};
-
-const box = {
-  width: 360,
-  padding: 24,
-  background: "rgba(255,255,255,0.2)",
-  backdropFilter: "blur(12px)",
-  borderRadius: 14,
+  fontSize: 13,
+  color: "#e5e7eb",
+  marginBottom: 28,
 };
 
 const input = {
   width: "100%",
-  padding: 14,
+  padding: "14px 16px",
   marginBottom: 14,
-  borderRadius: 8,
-  border: "none",
-  fontSize: 16,
+  borderRadius: 10,
+  border: "1px solid rgba(255,255,255,0.25)",
+  background: "rgba(0,0,0,0.55)",
+  color: "#fff",
+  fontSize: 15,
+  outline: "none",
 };
 
 const btn = {
   width: "100%",
   padding: 14,
-  background: "gold",
-  borderRadius: 10,
+  marginTop: 8,
+  borderRadius: 12,
+  background: "linear-gradient(135deg, #facc15, #eab308)",
+  color: "#000",
   fontWeight: "bold",
   fontSize: 16,
+  border: "none",
   cursor: "pointer",
-  opacity: 1,
+  transition: "transform .15s ease, box-shadow .15s ease",
 };
 
-const errorText = {
-  color: "#ffb4b4",
+const forgot = {
+  display: "block",
+  marginTop: 16,
   fontSize: 13,
-  marginBottom: 10,
+  color: "#fde047",
+  textDecoration: "none",
 };
 
-const expiredText = {
-  color: "#ffe08a",
+const infoBox = {
+  background: "rgba(234,179,8,0.2)",
+  color: "#fde68a",
+  padding: 10,
+  borderRadius: 8,
   fontSize: 13,
-  marginBottom: 10,
+  marginBottom: 12,
 };
+
+const errorBox = {
+  background: "rgba(220,38,38,0.2)",
+  color: "#fecaca",
+  padding: 10,
+  borderRadius: 8,
+  fontSize: 13,
+  marginBottom: 12,
+};
+
+/* =========================
+   KEYFRAME INJECTION
+========================= */
+const style = document.createElement("style");
+style.innerHTML = `
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+`;
+document.head.appendChild(style);
