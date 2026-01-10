@@ -3,10 +3,7 @@ import api from "../api/api";
 import Footer from "../components/Footer";
 import PublicNavbar from "../components/PublicNavbar";
 
-/* =========================
-   🔑 UPI CONFIG
-========================= */
-const UPI_ID = "yourupi@bank"; // 🔴 CHANGE THIS
+const UPI_ID = "yourupi@bank";   // change
 const UPI_NAME = "Hinduswaraj Youth Welfare Association";
 
 export default function PublicDonation() {
@@ -15,6 +12,7 @@ export default function PublicDonation() {
 
   const [donor_name, setDonorName] = useState("");
   const [donor_phone, setDonorPhone] = useState("");
+  const [donor_email, setDonorEmail] = useState("");
   const [fund_id, setFundId] = useState("");
   const [amount, setAmount] = useState("");
   const [payment_mode, setPaymentMode] = useState("");
@@ -23,48 +21,29 @@ export default function PublicDonation() {
   const [msg, setMsg] = useState("");
   const [error, setError] = useState("");
 
-  /* =========================
-     LOAD FUNDS
-  ========================= */
   useEffect(() => {
-    api
-      .get("/public/association-info")
-      .then((res) => {
-        setFunds(res.data.data.funds || []);
-      })
+    api.get("/public/association-info")
+      .then(res => setFunds(res.data.data.funds || []))
       .catch(() => setError("Failed to load funds"))
       .finally(() => setLoading(false));
   }, []);
 
-  /* =========================
-     UPI QR GENERATOR
-  ========================= */
   const getUpiQrUrl = (amt) => {
-    const upiString =
-      `upi://pay?pa=${UPI_ID}` +
-      `&pn=${encodeURIComponent(UPI_NAME)}` +
-      `&am=${amt}` +
-      `&cu=INR`;
-
-    return `https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=${encodeURIComponent(
-      upiString
-    )}`;
+    const upi = `upi://pay?pa=${UPI_ID}&pn=${encodeURIComponent(UPI_NAME)}&am=${amt}&cu=INR`;
+    return `https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${encodeURIComponent(upi)}`;
   };
 
-  /* =========================
-     SUBMIT DONATION
-  ========================= */
   const submit = async () => {
     setError("");
     setMsg("");
 
-    if (!fund_id || !amount || !payment_mode) {
+    if (!donor_email || !fund_id || !amount || !payment_mode) {
       setError("Please fill all required fields");
       return;
     }
 
     if (payment_mode === "UPI" && !reference_no) {
-      setError("UTR / Reference number is required for UPI");
+      setError("UTR / Reference is required");
       return;
     }
 
@@ -72,126 +51,81 @@ export default function PublicDonation() {
       await api.post("/public/donate", {
         donor_name,
         donor_phone,
+        donor_email,
         fund_id,
         amount,
         payment_mode,
-        reference_no,
+        reference_no
       });
 
-      setMsg("🙏 Thank you! Donation submitted successfully");
-
-      // reset
+      setMsg("🙏 Thank you for your Seva. Your donation was received.");
       setDonorName("");
       setDonorPhone("");
+      setDonorEmail("");
       setFundId("");
       setAmount("");
       setPaymentMode("");
       setReferenceNo("");
-    } catch (err) {
-      setError(err.response?.data?.error || "Donation failed");
+    } catch (e) {
+      setError(e.response?.data?.error || "Donation failed");
     }
   };
 
-  if (loading) {
-    return <div style={{ padding: 60 }}>Loading...</div>;
-  }
+  if (loading) return <div style={{ padding: 60 }}>Loading…</div>;
 
   return (
     <>
       <PublicNavbar />
 
       <div style={page}>
-        <h2>🙏 Make a Donation</h2>
+        <h1 style={title}>🙏 Donate for Dharma & Seva</h1>
+        <p style={sub}>
+          “दानं धर्मस्य मूलम्” — Charity is the root of righteousness
+        </p>
 
-        {error && <p style={{ color: "red" }}>{error}</p>}
-        {msg && <p style={{ color: "green" }}>{msg}</p>}
+        {error && <div style={errorBox}>{error}</div>}
+        {msg && <div style={successBox}>{msg}</div>}
 
-        <input
-          placeholder="Your Name (optional)"
-          value={donor_name}
-          onChange={(e) => setDonorName(e.target.value)}
-          style={input}
-        />
+        <div style={card}>
+          <input placeholder="Full Name (optional)" value={donor_name} onChange={e=>setDonorName(e.target.value)} style={input}/>
+          <input placeholder="Phone (optional)" value={donor_phone} onChange={e=>setDonorPhone(e.target.value)} style={input}/>
+          <input placeholder="Email (required)" value={donor_email} onChange={e=>setDonorEmail(e.target.value)} style={input}/>
 
-        <input
-          placeholder="Phone Number (optional)"
-          value={donor_phone}
-          onChange={(e) => setDonorPhone(e.target.value)}
-          style={input}
-        />
-        
-        <input
-          placeholder="email(Mandatory )"
-          value={donor_email}
-          onChange={(e) => setDonoremail(e.target.value)}
-          style={input}
-        />     
-        <select
-          value={fund_id}
-          onChange={(e) => setFundId(e.target.value)}
-          style={input}
-        >
-          <option value="">Select Fund *</option>
-          {funds.map((f) => (
-            <option key={f.id} value={f.id}>
-              {f.fund_name}
-            </option>
-          ))}
-        </select>
+          <select value={fund_id} onChange={e=>setFundId(e.target.value)} style={input}>
+            <option value="">Select Seva / Fund</option>
+            {funds.map(f=>(
+              <option key={f.id} value={f.id}>{f.fund_name}</option>
+            ))}
+          </select>
 
-        <input
-          type="number"
-          placeholder="Amount (₹)"
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
-          style={input}
-        />
+          <input type="number" placeholder="Donation Amount ₹" value={amount} onChange={e=>setAmount(e.target.value)} style={input}/>
 
-        <select
-          value={payment_mode}
-          onChange={(e) => setPaymentMode(e.target.value)}
-          style={input}
-        >
-          <option value="">Payment Mode *</option>
-          <option value="UPI">UPI</option>
-          <option value="CASH">Cash</option>
-          <option value="BANK">Bank Transfer</option>
-        </select>
+          <select value={payment_mode} onChange={e=>setPaymentMode(e.target.value)} style={input}>
+            <option value="">Payment Method</option>
+            <option value="UPI">UPI</option>
+            <option value="BANK">Bank Transfer</option>
+            <option value="CASH">Cash</option>
+          </select>
 
-        {/* ===== AUTO UPI QR ===== */}
-        {payment_mode === "UPI" && amount > 0 && (
-          <div style={qrBox}>
-            <h4>Scan & Pay</h4>
+          {payment_mode === "UPI" && amount > 0 && (
+            <div style={qrBox}>
+              <h3>Scan & Offer Your Seva</h3>
+              <img src={getUpiQrUrl(amount)} style={{ width: 240 }} />
+              <p>Pay ₹{amount} to <b>{UPI_NAME}</b></p>
+            </div>
+          )}
 
-            <img
-              src={getUpiQrUrl(amount)}
-              alt="UPI QR"
-              style={{ width: 260 }}
+          {payment_mode === "UPI" && (
+            <input
+              placeholder="UTR / Reference No"
+              value={reference_no}
+              onChange={e=>setReferenceNo(e.target.value)}
+              style={input}
             />
+          )}
 
-            <p style={{ marginTop: 10 }}>
-              Pay ₹{amount} to <b>{UPI_NAME}</b>
-            </p>
-
-            <p style={{ fontSize: 12, color: "#64748b" }}>
-              After payment, enter UTR below 👇
-            </p>
-          </div>
-        )}
-
-        {/* ===== UTR ===== */}
-        {payment_mode === "UPI" && (
-          <input
-            placeholder="UTR / Reference Number *"
-            value={reference_no}
-            onChange={(e) => setReferenceNo(e.target.value)}
-            style={input}
-          />
-        )}
-
-        <button style={btn} onClick={submit}>
-          Submit Donation
-        </button>
+          <button onClick={submit} style={btn}>🙏 Submit Donation</button>
+        </div>
       </div>
 
       <Footer />
@@ -199,38 +133,80 @@ export default function PublicDonation() {
   );
 }
 
-/* =========================
-   STYLES
-========================= */
+/* ========== STYLES ========== */
+
 const page = {
+  minHeight: "100vh",
+  background: "linear-gradient(to bottom, #fff7ed, #fefce8)",
+  padding: "60px 15px",
+  textAlign: "center"
+};
+
+const title = {
+  fontSize: "2.2rem",
+  color: "#7c2d12",
+  fontWeight: "800",
+  marginBottom: 10
+};
+
+const sub = {
+  color: "#854d0e",
+  fontSize: 15,
+  marginBottom: 30
+};
+
+const card = {
   maxWidth: 420,
-  margin: "40px auto",
-  padding: 20,
-  textAlign: "center",
+  margin: "auto",
+  background: "#fff",
+  padding: 28,
+  borderRadius: 16,
+  boxShadow: "0 10px 30px rgba(0,0,0,0.08)"
 };
 
 const input = {
   width: "100%",
   padding: 12,
   marginBottom: 12,
-  borderRadius: 8,
-  border: "1px solid #cbd5f5",
+  borderRadius: 10,
+  border: "1px solid #facc15",
+  background: "#fffbea",
+  fontSize: 14
 };
 
 const btn = {
   width: "100%",
   padding: 14,
-  background: "#2563eb",
+  background: "linear-gradient(to right, #ca8a04, #854d0e)",
   color: "#fff",
   border: "none",
-  borderRadius: 10,
-  fontWeight: "bold",
-  cursor: "pointer",
+  borderRadius: 12,
+  fontSize: 16,
+  fontWeight: "700",
+  marginTop: 10,
+  cursor: "pointer"
 };
 
 const qrBox = {
-  marginTop: 20,
-  padding: 16,
-  border: "1px dashed #94a3b8",
+  margin: "15px 0",
+  padding: 15,
+  background: "#fffbeb",
   borderRadius: 12,
+  border: "1px dashed #facc15"
+};
+
+const errorBox = {
+  background: "#fee2e2",
+  color: "#991b1b",
+  padding: 10,
+  borderRadius: 8,
+  marginBottom: 10
+};
+
+const successBox = {
+  background: "#dcfce7",
+  color: "#166534",
+  padding: 10,
+  borderRadius: 8,
+  marginBottom: 10
 };
