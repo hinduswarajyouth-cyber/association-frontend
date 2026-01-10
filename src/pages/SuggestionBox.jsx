@@ -3,12 +3,20 @@ import api from "../api/api";
 import Navbar from "../components/Navbar";
 import { useAuth } from "../context/AuthContext";
 
+/* ================= META ================= */
+const STATUS_META = {
+  PENDING: { color: "#f59e0b", icon: "⏳" },
+  APPROVED: { color: "#22c55e", icon: "✅" },
+  REJECTED: { color: "#ef4444", icon: "❌" },
+};
+
 export default function SuggestionBox() {
   const { user } = useAuth();
 
   const isAdmin =
     user?.role === "SUPER_ADMIN" || user?.role === "PRESIDENT";
 
+  /* ================= STATE ================= */
   const [form, setForm] = useState({
     title: "",
     type: "GENERAL",
@@ -19,9 +27,7 @@ export default function SuggestionBox() {
   const [loading, setLoading] = useState(true);
   const [success, setSuccess] = useState("");
 
-  /* =========================
-     LOAD SUGGESTIONS
-  ========================= */
+  /* ================= LOAD ================= */
   useEffect(() => {
     if (user) loadSuggestions();
     // eslint-disable-next-line
@@ -36,92 +42,86 @@ export default function SuggestionBox() {
 
       setSuggestions(res.data?.data || []);
     } catch (err) {
-      console.error("LOAD SUGGESTIONS ERROR 👉", err);
+      console.error(err);
       alert("Failed to load suggestions");
     } finally {
       setLoading(false);
     }
   };
 
-  /* =========================
-     SUBMIT SUGGESTION
-  ========================= */
-  const submitSuggestion = async (e) => {
-    e.preventDefault();
-    setSuccess("");
+  /* ================= SUBMIT ================= */
+  const submitSuggestion = async () => {
+    if (!form.message) return alert("Message required");
 
-    if (!form.message) {
-      alert("Message required");
-      return;
-    }
+    await api.post("/suggestions", form);
+    setSuccess("✅ Suggestion submitted");
+    setForm({ title: "", type: "GENERAL", message: "" });
+    loadSuggestions();
 
-    try {
-      await api.post("/suggestions", form);
-      setSuccess("✅ Suggestion submitted successfully");
-      setForm({ title: "", type: "GENERAL", message: "" });
-      loadSuggestions();
-
-      setTimeout(() => setSuccess(""), 3000);
-    } catch (err) {
-      console.error("SUBMIT ERROR 👉", err);
-      alert("Failed to submit suggestion");
-    }
+    setTimeout(() => setSuccess(""), 3000);
   };
 
-  /* =========================
-     ADMIN APPROVE / REJECT
-  ========================= */
+  /* ================= ADMIN ACTION ================= */
   const updateStatus = async (id, status) => {
-    try {
-      await api.put(`/suggestions/${id}/status`, { status });
-      loadSuggestions();
-    } catch {
-      alert("Failed to update status");
-    }
+    await api.put(`/suggestions/${id}/status`, { status });
+    loadSuggestions();
   };
 
-  const statusColor = {
-    APPROVED: "#86efac",
-    REJECTED: "#fca5a5",
-    PENDING: "#fde68a",
-  };
+  /* ================= DASHBOARD COUNTS ================= */
+  const pending = suggestions.filter(s => s.status === "PENDING").length;
+  const approved = suggestions.filter(s => s.status === "APPROVED").length;
+  const rejected = suggestions.filter(s => s.status === "REJECTED").length;
 
   return (
     <>
       <Navbar />
-
       <div style={page}>
-        <h2 style={{ marginBottom: 6 }}>💡 Suggestion Box</h2>
+        <h2>💡 Suggestion Box</h2>
         <p style={{ color: "#64748b", marginBottom: 20 }}>
-          Share ideas, improvements, or concerns with the association.
+          Share ideas, improvements, or concerns with the association
         </p>
 
-        {/* ================= CREATE ================= */}
+        {/* ===== DASHBOARD ===== */}
+        <div style={dashGrid}>
+          {[
+            ["PENDING", pending],
+            ["APPROVED", approved],
+            ["REJECTED", rejected],
+          ].map(([k, v]) => (
+            <div
+              key={k}
+              style={{
+                ...dashCard,
+                background: `linear-gradient(135deg, ${STATUS_META[k].color}, #00000020)`
+              }}
+            >
+              <div style={{ fontSize: 32 }}>{STATUS_META[k].icon}</div>
+              <div>
+                <div style={{ fontSize: 13 }}>{k}</div>
+                <div style={{ fontSize: 28, fontWeight: 700 }}>{v}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* ===== CREATE ===== */}
         {!isAdmin && (
           <div style={card}>
             <h3>Submit Suggestion</h3>
 
-            {success && (
-              <p style={{ color: "green", marginBottom: 10 }}>
-                {success}
-              </p>
-            )}
+            {success && <p style={{ color: "green" }}>{success}</p>}
 
             <input
               style={input}
               placeholder="Title (optional)"
               value={form.title}
-              onChange={(e) =>
-                setForm({ ...form, title: e.target.value })
-              }
+              onChange={e => setForm({ ...form, title: e.target.value })}
             />
 
             <select
               style={input}
               value={form.type}
-              onChange={(e) =>
-                setForm({ ...form, type: e.target.value })
-              }
+              onChange={e => setForm({ ...form, type: e.target.value })}
             >
               <option value="GENERAL">General</option>
               <option value="IMPROVEMENT">Improvement</option>
@@ -133,9 +133,7 @@ export default function SuggestionBox() {
               style={textarea}
               placeholder="Your suggestion..."
               value={form.message}
-              onChange={(e) =>
-                setForm({ ...form, message: e.target.value })
-              }
+              onChange={e => setForm({ ...form, message: e.target.value })}
             />
 
             <button style={btnPrimary} onClick={submitSuggestion}>
@@ -144,32 +142,23 @@ export default function SuggestionBox() {
           </div>
         )}
 
-        {/* ================= LIST ================= */}
-        <h3 style={{ marginTop: 20 }}>
+        {/* ===== LIST ===== */}
+        <h3 style={{ marginTop: 30 }}>
           {isAdmin ? "📬 All Suggestions" : "📝 My Suggestions"}
         </h3>
 
-        {loading && <p>Loading suggestions...</p>}
+        {loading && <p>Loading...</p>}
 
         {!loading && suggestions.length === 0 && (
-          <p style={{ color: "#64748b" }}>
-            {isAdmin
-              ? "No suggestions submitted yet."
-              : "You haven’t submitted any suggestions yet."}
-          </p>
+          <p style={{ color: "#64748b" }}>No suggestions yet.</p>
         )}
 
-        {suggestions.map((s) => (
-          <div key={s.id} style={card}>
+        {suggestions.map(s => (
+          <div key={s.id} style={cardAnimated}>
             <div style={cardHeader}>
-              <strong>{s.title || "No Title"}</strong>
-              <span
-                style={{
-                  ...badge,
-                  background: statusColor[s.status] || "#e5e7eb",
-                }}
-              >
-                {s.status}
+              <b>{s.title || "No Title"}</b>
+              <span style={statusBadge(s.status)}>
+                {STATUS_META[s.status].icon} {s.status}
               </span>
             </div>
 
@@ -203,20 +192,42 @@ export default function SuggestionBox() {
   );
 }
 
-/* =========================
-   🎨 STYLES
-========================= */
+/* ================= STYLES ================= */
+
 const page = {
   padding: 30,
   background: "#f1f5f9",
   minHeight: "100vh",
 };
 
+const dashGrid = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(180px,1fr))",
+  gap: 20,
+  marginBottom: 30,
+};
+
+const dashCard = {
+  color: "#fff",
+  padding: 20,
+  borderRadius: 18,
+  display: "flex",
+  gap: 16,
+  alignItems: "center",
+  boxShadow: "0 20px 40px rgba(0,0,0,.15)",
+};
+
 const card = {
   background: "#fff",
-  padding: 18,
-  borderRadius: 12,
-  marginBottom: 16,
+  padding: 20,
+  borderRadius: 18,
+  marginBottom: 20,
+  boxShadow: "0 10px 25px rgba(0,0,0,.08)",
+};
+
+const cardAnimated = {
+  ...card,
+  transition: "transform .25s, box-shadow .25s",
 };
 
 const cardHeader = {
@@ -225,12 +236,14 @@ const cardHeader = {
   alignItems: "center",
 };
 
-const badge = {
-  padding: "4px 10px",
-  borderRadius: 12,
+const statusBadge = status => ({
+  padding: "6px 14px",
+  borderRadius: 999,
   fontSize: 12,
   fontWeight: 600,
-};
+  color: "#fff",
+  background: STATUS_META[status]?.color,
+});
 
 const actionRow = {
   display: "flex",
@@ -241,41 +254,42 @@ const actionRow = {
 const input = {
   width: "100%",
   maxWidth: 360,
-  padding: 8,
+  padding: 10,
   marginBottom: 10,
+  borderRadius: 8,
+  border: "1px solid #cbd5f5",
 };
 
 const textarea = {
   width: "100%",
   maxWidth: 360,
   height: 90,
-  padding: 8,
+  padding: 10,
   marginBottom: 10,
+  borderRadius: 8,
+  border: "1px solid #cbd5f5",
 };
 
 const btnPrimary = {
   background: "#2563eb",
   color: "#fff",
-  border: "none",
   padding: "8px 16px",
+  border: "none",
   borderRadius: 8,
-  cursor: "pointer",
 };
 
 const btnSuccess = {
   background: "#16a34a",
   color: "#fff",
-  border: "none",
   padding: "6px 14px",
+  border: "none",
   borderRadius: 6,
-  cursor: "pointer",
 };
 
 const btnDanger = {
   background: "#dc2626",
   color: "#fff",
-  border: "none",
   padding: "6px 14px",
+  border: "none",
   borderRadius: 6,
-  cursor: "pointer",
 };
