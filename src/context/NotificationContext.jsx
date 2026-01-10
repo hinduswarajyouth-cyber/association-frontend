@@ -5,23 +5,39 @@ import { useAuth } from "./AuthContext";
 const NotificationContext = createContext();
 
 export function NotificationProvider({ children }) {
-  const { user } = useAuth(); // ✅ check login
+  const { user } = useAuth();
   const [notifications, setNotifications] = useState([]);
   const [loaded, setLoaded] = useState(false);
 
+  /* ================= LOAD ================= */
   const loadNotifications = async () => {
-    // 🔒 Do not call API if not logged in
     if (!user) return;
 
     try {
       const res = await api.get("/notifications");
       setNotifications(res.data || []);
     } catch (err) {
-      // ❌ Do nothing on error (axios handles redirect)
-      console.warn("Notifications skipped");
+      console.warn("Notifications load skipped");
     }
   };
 
+  /* ================= MARK AS READ ================= */
+  const markAsRead = async (id) => {
+    try {
+      // optimistic UI update
+      setNotifications((prev) =>
+        prev.map((n) =>
+          n.id === id ? { ...n, is_read: true } : n
+        )
+      );
+
+      await api.put(`/notifications/${id}/read`);
+    } catch (err) {
+      console.warn("Failed to mark notification read");
+    }
+  };
+
+  /* ================= EFFECT ================= */
   useEffect(() => {
     if (user && !loaded) {
       loadNotifications();
@@ -29,7 +45,6 @@ export function NotificationProvider({ children }) {
     }
 
     if (!user) {
-      // logout / session expired
       setNotifications([]);
       setLoaded(false);
     }
@@ -40,6 +55,7 @@ export function NotificationProvider({ children }) {
       value={{
         notifications,
         reloadNotifications: loadNotifications,
+        markAsRead, // ✅ NOW PROVIDED
       }}
     >
       {children}
@@ -47,4 +63,7 @@ export function NotificationProvider({ children }) {
   );
 }
 
-export const useNotifications = () => useContext(NotificationContext);
+/* ================= HOOK ================= */
+export const useNotifications = () => {
+  return useContext(NotificationContext);
+};
