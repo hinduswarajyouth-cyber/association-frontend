@@ -34,10 +34,20 @@ export default function NotificationPanel({ onClose }) {
               ? "3px solid transparent"
               : "3px solid #22c55e",
           }}
-          onClick={() => {
-            markAsRead(n.id);
-            if (n.link) navigate(n.link);
-            onClose();
+          onClick={(e) => {
+            e.stopPropagation();          // ✅ SAFETY FIX
+            markAsRead(n.id);             // ✅ MARK READ
+            if (n.link) navigate(n.link); // ✅ SAFE NAVIGATION
+            onClose();                    // ✅ CLOSE PANEL
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = "translateY(-2px)";
+            e.currentTarget.style.boxShadow =
+              "0 6px 20px rgba(0,0,0,.4)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = "translateY(0)";
+            e.currentTarget.style.boxShadow = "none";
           }}
         >
           <div style={itemHeader}>
