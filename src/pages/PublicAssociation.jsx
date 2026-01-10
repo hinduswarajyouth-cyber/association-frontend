@@ -9,26 +9,18 @@ export default function Association() {
   );
 
   useEffect(() => {
-    localStorage.setItem("lang", lang);
-  }, [lang]);
-
-  useEffect(() => {
     api.get("/association-settings/public").then(r => {
       setSettings(r.data);
     });
   }, []);
 
+  useEffect(() => {
+    localStorage.setItem("lang", lang);
+  }, [lang]);
+
   if (!settings) return <div style={{ padding: 50 }}>Loading...</div>;
 
-  const t = (en, te) => (lang === "EN" ? en : te || en);
-
-  const sectionTitle = {
-    textAlign: "center",
-    marginBottom: 24,
-    fontSize: 22,
-    fontWeight: 700,
-    color: settings.primary_color,
-  };
+  const t = (en, te) => (lang === "EN" ? en : te);
 
   return (
     <>
@@ -76,7 +68,7 @@ export default function Association() {
             {t(settings.hero_subtitle, settings.hero_subtitle_te)}
           </p>
 
-          <p style={mantra}>“सर्वे भवन्तु सुखिनः”</p>
+          <p style={mantra}>“సర్వే భవంతు సుఖినః”</p>
 
           <div style={ctaRow}>
             <a href="/donate" style={btnPrimary(settings.primary_color)}>
@@ -89,96 +81,146 @@ export default function Association() {
         </section>
 
         <div style={content}>
-          {/* ================= ABOUT ================= */}
           {settings.show_about && (
             <section style={section}>
               <div style={cardWide}>
-                <h2 style={sectionTitle}>
+                <h2 style={sectionTitle(settings.primary_color)}>
                   🌱 {t("About the Association", "సంఘం గురించి")}
                 </h2>
-                <p>
-                  {t(
-                    settings.about_text ||
-                      "Hinduswaraj Youth Welfare Association is a registered non-profit organization committed to youth empowerment, social service, and cultural preservation.",
-                    settings.about_text_te
-                  )}
-                </p>
+                <p>{t(settings.about_text, settings.about_text_te)}</p>
               </div>
             </section>
           )}
 
-          {/* ================= MISSION & VISION ================= */}
-          {(settings.show_mission || settings.show_values) && (
+          {settings.show_mission && (
             <section style={section}>
               <div style={mvGrid}>
-                {settings.show_mission && (
-                  <div style={card}>
-                    <h3>🎯 {t("Our Mission", "మా లక్ష్యం")}</h3>
-                    <p>
-                      {t(
-                        settings.mission_text ||
-                          "To empower disciplined and socially responsible youth through education, leadership, welfare initiatives, and service-oriented activities rooted in Bharatiya values.",
-                        settings.mission_text_te
-                      )}
-                    </p>
-                  </div>
-                )}
-
-                {settings.show_values && (
-                  <div style={card}>
-                    <h3>🌍 {t("Our Vision", "మా దృష్టి")}</h3>
-                    <p>
-                      {t(
-                        settings.vision_text ||
-                          "To build a strong, self-reliant, and culturally conscious generation that actively contributes to social harmony and national development.",
-                        settings.vision_text_te
-                      )}
-                    </p>
-                  </div>
-                )}
-              </div>
-            </section>
-          )}
-
-          {/* ================= ACTIVITIES ================= */}
-          {settings.show_activities && (
-            <section style={section}>
-              <h2 style={sectionTitle}>
-                🤝 {t("What We Do", "మేము చేసే సేవలు")}
-              </h2>
-              <div style={activityGrid}>
-                {DEFAULT_ACTIVITIES.map((a, i) => (
-                  <div key={i} style={activityCard}>
-                    {lang === "EN" ? a.en : a.te}
-                  </div>
-                ))}
-              </div>
-            </section>
-          )}
-
-          {/* ================= TRANSPARENCY ================= */}
-          {settings.show_transparency && (
-            <section style={section}>
-              <div style={cardWide}>
-                <h2 style={sectionTitle}>
-                  🔍 {t("Transparency & Governance", "పారదర్శకత & పాలన")}
-                </h2>
-                <p>
-                  {t(
-                    "We follow transparent governance practices including documented meetings, audited financials, democratic decision-making, and accountable leadership.",
-                    "డాక్యుమెంటెడ్ సమావేశాలు, ఆడిట్ చేసిన ఆర్థిక నివేదికలు, ప్రజాస్వామ్య నిర్ణయాలు మరియు బాధ్యతాయుతమైన నాయకత్వంతో మేము పారదర్శక పాలనను పాటిస్తాము."
-                  )}
-                </p>
+                <div style={card}>
+                  <h3>🎯 {t("Our Mission", "మా లక్ష్యం")}</h3>
+                  <p>{t(settings.mission_text, settings.mission_text_te)}</p>
+                </div>
+                <div style={card}>
+                  <h3>🌍 {t("Our Vision", "మా దృష్టి")}</h3>
+                  <p>{t(settings.vision_text, settings.vision_text_te)}</p>
+                </div>
               </div>
             </section>
           )}
         </div>
       </div>
+
+      <footer style={footer}>
+        © 2026 Hinduswaraj Youth Welfare Association • Developed by
+        <b> Sreetech Technologies, Jagtial</b>
+      </footer>
     </>
   );
 }
 
-/* ================= LANGUAGE TOGGLE STYLES ================= */
+/* ================= STYLES ================= */
+
+const page = {
+  minHeight: "100vh",
+  width: "100%",
+};
+
+const hero = {
+  textAlign: "center",
+  padding: "90px 20px 80px",
+};
+
+const logo = {
+  width: 140,
+  marginBottom: 20,
+};
+
+const title = {
+  fontSize: 40,
+  fontWeight: 800,
+};
+
+const subtitle = {
+  marginTop: 10,
+  fontSize: 16,
+};
+
+const mantra = {
+  marginTop: 12,
+  fontSize: 14,
+  letterSpacing: 1,
+  color: "#78350f",
+};
+
+const ctaRow = {
+  display: "flex",
+  justifyContent: "center",
+  gap: 16,
+  marginTop: 30,
+  flexWrap: "wrap",
+};
+
+const btnPrimary = color => ({
+  background: `linear-gradient(135deg,${color},#000)`,
+  color: "#fff",
+  padding: "14px 32px",
+  borderRadius: 999,
+  textDecoration: "none",
+  fontWeight: 700,
+});
+
+const btnGhost = color => ({
+  border: `2px solid ${color}`,
+  color,
+  padding: "12px 28px",
+  borderRadius: 999,
+  textDecoration: "none",
+  fontWeight: 600,
+});
+
+const content = {
+  maxWidth: 1200,
+  margin: "0 auto",
+  padding: "0 24px",
+};
+
+const section = {
+  marginBottom: 80,
+};
+
+const mvGrid = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit,minmax(360px,1fr))",
+  gap: 24,
+};
+
+const card = {
+  background: "#fff",
+  padding: 26,
+  borderRadius: 22,
+  boxShadow: "0 20px 40px rgba(0,0,0,.08)",
+};
+
+const cardWide = {
+  background: "#fff",
+  padding: 36,
+  borderRadius: 26,
+  boxShadow: "0 20px 40px rgba(0,0,0,.08)",
+};
+
+const sectionTitle = color => ({
+  textAlign: "center",
+  marginBottom: 24,
+  color,
+  fontSize: 22,
+  fontWeight: 700,
+});
+
+const footer = {
+  textAlign: "center",
+  padding: 24,
+  color: "#475569",
+  fontSize: 13,
+};
 
 const langToggle = {
   position: "fixed",
@@ -190,12 +232,11 @@ const langToggle = {
 };
 
 const langBtn = {
-  padding: "6px 14px",
+  padding: "6px 12px",
   borderRadius: 20,
   border: "1px solid #cbd5f5",
   background: "#fff",
   cursor: "pointer",
-  fontWeight: 600,
 };
 
 const langBtnActive = {
@@ -203,28 +244,3 @@ const langBtnActive = {
   background: "#312e81",
   color: "#fff",
 };
-/* ================= STYLES ================= */
-
-const page = {
-  minHeight: "100vh",
-  width: "100%",
-};
-
-const content = {
-  maxWidth: 1200,
-  margin: "0 auto",
-  padding: "0 24px",
-};
-
-const section = { marginBottom: 80 };
-
-const hero = {
-  textAlign: "center",
-  padding: "90px 20px 80px",
-};
-
-const logo = { width: 140, marginBottom: 20 };
-
-const title = { fontSize: 40, fontWeight: 800 };
-
-const subtitle = { marginTop: 10, fontSize: 16 };
