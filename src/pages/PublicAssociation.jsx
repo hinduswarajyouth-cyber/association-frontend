@@ -1,52 +1,30 @@
-import { useEffect, useState } from "react";
-import api from "../api/api";
-import Footer from "../components/Footer";
-import PublicNavbar from "../components/PublicNavbar";
-import { useNavigate } from "react-router-dom";
+import Navbar from "../components/Navbar";
 
-export default function PublicAssociation() {
-  const [association, setAssociation] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    api
-      .get("/public/association-info")
-      .then(res => {
-        setAssociation(res.data?.data?.association || null);
-      })
-      .catch(err => {
-        console.error("PUBLIC ASSOCIATION ERROR 👉", err);
-      })
-      .finally(() => setLoading(false));
-  }, []);
-
-  if (loading) return <div style={loadingBox}>Loading...</div>;
-  if (!association)
-    return <div style={loadingBox}>No association info found</div>;
-
+export default function Association() {
   return (
     <>
-      <PublicNavbar />
+      <Navbar />
 
       <div style={page}>
         {/* ================= HERO ================= */}
         <section style={hero}>
           <img
-            src={association.logo_url || "/logo.png"}
-            alt={association.name}
+            src="/logo.png"
+            alt="Hinduswaraj Youth Welfare Association Logo"
             style={logo}
           />
 
-          <h1 style={title}>{association.name}</h1>
+          <h1 style={title}>
+            Hinduswaraj Youth Welfare Association
+          </h1>
 
           <p style={subtitle}>
-            Registered Non-Profit Organization • Empowering Youth • Serving Society
+            🕉️ Registered Non-Profit Organization • Empowering Youth • Serving Dharma & Society
           </p>
 
           <div style={ctaRow}>
             <a href="/donate" style={btnPrimary}>
-              🙏 Donate Now
+              🙏 Donate for Seva
             </a>
             <a href="/login" style={btnGhost}>
               Member Login
@@ -56,47 +34,47 @@ export default function PublicAssociation() {
 
         {/* ================= HIGHLIGHTS ================= */}
         <section style={highlightGrid}>
-          <div style={highlightCard}>
-            <h3>🏛 Registration</h3>
-            <p><b>{association.registration_no}</b></p>
-            <small>Government Registered Trust</small>
-          </div>
-
-          <div style={highlightCard}>
-            <h3>📅 Established</h3>
-            <p><b>{association.established_year}</b></p>
-            <small>Growing Youth Organization</small>
-          </div>
-
-          <div style={highlightCard}>
-            <h3>📍 Location</h3>
-            <p><b>{association.city}</b></p>
-            <small>{association.state}, {association.country}</small>
-          </div>
-
-          <div style={highlightCard}>
-            <h3>📞 Contact</h3>
-            <p>{association.phone}</p>
-            <small>{association.email}</small>
-          </div>
+          <Highlight title="🏛 Registration" value="REG-2023-HSY" note="Government Registered Trust" />
+          <Highlight title="📅 Established" value="2023" note="Youth-Driven Organization" />
+          <Highlight title="📍 Location" value="Jagtial" note="Telangana, Bharat 🇮🇳" />
+          <Highlight title="📞 Contact" value="+91 98765 43210" note="info@hinduswarajyouth.online" />
         </section>
 
         {/* ================= ABOUT ================= */}
         <section style={aboutSection}>
-          <h2>🌱 About Our Association</h2>
-          <p>{association.about}</p>
+          <h2>🌱 About the Association</h2>
+          <p>
+            <b>Hinduswaraj Youth Welfare Association</b> is a community-driven,
+            non-profit organization rooted in <b>Bharatiya values</b>,
+            dedicated to empowering youth, promoting social responsibility,
+            and serving society through structured welfare initiatives.
+          </p>
+
+          <p>
+            Inspired by the ideals of <b>Seva (Service)</b>, <b>Sanghatan (Unity)</b>,
+            and <b>Sanskriti (Culture)</b>, the association works towards
+            holistic development of individuals and communities.
+          </p>
         </section>
 
         {/* ================= MISSION / VISION ================= */}
         <section style={mvGrid}>
           <div style={mvCard}>
             <h3>🎯 Our Mission</h3>
-            <p>{association.mission}</p>
+            <p>
+              To nurture disciplined, responsible, and service-oriented youth
+              through education, leadership, welfare activities, and
+              community participation rooted in ethical and cultural values.
+            </p>
           </div>
 
           <div style={mvCard}>
             <h3>🌍 Our Vision</h3>
-            <p>{association.vision}</p>
+            <p>
+              To build a strong, self-reliant, and socially conscious generation
+              that contributes positively to national growth, social harmony,
+              and cultural preservation.
+            </p>
           </div>
         </section>
 
@@ -105,11 +83,25 @@ export default function PublicAssociation() {
           <h2>🤝 What We Do</h2>
 
           <div style={activityGrid}>
-            {association.activities?.map((a, i) => (
-              <div key={i} style={activityCard}>
-                {a}
-              </div>
-            ))}
+            <Activity>👨‍🎓 Youth Leadership & Skill Development</Activity>
+            <Activity>🏥 Health, Welfare & Blood Donation Camps</Activity>
+            <Activity>🌳 Environmental & Cleanliness Drives</Activity>
+            <Activity>📢 Social Awareness & Cultural Programs</Activity>
+            <Activity>🏫 Educational & Career Support</Activity>
+            <Activity>🤲 Relief, Seva & Emergency Support</Activity>
+          </div>
+        </section>
+
+        {/* ================= VALUES ================= */}
+        <section style={valuesSection}>
+          <h2>🕉️ Our Core Values</h2>
+
+          <div style={valuesGrid}>
+            <Value>Seva (Selfless Service)</Value>
+            <Value>Discipline & Integrity</Value>
+            <Value>Unity & Brotherhood</Value>
+            <Value>Cultural Awareness</Value>
+            <Value>Transparency & Accountability</Value>
           </div>
         </section>
 
@@ -117,36 +109,51 @@ export default function PublicAssociation() {
         <section style={trustSection}>
           <h2>🔍 Transparency & Governance</h2>
           <p>
-            Our association follows transparent accounting, democratic
-            decision-making, documented meetings, audited financials,
-            and accountable leadership.
+            We follow transparent governance practices including
+            documented meetings, audited financials, democratic
+            decision-making, and accountable leadership.
           </p>
           <p>
-            Members can access complaints, suggestions, meetings,
-            resolutions, and reports through our secure digital platform.
+            Members actively participate through our secure digital
+            platform for meetings, complaints, suggestions, resolutions,
+            and reports.
           </p>
         </section>
       </div>
 
-      <Footer />
+      {/* ================= FOOTER ================= */}
+      <footer style={footer}>
+        © 2026 Hinduswaraj Youth Welfare Association • Developed by
+        <b> Sreetech Technologies, Jagtial</b>
+      </footer>
     </>
   );
 }
 
+/* ================= SMALL COMPONENTS ================= */
+
+const Highlight = ({ title, value, note }) => (
+  <div style={highlightCard}>
+    <h3>{title}</h3>
+    <p><b>{value}</b></p>
+    <small>{note}</small>
+  </div>
+);
+
+const Activity = ({ children }) => (
+  <div style={activityCard}>{children}</div>
+);
+
+const Value = ({ children }) => (
+  <div style={valueCard}>{children}</div>
+);
+
 /* ================= STYLES ================= */
 
-const loadingBox = {
-  minHeight: "70vh",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  fontSize: 18,
-  color: "#475569",
-};
-
 const page = {
-  background: "linear-gradient(180deg,#f8fafc,#eef2ff)",
+  background: "linear-gradient(180deg,#fff7ed,#fef3c7,#eef2ff)",
   minHeight: "100vh",
+  paddingBottom: 60,
 };
 
 const hero = {
@@ -155,7 +162,7 @@ const hero = {
 };
 
 const logo = {
-  width: 120,
+  width: 130,
   marginBottom: 20,
 };
 
@@ -167,7 +174,7 @@ const title = {
 
 const subtitle = {
   marginTop: 10,
-  color: "#475569",
+  color: "#92400e",
   fontSize: 16,
 };
 
@@ -180,18 +187,18 @@ const ctaRow = {
 };
 
 const btnPrimary = {
-  background: "linear-gradient(135deg,#2563eb,#1e40af)",
+  background: "linear-gradient(135deg,#f59e0b,#b45309)",
   color: "#fff",
   padding: "14px 30px",
   borderRadius: 999,
   textDecoration: "none",
-  fontWeight: 600,
-  boxShadow: "0 10px 30px rgba(37,99,235,.4)",
+  fontWeight: 700,
+  boxShadow: "0 12px 30px rgba(245,158,11,.5)",
 };
 
 const btnGhost = {
-  border: "2px solid #2563eb",
-  color: "#2563eb",
+  border: "2px solid #b45309",
+  color: "#b45309",
   padding: "12px 28px",
   borderRadius: 999,
   textDecoration: "none",
@@ -203,23 +210,23 @@ const highlightGrid = {
   gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))",
   gap: 20,
   maxWidth: 1100,
-  margin: "0 auto 60px",
+  margin: "0 auto 70px",
   padding: "0 20px",
 };
 
 const highlightCard = {
   background: "#fff",
   padding: 24,
-  borderRadius: 18,
+  borderRadius: 20,
   boxShadow: "0 20px 40px rgba(0,0,0,.08)",
   textAlign: "center",
 };
 
 const aboutSection = {
   maxWidth: 900,
-  margin: "0 auto 60px",
+  margin: "0 auto 70px",
   background: "#fff",
-  padding: 32,
+  padding: 34,
   borderRadius: 22,
   boxShadow: "0 20px 40px rgba(0,0,0,.08)",
 };
@@ -229,26 +236,26 @@ const mvGrid = {
   gridTemplateColumns: "repeat(auto-fit,minmax(320px,1fr))",
   gap: 24,
   maxWidth: 1000,
-  margin: "0 auto 60px",
+  margin: "0 auto 70px",
   padding: "0 20px",
 };
 
 const mvCard = {
   background: "#fff",
-  padding: 30,
+  padding: 32,
   borderRadius: 22,
   boxShadow: "0 20px 40px rgba(0,0,0,.08)",
 };
 
 const activitySection = {
   textAlign: "center",
-  marginBottom: 60,
+  marginBottom: 70,
 };
 
 const activityGrid = {
   display: "grid",
-  gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))",
-  gap: 16,
+  gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))",
+  gap: 18,
   maxWidth: 900,
   margin: "30px auto 0",
   padding: "0 20px",
@@ -256,17 +263,46 @@ const activityGrid = {
 
 const activityCard = {
   background: "#fff",
+  padding: 20,
+  borderRadius: 16,
+  boxShadow: "0 12px 28px rgba(0,0,0,.08)",
+  fontWeight: 600,
+};
+
+const valuesSection = {
+  textAlign: "center",
+  marginBottom: 70,
+};
+
+const valuesGrid = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))",
+  gap: 16,
+  maxWidth: 800,
+  margin: "30px auto 0",
+  padding: "0 20px",
+};
+
+const valueCard = {
+  background: "linear-gradient(135deg,#fde68a,#f59e0b)",
   padding: 18,
   borderRadius: 14,
-  boxShadow: "0 10px 25px rgba(0,0,0,.08)",
-  fontWeight: 600,
+  fontWeight: 700,
 };
 
 const trustSection = {
   maxWidth: 900,
-  margin: "0 auto 80px",
+  margin: "0 auto 60px",
   background: "#fff",
-  padding: 30,
+  padding: 34,
   borderRadius: 22,
   boxShadow: "0 20px 40px rgba(0,0,0,.08)",
+};
+
+const footer = {
+  marginTop: 60,
+  textAlign: "center",
+  padding: 20,
+  color: "#475569",
+  fontSize: 13,
 };
