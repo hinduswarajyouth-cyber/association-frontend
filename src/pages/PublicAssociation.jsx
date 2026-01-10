@@ -1,135 +1,152 @@
+import { useEffect, useState } from "react";
+import api from "../api/api";
 import Navbar from "../components/Navbar";
-import logoImg from "../assets/logo.png";
 
 export default function Association() {
+  const [settings, setSettings] = useState(null);
+  const [lang, setLang] = useState("EN");
+
+  useEffect(() => {
+    api.get("/association-settings/public").then(r => {
+      setSettings(r.data);
+    });
+  }, []);
+
+  if (!settings) return <div style={{ padding: 50 }}>Loading...</div>;
+
+  const t = (en, te) => (lang === "EN" ? en : te);
+
   return (
     <>
       <Navbar />
 
-      <div style={page}>
+      {/* 🌐 LANGUAGE TOGGLE */}
+      <div style={langToggle}>
+        <button
+          onClick={() => setLang("EN")}
+          style={lang === "EN" ? langBtnActive : langBtn}
+        >
+          English
+        </button>
+        <button
+          onClick={() => setLang("TE")}
+          style={lang === "TE" ? langBtnActive : langBtn}
+        >
+          తెలుగు
+        </button>
+      </div>
+
+      <div
+        style={{
+          ...page,
+          background:
+            settings.background_gradient ||
+            "linear-gradient(180deg,#fff7ed,#fef3c7,#eef2ff)",
+        }}
+      >
         {/* ================= HERO ================= */}
         <section style={hero}>
-          <img
-            src={logoImg}
-            alt="Hinduswaraj Youth Welfare Association Logo"
-            style={logo}
-          />
+          {settings.logo_url && (
+            <img
+              src={import.meta.env.VITE_API_BASE_URL + settings.logo_url}
+              alt="Association Logo"
+              style={logo}
+            />
+          )}
 
-          <h1 style={title}>
-            Hinduswaraj Youth Welfare Association
+          <h1 style={{ ...title, color: settings.primary_color }}>
+            {t(settings.hero_title, settings.hero_title_te)}
           </h1>
 
-          <p style={subtitle}>
-            🕉️ Registered Non-Profit Organization • Empowering Youth • Serving Dharma & Society
+          <p style={{ ...subtitle, color: settings.secondary_color }}>
+            {t(settings.hero_subtitle, settings.hero_subtitle_te)}
           </p>
 
           <p style={mantra}>“सर्वे भवन्तु सुखिनः”</p>
 
           <div style={ctaRow}>
-            <a href="/donate" style={btnPrimary}>
-              🙏 Donate for Seva
+            <a href="/donate" style={btnPrimary(settings.primary_color)}>
+              🙏 {t("Donate for Seva", "సేవకు విరాళం")}
             </a>
-            <a href="/login" style={btnGhost}>
-              Member Login
+            <a href="/login" style={btnGhost(settings.primary_color)}>
+              {t("Member Login", "సభ్యుల లాగిన్")}
             </a>
           </div>
         </section>
 
-        {/* ================= CONTENT WRAPPER ================= */}
         <div style={content}>
-          {/* ================= HIGHLIGHTS ================= */}
-          <section style={section}>
-            <div style={highlightGrid}>
-              <Highlight title="🏛 Registration" value="784/2025" note="Government Registered Trust" />
-              <Highlight title="📅 Established" value="2012" note="Youth-Driven Organization" />
-              <Highlight title="📍 Location" value="Jagtial" note="Telangana, Bharat 🇮🇳" />
-              <Highlight title="📞 Contact" value="+91 84998 78425" note="info@hinduswarajyouth.online" />
-            </div>
-          </section>
-
           {/* ================= ABOUT ================= */}
-          <section style={section}>
-            <div style={cardWide}>
-              <h2 style={sectionTitle}>🌱 About the Association</h2>
-              <p>
-                <b>Hinduswaraj Youth Welfare Association</b> is a community-driven,
-                non-profit organization rooted in <b>Bharatiya values</b>,
-                dedicated to empowering youth, promoting social responsibility,
-                and serving society through structured welfare initiatives.
-              </p>
-              <p>
-                Inspired by the ideals of <b>Seva</b>, <b>Sanghatan</b>, and <b>Sanskriti</b>,
-                we work towards holistic development of individuals and communities.
-              </p>
-            </div>
-          </section>
+          {settings.show_about && (
+            <section style={section}>
+              <div style={cardWide}>
+                <h2 style={sectionTitle}>
+                  🌱 {t("About the Association", "సంఘం గురించి")}
+                </h2>
+                <p>{t(settings.about_text, settings.about_text_te)}</p>
+              </div>
+            </section>
+          )}
 
           {/* ================= MISSION / VISION ================= */}
-          <section style={section}>
-            <div style={mvGrid}>
-              <div style={card}>
-                <h3>🎯 Our Mission</h3>
-                <p>
-                  To nurture disciplined, responsible, and service-oriented youth
-                  through education, leadership, welfare activities, and
-                  community participation rooted in ethical and cultural values.
-                </p>
-              </div>
+          {(settings.show_mission || settings.show_values) && (
+            <section style={section}>
+              <div style={mvGrid}>
+                {settings.show_mission && (
+                  <div style={card}>
+                    <h3>🎯 {t("Our Mission", "మా లక్ష్యం")}</h3>
+                    <p>
+                      {t(settings.mission_text, settings.mission_text_te)}
+                    </p>
+                  </div>
+                )}
 
-              <div style={card}>
-                <h3>🌍 Our Vision</h3>
-                <p>
-                  To build a strong, self-reliant, and socially conscious generation
-                  that contributes positively to national growth, social harmony,
-                  and cultural preservation.
-                </p>
+                {settings.show_values && (
+                  <div style={card}>
+                    <h3>🌍 {t("Our Vision", "మా దృష్టి")}</h3>
+                    <p>
+                      {t(settings.vision_text, settings.vision_text_te)}
+                    </p>
+                  </div>
+                )}
               </div>
-            </div>
-          </section>
+            </section>
+          )}
 
           {/* ================= ACTIVITIES ================= */}
-          <section style={section}>
-            <h2 style={sectionTitle}>🤝 What We Do</h2>
-            <div style={activityGrid}>
-              <Activity>👨‍🎓 Youth Leadership & Skill Development</Activity>
-              <Activity>🏥 Health, Welfare & Blood Donation Camps</Activity>
-              <Activity>🌳 Environmental & Cleanliness Drives</Activity>
-              <Activity>📢 Social Awareness & Cultural Programs</Activity>
-              <Activity>🏫 Educational & Career Support</Activity>
-              <Activity>🤲 Relief, Seva & Emergency Support</Activity>
-            </div>
-          </section>
-
-          {/* ================= VALUES ================= */}
-          <section style={section}>
-            <h2 style={sectionTitle}>🕉️ Our Core Values</h2>
-            <div style={valuesGrid}>
-              <Value>Seva (Selfless Service)</Value>
-              <Value>Discipline & Integrity</Value>
-              <Value>Unity & Brotherhood</Value>
-              <Value>Cultural Awareness</Value>
-              <Value>Transparency & Accountability</Value>
-            </div>
-          </section>
+          {settings.show_activities && (
+            <section style={section}>
+              <h2 style={sectionTitle}>
+                🤝 {t("What We Do", "మేము చేసే సేవలు")}
+              </h2>
+              <div style={activityGrid}>
+                {DEFAULT_ACTIVITIES.map((a, i) => (
+                  <div key={i} style={activityCard}>
+                    {lang === "EN" ? a.en : a.te}
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
 
           {/* ================= TRANSPARENCY ================= */}
-          <section style={section}>
-            <div style={cardWide}>
-              <h2 style={sectionTitle}>🔍 Transparency & Governance</h2>
-              <p>
-                We follow transparent governance practices including documented meetings,
-                audited financials, democratic decision-making, and accountable leadership.
-              </p>
-              <p>
-                Members actively participate through our secure digital platform
-                for meetings, complaints, suggestions, resolutions, and reports.
-              </p>
-            </div>
-          </section>
+          {settings.show_transparency && (
+            <section style={section}>
+              <div style={cardWide}>
+                <h2 style={sectionTitle}>
+                  🔍 {t("Transparency & Governance", "పారదర్శకత & పాలన")}
+                </h2>
+                <p>
+                  {t(
+                    "We follow transparent governance practices including documented meetings, audited financials, democratic decision-making, and accountable leadership.",
+                    "డాక్యుమెంటెడ్ సమావేశాలు, ఆడిట్ చేసిన ఆర్థిక నివేదికలు, ప్రజాస్వామ్య నిర్ణయాలు మరియు బాధ్యతాయుతమైన నాయకత్వంతో మేము పారదర్శక పాలనను పాటిస్తాము."
+                  )}
+                </p>
+              </div>
+            </section>
+          )}
         </div>
       </div>
 
-      {/* ================= FOOTER ================= */}
       <footer style={footer}>
         © 2026 Hinduswaraj Youth Welfare Association • Developed by
         <b> Sreetech Technologies, Jagtial</b>
@@ -138,30 +155,38 @@ export default function Association() {
   );
 }
 
-/* ================= SMALL COMPONENTS ================= */
+/* ================= DATA ================= */
 
-const Highlight = ({ title, value, note }) => (
-  <div style={card}>
-    <h3>{title}</h3>
-    <p><b>{value}</b></p>
-    <small>{note}</small>
-  </div>
-);
-
-const Activity = ({ children }) => (
-  <div style={activityCard}>{children}</div>
-);
-
-const Value = ({ children }) => (
-  <div style={valueCard}>{children}</div>
-);
+const DEFAULT_ACTIVITIES = [
+  {
+    en: "👨‍🎓 Youth Leadership & Skill Development",
+    te: "👨‍🎓 యువ నాయకత్వం & నైపుణ్యాభివృద్ధి",
+  },
+  {
+    en: "🏥 Health, Welfare & Blood Donation Camps",
+    te: "🏥 ఆరోగ్య & రక్తదాన శిబిరాలు",
+  },
+  {
+    en: "🌳 Environmental & Cleanliness Drives",
+    te: "🌳 పర్యావరణ & పరిశుభ్రత కార్యక్రమాలు",
+  },
+  {
+    en: "📢 Social Awareness & Cultural Programs",
+    te: "📢 సామాజిక అవగాహన & సాంస్కృతిక కార్యక్రమాలు",
+  },
+  {
+    en: "🏫 Educational & Career Support",
+    te: "🏫 విద్య & ఉపాధి మద్దతు",
+  },
+  {
+    en: "🤲 Relief, Seva & Emergency Support",
+    te: "🤲 సహాయం, సేవ & అత్యవసర మద్దతు",
+  },
+];
 
 /* ================= STYLES ================= */
 
-const page = {
-  background: "linear-gradient(180deg,#fff7ed,#fef3c7,#eef2ff)",
-  minHeight: "100vh",
-};
+const page = { minHeight: "100vh" };
 
 const content = {
   maxWidth: 1200,
@@ -169,37 +194,24 @@ const content = {
   padding: "0 24px",
 };
 
-const section = {
-  marginBottom: 80,
-};
+const section = { marginBottom: 80 };
 
 const hero = {
   textAlign: "center",
   padding: "90px 20px 80px",
 };
 
-const logo = {
-  width: 140,
-  marginBottom: 20,
-};
+const logo = { width: 140, marginBottom: 20 };
 
-const title = {
-  fontSize: 40,
-  fontWeight: 800,
-  color: "#0f172a",
-};
+const title = { fontSize: 40, fontWeight: 800 };
 
-const subtitle = {
-  marginTop: 10,
-  color: "#92400e",
-  fontSize: 16,
-};
+const subtitle = { marginTop: 10, fontSize: 16 };
 
 const mantra = {
   marginTop: 12,
   fontSize: 14,
-  color: "#78350f",
   letterSpacing: 1,
+  color: "#78350f",
 };
 
 const ctaRow = {
@@ -210,29 +222,23 @@ const ctaRow = {
   flexWrap: "wrap",
 };
 
-const btnPrimary = {
-  background: "linear-gradient(135deg,#f59e0b,#b45309)",
+const btnPrimary = color => ({
+  background: `linear-gradient(135deg,${color},#000)`,
   color: "#fff",
   padding: "14px 32px",
   borderRadius: 999,
   textDecoration: "none",
   fontWeight: 700,
-};
+});
 
-const btnGhost = {
-  border: "2px solid #b45309",
-  color: "#b45309",
+const btnGhost = color => ({
+  border: `2px solid ${color}`,
+  color,
   padding: "12px 28px",
   borderRadius: 999,
   textDecoration: "none",
   fontWeight: 600,
-};
-
-const highlightGrid = {
-  display: "grid",
-  gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))",
-  gap: 24,
-};
+});
 
 const mvGrid = {
   display: "grid",
@@ -245,7 +251,6 @@ const card = {
   padding: 26,
   borderRadius: 22,
   boxShadow: "0 20px 40px rgba(0,0,0,.08)",
-  textAlign: "center",
 };
 
 const cardWide = {
@@ -275,23 +280,34 @@ const activityCard = {
   boxShadow: "0 12px 28px rgba(0,0,0,.08)",
 };
 
-const valuesGrid = {
-  display: "grid",
-  gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))",
-  gap: 18,
-};
-
-const valueCard = {
-  background: "linear-gradient(135deg,#fde68a,#f59e0b)",
-  padding: 18,
-  borderRadius: 16,
-  fontWeight: 700,
-  textAlign: "center",
-};
-
 const footer = {
   textAlign: "center",
   padding: 24,
   color: "#475569",
   fontSize: 13,
+};
+
+/* 🌐 LANGUAGE TOGGLE STYLES */
+
+const langToggle = {
+  position: "fixed",
+  top: 80,
+  right: 20,
+  zIndex: 1000,
+  display: "flex",
+  gap: 8,
+};
+
+const langBtn = {
+  padding: "6px 12px",
+  borderRadius: 20,
+  border: "1px solid #cbd5f5",
+  background: "#fff",
+  cursor: "pointer",
+};
+
+const langBtnActive = {
+  ...langBtn,
+  background: "#312e81",
+  color: "#fff",
 };
