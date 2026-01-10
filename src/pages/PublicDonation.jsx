@@ -119,7 +119,13 @@ export default function PublicDonation() {
           onChange={(e) => setDonorPhone(e.target.value)}
           style={input}
         />
-
+        
+        <input
+          placeholder="email(Mandatory )"
+          value={donor_email}
+          onChange={(e) => setDonoremail(e.target.value)}
+          style={input}
+        />     
         <select
           value={fund_id}
           onChange={(e) => setFundId(e.target.value)}
