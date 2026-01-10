@@ -203,3 +203,28 @@ const langBtnActive = {
   background: "#312e81",
   color: "#fff",
 };
+/* ================= STYLES ================= */
+
+const page = {
+  minHeight: "100vh",
+  width: "100%",
+};
+
+const content = {
+  maxWidth: 1200,
+  margin: "0 auto",
+  padding: "0 24px",
+};
+
+const section = { marginBottom: 80 };
+
+const hero = {
+  textAlign: "center",
+  padding: "90px 20px 80px",
+};
+
+const logo = { width: 140, marginBottom: 20 };
+
+const title = { fontSize: 40, fontWeight: 800 };
+
+const subtitle = { marginTop: 10, fontSize: 16 };
