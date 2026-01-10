@@ -5,7 +5,8 @@ import Navbar from "../components/Navbar";
 /* =========================
    ROLE HELPERS
 ========================= */
-const ROLE = JSON.parse(localStorage.getItem("user"))?.role;
+const USER = JSON.parse(localStorage.getItem("user")) || {};
+const ROLE = USER.role;
 
 const ADMIN_ROLES = ["SUPER_ADMIN", "PRESIDENT"];
 const OFFICE_ROLES = [
@@ -40,7 +41,7 @@ export default function Complaint() {
   });
 
   /* =========================
-     LOAD
+     LOAD DATA
   ========================= */
   useEffect(() => {
     loadComplaints();
@@ -50,21 +51,28 @@ export default function Complaint() {
   }, []);
 
   const loadComplaints = async () => {
-    let res;
-    if (ROLE === "MEMBER") res = await api.get("/complaints/my");
-    else if (OFFICE_ROLES.includes(ROLE))
-      res = await api.get("/complaints/assigned");
-    else res = await api.get("/complaints/all");
+    try {
+      let res;
+      if (ROLE === "MEMBER") res = await api.get("/complaints/my");
+      else if (OFFICE_ROLES.includes(ROLE))
+        res = await api.get("/complaints/assigned");
+      else res = await api.get("/complaints/all");
 
-    setComplaints(res.data || []);
-    setLoading(false);
+      setComplaints(res.data || []);
+    } catch {
+      alert("Failed to load complaints");
+    } finally {
+      setLoading(false);
+    }
   };
 
   /* =========================
-     CREATE
+     CREATE COMPLAINT
   ========================= */
   const submitComplaint = async () => {
-    if (!form.subject || !form.description) return alert("Required");
+    if (!form.subject || !form.description)
+      return alert("Subject & description required");
+
     await api.post("/complaints/create", form);
     setForm({ subject: "", description: "", priority: "NORMAL" });
     loadComplaints();
@@ -74,11 +82,12 @@ export default function Complaint() {
      COMMENTS
   ========================= */
   const loadComments = async (id) => {
-    const res = await api.get(`/complaints/comment/${id}`);
-    setComments(p => ({ ...p, [id]: res.data }));
+    const res = await api.get(`/complaints/comments/${id}`);
+    setComments(p => ({ ...p, [id]: res.data || [] }));
   };
 
   const addComment = async (id) => {
+    if (!commentInput[id]) return;
     await api.post(`/complaints/comment/${id}`, {
       comment: commentInput[id],
     });
@@ -95,9 +104,13 @@ export default function Complaint() {
     return days > 7;
   };
 
+  /* =========================
+     RENDER
+  ========================= */
   return (
     <>
       <Navbar />
+
       <div style={page}>
         <h2>📮 Complaint Management</h2>
 
@@ -106,7 +119,7 @@ export default function Complaint() {
           <div style={dashRow}>
             {Object.entries(stats).map(([k, v]) => (
               <div key={k} style={dashCard}>
-                <small>{k.replace("_", " ")}</small>
+                <small>{k.replace("_", " ").toUpperCase()}</small>
                 <h2>{v}</h2>
               </div>
             ))}
@@ -129,16 +142,23 @@ export default function Complaint() {
             onChange={e => setForm({ ...form, description: e.target.value })}
           />
           <button style={btnPrimary} onClick={submitComplaint}>
-            Submit
+            Submit Complaint
           </button>
         </div>
 
         {/* LIST */}
         {loading && <p>Loading...</p>}
+
         {complaints.map(c => (
           <div key={c.id} style={card}>
             <div style={cardHeader}>
-              <strong>{c.subject}</strong>
+              <div>
+                <strong>{c.subject}</strong>
+                <div style={meta}>
+                  Created by: <b>{c.member_name || "You"}</b>
+                </div>
+              </div>
+
               <span style={{ ...badge, background: STATUS_COLORS[c.status] }}>
                 {c.status}
               </span>
@@ -147,31 +167,40 @@ export default function Complaint() {
             <p>{c.description}</p>
 
             {isEscalated(c.created_at) && c.status !== "CLOSED" && (
-              <p style={{ color: "#dc2626" }}>⚠️ Auto-Escalated</p>
+              <p style={escalated}>⚠️ Auto Escalated (7+ days)</p>
             )}
 
             {/* COMMENTS */}
             <button style={commentBtn} onClick={() => loadComments(c.id)}>
-              💬 Comments
+              💬 View Comments
             </button>
 
             {comments[c.id]?.map((cm, i) => (
               <div key={i} style={commentItem}>
-                <b>{cm.commented_by}</b>
+                <div style={commentHeader}>
+                  <b>{cm.commented_by}</b>
+                  <small>{new Date(cm.created_at).toLocaleString()}</small>
+                </div>
                 <p>{cm.comment}</p>
               </div>
             ))}
 
-            {OFFICE_ROLES.includes(ROLE) && (
+            {OFFICE_ROLES.includes(ROLE) && c.status !== "CLOSED" && (
               <>
                 <textarea
                   style={commentInputStyle}
+                  placeholder="Add update / resolution note"
                   value={commentInput[c.id] || ""}
                   onChange={e =>
-                    setCommentInput({ ...commentInput, [c.id]: e.target.value })
+                    setCommentInput({
+                      ...commentInput,
+                      [c.id]: e.target.value,
+                    })
                   }
                 />
-                <button onClick={() => addComment(c.id)}>Add Comment</button>
+                <button style={btnSecondary} onClick={() => addComment(c.id)}>
+                  Add Comment
+                </button>
               </>
             )}
 
@@ -183,7 +212,7 @@ export default function Complaint() {
                 rel="noreferrer"
                 style={pdfBtn}
               >
-                📄 Download Report
+                📄 Download Complaint Report
               </a>
             )}
           </div>
@@ -197,42 +226,64 @@ export default function Complaint() {
    🎨 PREMIUM STYLES
 ========================= */
 const page = { padding: 30, background: "#f1f5f9", minHeight: "100vh" };
-const dashRow = { display: "flex", gap: 16, marginBottom: 20 };
+const dashRow = { display: "flex", gap: 16, marginBottom: 24 };
 const dashCard = {
-  background: "#fff",
-  padding: 18,
-  borderRadius: 14,
-  minWidth: 120,
-  boxShadow: "0 8px 24px rgba(0,0,0,.1)",
-  animation: "fadeUp .4s ease",
-};
-const card = {
   background: "#fff",
   padding: 20,
   borderRadius: 16,
-  marginBottom: 16,
-  boxShadow: "0 10px 30px rgba(0,0,0,.08)",
+  minWidth: 120,
+  boxShadow: "0 8px 28px rgba(0,0,0,.1)",
 };
-const cardHeader = { display: "flex", justifyContent: "space-between" };
-const badge = { padding: "4px 10px", borderRadius: 20, fontSize: 12 };
-const input = { width: "100%", padding: 10, marginBottom: 8 };
-const textarea = { width: "100%", height: 90, padding: 10 };
+const card = {
+  background: "#fff",
+  padding: 22,
+  borderRadius: 18,
+  marginBottom: 18,
+  boxShadow: "0 12px 34px rgba(0,0,0,.08)",
+};
+const cardHeader = {
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "flex-start",
+};
+const meta = { fontSize: 12, color: "#64748b" };
+const badge = {
+  padding: "6px 14px",
+  borderRadius: 999,
+  fontSize: 12,
+  fontWeight: "bold",
+};
+const input = { width: "100%", padding: 12, marginBottom: 10 };
+const textarea = { width: "100%", height: 100, padding: 12 };
 const btnPrimary = {
   background: "#2563eb",
   color: "#fff",
+  padding: "10px 18px",
+  borderRadius: 10,
+};
+const btnSecondary = {
+  background: "#0f172a",
+  color: "#fff",
   padding: "8px 16px",
   borderRadius: 8,
-};
-const commentBtn = { marginTop: 8 };
-const commentItem = {
-  borderTop: "1px solid #e5e7eb",
   marginTop: 6,
-  paddingTop: 6,
 };
-const commentInputStyle = { width: "100%", height: 60 };
+const commentBtn = { marginTop: 10 };
+const commentItem = {
+  borderLeft: "3px solid #2563eb",
+  paddingLeft: 12,
+  marginTop: 10,
+};
+const commentHeader = {
+  display: "flex",
+  justifyContent: "space-between",
+  fontSize: 12,
+};
+const commentInputStyle = { width: "100%", height: 70, marginTop: 8 };
 const pdfBtn = {
   display: "inline-block",
-  marginTop: 10,
-  color: "#2563eb",
+  marginTop: 12,
   fontWeight: "bold",
+  color: "#2563eb",
 };
+const escalated = { color: "#dc2626", fontWeight: "bold" };
