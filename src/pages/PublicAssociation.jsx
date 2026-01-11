@@ -69,6 +69,19 @@ export default function Association() {
   </div>
 </section>
 
+{/* ================= GOVERNANCE ================= */}
+<section style={section}>
+  <div style={cardWide}>
+    <h2 style={sectionTitle}>🏛 Association Governance</h2>
+    <p>
+      Hinduswaraj Youth Welfare Association is managed by a structured executive committee
+      consisting of President, Vice President, Secretary, Treasurer and Advisory members.
+      All decisions are recorded, reviewed and implemented through democratic and
+      transparent processes.
+    </p>
+  </div>
+</section>
+
 {/* ================= MISSION & VISION ================= */}
 <section style={section}>
   <div style={mvGrid}>
@@ -165,9 +178,7 @@ export default function Association() {
         </div>
       </div>
 
-      <footer style={footer}>
-        
-      </footer>
+      <footer style={footer}></footer>
     </>
   );
 }
@@ -185,7 +196,7 @@ const Highlight = ({ title, value, note }) => (
 const Activity = ({ children }) => <div style={activityCard}>{children}</div>;
 const Value = ({ children }) => <div style={valueCard}>{children}</div>;
 
-/* ================= YOUR ORIGINAL STYLES (UNCHANGED) ================= */
+/* ================= STYLES ================= */
 
 const page = {
   background: "linear-gradient(180deg,#fff7ed,#fef3c7,#eef2ff)",
@@ -193,12 +204,14 @@ const page = {
 };
 
 const content = { maxWidth: 1200, margin: "0 auto", padding: "0 24px" };
-const section = { marginBottom: 80 };
-const hero = { textAlign: "center", padding: "90px 20px 80px" };
+const section = { marginBottom: 56 };
+
+const hero = { textAlign: "center", padding: "70px 20px 50px", maxWidth: 900, margin: "0 auto" };
 const logo = { width: 140, marginBottom: 20 };
 const title = { fontSize: 40, fontWeight: 800, color: "#0f172a" };
 const subtitle = { marginTop: 10, color: "#92400e", fontSize: 16 };
 const mantra = { marginTop: 12, fontSize: 14, color: "#78350f", letterSpacing: 1 };
+
 const ctaRow = { display: "flex", justifyContent: "center", gap: 16, marginTop: 30, flexWrap: "wrap" };
 
 const btnPrimary = {
@@ -219,28 +232,46 @@ const btnGhost = {
   fontWeight: 600,
 };
 
-const highlightGrid = { display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))", gap: 24 };
-const mvGrid = { display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(360px,1fr))", gap: 24 };
+const highlightGrid = { display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 18 };
+const mvGrid = { display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(300px,1fr))", gap: 20 };
 
 const card = {
   background: "#fff",
-  padding: 26,
-  borderRadius: 22,
-  boxShadow: "0 20px 40px rgba(0,0,0,.08)",
-  textAlign: "center",
+  padding: "22px 24px",
+  borderRadius: 18,
+  boxShadow: "0 14px 30px rgba(0,0,0,.08)",
+  textAlign: "left",
 };
 
 const cardWide = {
   background: "#fff",
-  padding: 36,
-  borderRadius: 26,
-  boxShadow: "0 20px 40px rgba(0,0,0,.08)",
+  padding: "28px 32px",
+  borderRadius: 22,
+  boxShadow: "0 16px 32px rgba(0,0,0,.08)",
+  maxWidth: 900,
+  margin: "0 auto"
 };
 
-const sectionTitle = { textAlign: "center", marginBottom: 20, color: "#0f172a" };
+const sectionTitle = {
+  textAlign: "center",
+  marginBottom: 16,
+  color: "#0f172a",
+  fontWeight: 800,
+  letterSpacing: ".3px"
+};
 
 const activityGrid = { display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(260px,1fr))", gap: 20 };
-const activityCard = { background: "#fff", padding: 22, borderRadius: 18, fontWeight: 600, boxShadow: "0 12px 28px rgba(0,0,0,.08)" };
+
+const activityCard = {
+  background: "#fff",
+  padding: "18px 20px",
+  borderRadius: 16,
+  fontWeight: 600,
+  boxShadow: "0 10px 24px rgba(0,0,0,.08)",
+  display: "flex",
+  alignItems: "center",
+  gap: 12
+};
 
 const valuesGrid = { display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 18 };
 const valueCard = { background: "linear-gradient(135deg,#fde68a,#f59e0b)", padding: 18, borderRadius: 16, fontWeight: 700, textAlign: "center" };
