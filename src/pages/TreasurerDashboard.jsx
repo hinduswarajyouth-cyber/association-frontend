@@ -29,16 +29,26 @@ export default function TreasurerDashboard() {
     }
   };
 
+  // 🔥 refresh when tab changes
   useEffect(() => {
     loadAll();
-  }, []);
+  }, [tab]);
 
+  /* ================= APPROVE ================= */
   const approve = async (id) => {
     if (!window.confirm("Approve this donation?")) return;
+
     try {
       setProcessingId(id);
-      const r = await api.patch(`/treasurer/approve/${id}`);
-      alert(`Donation Approved\nReceipt No: ${r.data.receipt}`);
+
+      if (tab === "MEMBER") {
+        await api.patch(`/treasurer/approve-member/${id}`);
+        alert("Member donation approved");
+      } else {
+        await api.patch(`/treasurer/approve-public/${id}`);
+        alert("Public donation approved & receipt will be emailed");
+      }
+
       loadAll();
     } catch (e) {
       alert(e.response?.data?.error || "Approve failed");
@@ -47,12 +57,20 @@ export default function TreasurerDashboard() {
     }
   };
 
+  /* ================= REJECT ================= */
   const reject = async (id) => {
     const reason = prompt("Enter rejection reason");
     if (!reason) return;
+
     try {
       setProcessingId(id);
-      await api.patch(`/treasurer/reject/${id}`, { reason });
+
+      if (tab === "MEMBER") {
+        await api.patch(`/treasurer/reject-member/${id}`, { reason });
+      } else {
+        await api.patch(`/treasurer/reject-public/${id}`, { reason });
+      }
+
       alert("Donation rejected");
       loadAll();
     } catch (e) {
