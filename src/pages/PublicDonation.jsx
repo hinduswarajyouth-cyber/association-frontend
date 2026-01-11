@@ -24,7 +24,7 @@ export default function PublicDonation() {
   useEffect(() => {
     api.get("/public/association-info")
       .then(res => setFunds(res.data.data.funds || []))
-      .catch(() => setError("Failed to load funds"))
+      .catch(() => setError("Failed to load donation funds"))
       .finally(() => setLoading(false));
   }, []);
 
@@ -58,7 +58,7 @@ export default function PublicDonation() {
         reference_no
       });
 
-      setMsg("🙏 Thank you for your Seva. Your donation was received.");
+      setMsg("🙏 Thank you for supporting our Youth Welfare initiatives.");
       setDonorName("");
       setDonorPhone("");
       setDonorEmail("");
@@ -78,9 +78,9 @@ export default function PublicDonation() {
       <PublicNavbar />
 
       <div style={page}>
-        <h1 style={title}>🙏 Donate for Dharma & Seva</h1>
+        <h1 style={title}>🙏 Support Youth Welfare & Social Service</h1>
         <p style={sub}>
-          “दानं धर्मस्य मूलम्” — Charity is the root of righteousness
+          Your contribution helps us run education, health, relief and community programs
         </p>
 
         {error && <div style={errorBox}>{error}</div>}
@@ -109,7 +109,7 @@ export default function PublicDonation() {
 
           {payment_mode === "UPI" && amount > 0 && (
             <div style={qrBox}>
-              <h3>Scan & Offer Your Seva</h3>
+              <h3>Scan to Donate</h3>
               <img src={getUpiQrUrl(amount)} style={{ width: 240 }} />
               <p>Pay ₹{amount} to <b>{UPI_NAME}</b></p>
             </div>
@@ -126,6 +126,16 @@ export default function PublicDonation() {
 
           <button onClick={submit} style={btn}>🙏 Submit Donation</button>
         </div>
+
+        {/* ====== NGO Trust Message ====== */}
+        <div style={noteBox}>
+          <p>
+            Hinduswaraj Youth Welfare Association is a registered non-profit organization.
+            All donations are used strictly for education, health, social welfare and
+            community development activities.
+          </p>
+        </div>
+
       </div>
 
       <Footer />
@@ -193,6 +203,17 @@ const qrBox = {
   background: "#fffbeb",
   borderRadius: 12,
   border: "1px dashed #facc15"
+};
+
+const noteBox = {
+  maxWidth: 420,
+  margin: "20px auto",
+  fontSize: 13,
+  color: "#7c2d12",
+  background: "#fff7ed",
+  padding: 12,
+  borderRadius: 10,
+  border: "1px solid #fde68a"
 };
 
 const errorBox = {
