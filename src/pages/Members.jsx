@@ -7,75 +7,53 @@ export default function Members() {
   const [editing, setEditing] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  /* =========================
-     FETCH MEMBERS
-  ========================= */
   const fetchMembers = async () => {
     try {
-      setLoading(true);
       const res = await api.get("/members");
       setMembers(res.data || []);
-    } catch (err) {
-      console.error("FETCH MEMBERS ERROR 👉", err);
+    } catch {
       alert("Failed to load members");
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
+  useEffect(() => { fetchMembers(); }, []);
+
+  const toggleStatus = async (m) => {
+    if (!window.confirm("Change status?")) return;
+    await api.patch(`/members/${m.id}/status`);
     fetchMembers();
-  }, []);
-
-  /* =========================
-     BLOCK / UNBLOCK MEMBER
-  ========================= */
-  const toggleStatus = async (member) => {
-    if (!window.confirm("Change member status?")) return;
-
-    try {
-      await api.patch(`/members/${member.id}/status`, {
-        active: !member.active,
-      });
-      fetchMembers();
-    } catch (err) {
-      alert("Failed to update status");
-    }
   };
 
-  /* =========================
-     DELETE MEMBER
-  ========================= */
   const deleteMember = async (id) => {
-    if (!window.confirm("Delete member permanently?")) return;
+    if (!window.confirm("Delete this member?")) return;
+    await api.delete(`/members/${id}`);
+    fetchMembers();
+  };
 
+  const resendLogin = async (id) => {
     try {
-      await api.delete(`/members/${id}`);
-      fetchMembers();
+      await api.post(`/members/resend-login/${id}`);
+      alert("Login details sent");
     } catch (err) {
-      alert("Delete failed");
+      alert(err.response?.data?.error || "Failed to send login");
     }
   };
 
-  /* =========================
-     SAVE MEMBER (EDIT)
-  ========================= */
   const saveMember = async () => {
-    if (!window.confirm("Update this member?")) return;
-
     try {
       await api.put(`/members/${editing.id}`, {
         name: editing.name,
+        personal_email: editing.personal_email,
         phone: editing.phone,
         address: editing.address,
         role: editing.role,
-        active: editing.active,
+        active: editing.active
       });
-
-      alert("Member updated successfully");
       setEditing(null);
       fetchMembers();
-    } catch (err) {
+    } catch {
       alert("Update failed");
     }
   };
@@ -83,252 +61,113 @@ export default function Members() {
   return (
     <>
       <Navbar />
+      <div className="page">
+        <h2>Members</h2>
 
-      <div style={container}>
-        <h2 style={title}>Members</h2>
+        {loading ? <p>Loading...</p> : (
+          <table className="table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Member ID</th>
+                <th>Name</th>
+                <th>Association ID</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Role</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
 
-        {loading ? (
-          <p>Loading members...</p>
-        ) : (
-          <div style={{ overflowX: "auto" }}>
-            <table style={table}>
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Member ID</th>
-                  <th>Name</th>
-                  <th>Association ID</th>
-                  <th>Email</th>
-                  <th>Phone</th>
-                  <th>Address</th>
-                  <th>Role</th>
-                  <th>Status</th>
-                  <th>Actions</th>
+            <tbody>
+              {members.map(m => (
+                <tr key={m.id}>
+                  <td>{m.id}</td>
+                  <td>{m.member_id}</td>
+                  <td>{m.name}</td>
+                  <td className="assoc">{m.association_id}</td>
+                  <td>{m.personal_email || "-"}</td>
+                  <td>{m.phone || "-"}</td>
+                  <td><span className="role">{m.role}</span></td>
+                  <td>
+                    <span className={m.active ? "active" : "blocked"}>
+                      {m.active ? "ACTIVE" : "BLOCKED"}
+                    </span>
+                  </td>
+
+                  <td className="actions">
+                    {m.role !== "SUPER_ADMIN" ? (
+                      <>
+                        <button onClick={() => setEditing({ ...m })}>Edit</button>
+                        <button onClick={() => toggleStatus(m)}>
+                          {m.active ? "Block" : "Unblock"}
+                        </button>
+                        <button onClick={() => resendLogin(m.id)}>Resend</button>
+                        <button className="danger" onClick={() => deleteMember(m.id)}>Delete</button>
+                      </>
+                    ) : (
+                      <span>Protected</span>
+                    )}
+                  </td>
                 </tr>
-              </thead>
-
-              <tbody>
-                {members.map((m, i) => (
-                  <tr key={m.id} style={i % 2 ? rowAlt : undefined}>
-                    <td><span style={idBadge}>{m.id}</span></td>
-                    <td><span style={idBadge}>{m.member_id}</span></td>
-                    <td>{m.name}</td>
-                    <td>{m.association_id || "-"}</td>
-                    <td>{m.personal_email || "-"}</td>
-                    <td>{m.phone || "-"}</td>
-                    <td>{m.address || "-"}</td>
-
-                    <td>
-                      <span style={roleBadge}>{m.role}</span>
-                    </td>
-
-                    <td>
-                      <span
-                        style={{
-                          ...statusBadge,
-                          background: m.active ? "#16a34a" : "#dc2626",
-                        }}
-                      >
-                        {m.active ? "ACTIVE" : "BLOCKED"}
-                      </span>
-                    </td>
-
-                    <td style={{ whiteSpace: "nowrap" }}>
-                      {m.role !== "SUPER_ADMIN" ? (
-                        <>
-                          <button
-                            style={editBtn}
-                            onClick={() => setEditing({ ...m })}
-                          >
-                            Edit
-                          </button>
-
-                          <button
-                            style={m.active ? blockBtn : unblockBtn}
-                            onClick={() => toggleStatus(m)}
-                          >
-                            {m.active ? "Block" : "Unblock"}
-                          </button>
-
-                          <button
-                            style={deleteBtn}
-                            onClick={() => deleteMember(m.id)}
-                          >
-                            Delete
-                          </button>
-                        </>
-                      ) : (
-                        <span style={{ fontSize: 12, color: "#64748b" }}>
-                          Protected
-                        </span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+              ))}
+            </tbody>
+          </table>
         )}
       </div>
 
-      {/* =========================
-         EDIT MODAL
-      ========================= */}
       {editing && (
-        <div style={modalBg}>
-          <div style={modal}>
+        <div className="modalBg">
+          <div className="modal">
             <h3>Edit Member</h3>
 
-            <label style={label}>Member ID</label>
-            <div style={readonlyBox}>{editing.member_id}</div>
+            <label>Member ID</label>
+            <div className="readonly">{editing.member_id}</div>
 
-            <input
-              placeholder="Full Name"
-              value={editing.name}
-              onChange={(e) =>
-                setEditing({ ...editing, name: e.target.value })
-              }
-            />
+            <label>Association ID</label>
+            <div className="readonly">{editing.association_id}</div>
 
-            <input
-              placeholder="Phone"
-              value={editing.phone || ""}
-              onChange={(e) =>
-                setEditing({ ...editing, phone: e.target.value })
-              }
-            />
+            <input value={editing.name} onChange={e=>setEditing({...editing,name:e.target.value})} />
+            <input value={editing.personal_email||""} placeholder="Email" onChange={e=>setEditing({...editing,personal_email:e.target.value})} />
+            <input value={editing.phone||""} placeholder="Phone" onChange={e=>setEditing({...editing,phone:e.target.value})} />
+            <textarea value={editing.address||""} placeholder="Address" onChange={e=>setEditing({...editing,address:e.target.value})} />
 
-            <textarea
-              placeholder="Address"
-              value={editing.address || ""}
-              onChange={(e) =>
-                setEditing({ ...editing, address: e.target.value })
-              }
-            />
-
-            <select
-              value={editing.role}
-              onChange={(e) =>
-                setEditing({ ...editing, role: e.target.value })
-              }
-            >
-              <option value="MEMBER">MEMBER</option>
-              <option value="EC_MEMBER">EC_MEMBER</option>
-              <option value="TREASURER">TREASURER</option>
-              <option value="PRESIDENT">PRESIDENT</option>
-              <option value="VICE_PRESIDENT">VICE_PRESIDENT</option>
-              <option value="GENERAL_SECRETARY">GENERAL_SECRETARY</option>
-              <option value="JOINT_SECRETARY">JOINT_SECRETARY</option>
+            <select value={editing.role} onChange={e=>setEditing({...editing,role:e.target.value})}>
+              <option>MEMBER</option>
+              <option>EC_MEMBER</option>
+              <option>TREASURER</option>
+              <option>PRESIDENT</option>
+              <option>VICE_PRESIDENT</option>
+              <option>GENERAL_SECRETARY</option>
+              <option>JOINT_SECRETARY</option>
             </select>
 
-            <label>
-              <input
-                type="checkbox"
-                checked={editing.active}
-                onChange={(e) =>
-                  setEditing({ ...editing, active: e.target.checked })
-                }
-              />{" "}
-              Active
-            </label>
+            <label><input type="checkbox" checked={editing.active} onChange={e=>setEditing({...editing,active:e.target.checked})}/> Active</label>
 
-            <div style={{ textAlign: "right", marginTop: 10 }}>
-              <button style={saveBtn} onClick={saveMember}>Save</button>{" "}
-              <button style={cancelBtn} onClick={() => setEditing(null)}>
-                Cancel
-              </button>
+            <div className="modalActions">
+              <button onClick={saveMember}>Save</button>
+              <button onClick={()=>setEditing(null)}>Cancel</button>
             </div>
           </div>
         </div>
       )}
+
+      <style>{`
+        .page{padding:30px;background:#f4f6f8}
+        .table{width:100%;background:#fff;border-radius:10px;overflow:hidden}
+        th,td{padding:10px;border-bottom:1px solid #eee}
+        .assoc{color:#2563eb;font-weight:600}
+        .role{background:#e0e7ff;padding:4px 8px;border-radius:6px}
+        .active{background:#16a34a;color:#fff;padding:4px 10px;border-radius:999px}
+        .blocked{background:#dc2626;color:#fff;padding:4px 10px;border-radius:999px}
+        .actions button{margin-right:5px;padding:5px 10px;border-radius:6px;border:none;background:#2563eb;color:white}
+        .actions .danger{background:#dc2626}
+        .modalBg{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;justify-content:center;align-items:center}
+        .modal{background:white;padding:20px;border-radius:10px;width:400px;display:flex;flex-direction:column;gap:10px}
+        .readonly{background:#f1f5f9;padding:10px;border-radius:6px}
+        .modalActions{text-align:right}
+      `}</style>
     </>
   );
 }
-
-/* =========================
-   STYLES
-========================= */
-
-const container = {
-  padding: 30,
-  background: "#f4f6f8",
-  minHeight: "100vh",
-};
-
-const title = { marginBottom: 20 };
-
-const table = {
-  width: "100%",
-  borderCollapse: "collapse",
-  background: "#fff",
-  minWidth: 1100,
-};
-
-const rowAlt = { background: "#f9fafb" };
-
-const statusBadge = {
-  padding: "4px 12px",
-  borderRadius: 999,
-  color: "#fff",
-  fontSize: 12,
-};
-
-const roleBadge = {
-  padding: "4px 10px",
-  borderRadius: 6,
-  background: "#e0e7ff",
-  color: "#1e3a8a",
-  fontSize: 12,
-};
-
-const idBadge = {
-  background: "#ecfeff",
-  color: "#155e75",
-  padding: "4px 10px",
-  borderRadius: 6,
-  fontSize: 12,
-};
-
-const baseBtn = {
-  padding: "5px 10px",
-  borderRadius: 6,
-  border: "none",
-  fontSize: 12,
-  cursor: "pointer",
-  marginRight: 6,
-};
-
-const editBtn = { ...baseBtn, background: "#2563eb", color: "#fff" };
-const blockBtn = { ...baseBtn, background: "#f97316", color: "#fff" };
-const unblockBtn = { ...baseBtn, background: "#16a34a", color: "#fff" };
-const deleteBtn = { ...baseBtn, background: "#dc2626", color: "#fff" };
-const saveBtn = { ...baseBtn, background: "#16a34a", color: "#fff" };
-const cancelBtn = { ...baseBtn, background: "#6b7280", color: "#fff" };
-
-const modalBg = {
-  position: "fixed",
-  inset: 0,
-  background: "rgba(0,0,0,0.5)",
-  display: "flex",
-  justifyContent: "center",
-  alignItems: "center",
-};
-
-const modal = {
-  background: "#fff",
-  padding: 20,
-  borderRadius: 10,
-  width: 420,
-  display: "flex",
-  flexDirection: "column",
-  gap: 10,
-};
-
-const label = { fontSize: 12, fontWeight: 600 };
-
-const readonlyBox = {
-  padding: "10px 12px",
-  borderRadius: 8,
-  background: "#f1f5f9",
-  border: "1px solid #cbd5e1",
-};
