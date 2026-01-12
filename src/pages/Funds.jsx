@@ -92,7 +92,7 @@ export default function Funds() {
     );
     if (!confirm) return;
 
-    await api.delete(`/funds/delete/${id}`);
+    await api.delete(`/funds/${id}`);
     loadFunds();
   };
 
