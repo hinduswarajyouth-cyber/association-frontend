@@ -21,6 +21,32 @@ const MEETING_META = {
 };
 
 /* ================= COMPONENT ================= */
+const ist = d => new Date(d.replace(" ", "T"));
+
+const meetingCountdown = (d) => {
+  const diff = ist(d) - new Date();
+  if (diff <= 0) return "Started";
+  const h = Math.floor(diff / 3600000);
+  const m = Math.floor((diff % 3600000) / 60000);
+  return `${h}h ${m}m`;
+};
+
+const isLive = (d) => {
+  const t = ist(d).getTime();
+  const now = Date.now();
+  return now > t - 15 * 60 * 1000 && now < t + 2 * 60 * 60 * 1000;
+};
+const smartDay = (d) => {
+  const date = new Date(d.replace(" ", "T"));
+  const today = new Date();
+  const diff = Math.floor((date - today) / 86400000);
+
+  if (diff === 0) return "Today";
+  if (diff === 1) return "Tomorrow";
+
+  return date.toLocaleDateString("en-IN", { weekday: "long" });
+};
+
 export default function Meetings() {
   const { user } = useAuth();
   const role = user.role;
@@ -40,6 +66,7 @@ export default function Meetings() {
   const [selected, setSelected] = useState(null);
   const [editing, setEditing] = useState(false);
   const [resolutions, setResolutions] = useState([]);
+  const [votes, setVotes] = useState({});
 
   const [attendance, setAttendance] = useState([]);
 
@@ -55,10 +82,15 @@ export default function Meetings() {
   const [deadline, setDeadline] = useState("");
 
   const [minutesFile, setMinutesFile] = useState(null);
+  const [agenda, setAgenda] = useState("");
+const [agendaLocked, setAgendaLocked] = useState(false);
 
   /* ================= HELPERS ================= */
-  const meetingStatus = (date) =>
-    new Date(date) > new Date() ? "UPCOMING" : "COMPLETED";
+  const meetingStatus = (date) => {
+  const now = new Date();
+  const d = new Date(date.replace(" ", "T"));
+  return d > now ? "UPCOMING" : "COMPLETED";
+};
 
   /* ================= LOAD ================= */
   const loadMeetings = async () => {
@@ -78,11 +110,27 @@ export default function Meetings() {
     await api.post(`/meetings/join/${m.id}`).catch(() => {});
     const r = await api.get(`/meetings/resolution/${m.id}`);
     setResolutions(r.data || []);
+    const voteMap = {};
+for (const res of r.data || []) {
+  const vr = await api.get(`/meetings/votes/${res.id}`);
+  voteMap[res.id] = vr.data;
+}
+setVotes(voteMap);
 
     // OPTIONAL BACKEND: /meetings/attendance/:id
     api.get(`/meetings/attendance/${m.id}`)
       .then(res => setAttendance(res.data || []))
       .catch(() => setAttendance([]));
+       // ===== Load Agenda =====
+  api.get(`/meetings/agenda/${m.id}`)
+    .then(r => {
+      setAgenda(r.data.agenda || "");
+      setAgendaLocked(r.data.agenda_locked);
+    })
+    .catch(() => {
+      setAgenda("");
+      setAgendaLocked(false);
+    });
   };
 
   /* ================= CREATE / UPDATE ================= */
@@ -94,7 +142,7 @@ export default function Meetings() {
 
     const payload = {
   ...form,
-  meeting_date: new Date(form.meeting_date + ":00").toISOString()
+  meeting_date: form.meeting_date.replace("T", " ") + ":00"
 };
 
 if (editing) {
@@ -122,10 +170,16 @@ if (editing) {
 
   /* ================= VOTE ================= */
   const vote = async (rid, v) => {
-    await api.post(`/meetings/vote/${rid}`, { vote: v });
-    const r = await api.get(`/meetings/resolution/${selected.id}`);
-    setResolutions(r.data || []);
-  };
+  await api.post(`/meetings/vote/${rid}`, { vote: v });
+
+  // reload resolutions
+  const r = await api.get(`/meetings/resolution/${selected.id}`);
+  setResolutions(r.data || []);
+
+  // reload votes for this resolution
+  const vr = await api.get(`/meetings/votes/${rid}`);
+  setVotes(prev => ({ ...prev, [rid]: vr.data }));
+};
 
   /* ================= RESOLUTION ================= */
   const addResolution = async () => {
@@ -246,7 +300,13 @@ if (editing) {
                 </span>
               </div>
 
-              <p>🕒 {new Date(m.meeting_date).toLocaleString()}</p>
+   <p>
+  🕒 {new Date(m.meeting_date.replace(" ", "T")).toLocaleString()} <br/>
+  📅 {smartDay(m.meeting_date)} <br/>
+  ⏳ {meetingCountdown(m.meeting_date)}
+  {isLive(m.meeting_date) && <span style={{ color: "red", fontWeight: 700 }}> 🔴 LIVE</span>}
+</p>
+
 
               <button style={btnPrimary} onClick={() => openMeeting(m)}>Open</button>
               {ADMIN_ROLES.includes(role) && (
@@ -255,7 +315,7 @@ if (editing) {
                   setEditing(true);
                   setForm({
                     title: m.title,
-                    meeting_date: m.meeting_date.slice(0, 16),
+                meeting_date: m.meeting_date.replace(" ", "T").slice(0, 16),
                     description: m.description || "",
                     join_link: m.join_link || "",
                   });
@@ -272,6 +332,35 @@ if (editing) {
         {selected && (
           <div style={card}>
             <h3>{selected.title}</h3>
+            {/* ===== MEETING AGENDA ===== */}
+<div style={box}>
+  <h4>📝 Meeting Agenda</h4>
+
+  {ADMIN_ROLES.includes(role) && !agendaLocked ? (
+    <>
+      <textarea
+        value={agenda}
+        onChange={(e) => setAgenda(e.target.value)}
+        style={textarea}
+        placeholder="Enter agenda points..."
+      />
+      <button
+        style={btnPrimary}
+        onClick={() =>
+          api.post(`/meetings/agenda/${selected.id}`, { agenda })
+        }
+      >
+        Save Agenda
+      </button>
+    </>
+  ) : (
+    <pre style={{ whiteSpace: "pre-wrap" }}>
+      {agenda || "No agenda set"}
+    </pre>
+  )}
+
+  {agendaLocked && <p style={{ color: "red" }}>🔒 Agenda Locked</p>}
+</div>
 
             {selected.join_link && (
               <a href={selected.join_link} target="_blank" rel="noreferrer" style={joinBtn}>
@@ -305,25 +394,91 @@ if (editing) {
                 <button style={btnPrimary} onClick={uploadMinutes}>Upload</button>
               </div>
             )}
+            {ADMIN_ROLES.includes(role) && (
+  <div style={box}>
+    <h4>🧾 Auto Generate Minutes</h4>
+    <button
+      style={{ ...btnPrimary, background: "#16a34a" }}
+      onClick={async () => {
+        const r = await api.post(`/meetings/minutes-pdf/${selected.id}`);
+        window.open(
+          `${import.meta.env.VITE_API_BASE_URL}/${r.data.pdf}`,
+          "_blank"
+        );
+      }}
+    >
+      📥 Generate Minutes PDF
+    </button>
+  </div>
+)}
 
             {/* ===== RESOLUTIONS ===== */}
+           {ADMIN_ROLES.includes(role) && (
+  <div style={box}>
+    <h4>➕ Create Resolution</h4>
+
+    <input
+      style={input}
+      placeholder="Resolution Title"
+      value={newTitle}
+      onChange={e => setNewTitle(e.target.value)}
+    />
+
+    <textarea
+      style={textarea}
+      placeholder="Resolution Details"
+      value={newContent}
+      onChange={e => setNewContent(e.target.value)}
+    />
+
+    <input
+      type="datetime-local"
+      style={input}
+      value={deadline}
+      onChange={e => setDeadline(e.target.value)}
+    />
+
+    <button style={btnPrimary} onClick={addResolution}>
+      Add Resolution
+    </button>
+  </div>
+)}
             <h4>📜 Resolutions</h4>
 
             {resolutions.map((r) => (
               <div key={r.id} style={resolutionCard}>
                 <h5>{r.title}</h5>
                 <p>{r.content}</p>
+                {r.vote_deadline && (
+  <p>⏳ Voting ends in {meetingCountdown(r.vote_deadline)}</p>
+)}
 
                 <p>Status: <b style={{ color: r.status === "APPROVED" ? "green" : "orange" }}>
                   {r.status}
                 </b></p>
 
-                {CAN_VOTE.includes(role) && !r.is_locked && (
+               {CAN_VOTE.includes(role) && 
+ !r.is_locked && 
+ (!r.vote_deadline || new Date(r.vote_deadline.replace(" ", "T")) > new Date()) && (
                   <>
                     <button style={btnYes} onClick={() => vote(r.id, "YES")}>👍 YES</button>
                     <button style={btnNo} onClick={() => vote(r.id, "NO")}>👎 NO</button>
                   </>
                 )}
+                {votes[r.id] && (
+  <div style={{ marginTop: 10, background: "#f1f5f9", padding: 10, borderRadius: 8 }}>
+    <b>🧾 Who Voted</b>
+    {votes[r.id].length > 0 ? (
+      votes[r.id].map((v, i) => (
+        <div key={i}>
+          {v.vote === "YES" ? "👍" : "👎"} {v.name}
+        </div>
+      ))
+    ) : (
+      <div>No votes yet</div>
+    )}
+  </div>
+)}
 
                 {r.pdf_path && (
                   <a
