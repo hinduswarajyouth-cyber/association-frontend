@@ -25,7 +25,7 @@ export default function Meetings() {
   const { user } = useAuth();
   const role = user.role;
 
-  /* ================= ROLES ================= */
+  /* ROLE GROUPS */
   const ADMIN_ROLES = ["SUPER_ADMIN", "PRESIDENT"];
   const CAN_VOTE = [
     "EC_MEMBER",
@@ -35,7 +35,7 @@ export default function Meetings() {
   ];
   const CAN_DELETE = role === "SUPER_ADMIN";
 
-  /* ================= STATE ================= */
+  /* STATES */
   const [meetings, setMeetings] = useState([]);
   const [selected, setSelected] = useState(null);
   const [editing, setEditing] = useState(false);
@@ -55,8 +55,8 @@ export default function Meetings() {
   const [minutesFile, setMinutesFile] = useState(null);
 
   /* ================= TIME & STATUS HELPERS ================= */
-  const formatMeetingTime = (date) => {
-    return new Date(date).toLocaleString("en-IN", {
+  const formatMeetingTime = (date) =>
+    new Date(date).toLocaleString("en-IN", {
       day: "2-digit",
       month: "short",
       year: "numeric",
@@ -64,7 +64,6 @@ export default function Meetings() {
       minute: "2-digit",
       hour12: true,
     });
-  };
 
   const getDayLabel = (date) => {
     const d = new Date(date);
@@ -81,10 +80,9 @@ export default function Meetings() {
   const getCountdown = (date) => {
     const diff = new Date(date) - new Date();
     if (diff <= 0) return null;
-
-    const hours = Math.floor(diff / (1000 * 60 * 60));
-    const mins = Math.floor((diff / (1000 * 60)) % 60);
-    return `${hours}h ${mins}m`;
+    const h = Math.floor(diff / (1000 * 60 * 60));
+    const m = Math.floor((diff / (1000 * 60)) % 60);
+    return `${h}h ${m}m`;
   };
 
   const meetingStatusAdvanced = (date) => {
@@ -130,11 +128,8 @@ export default function Meetings() {
       meeting_date: new Date(form.meeting_date + ":00").toISOString()
     };
 
-    if (editing) {
-      await api.put(`/meetings/${selected.id}`, payload);
-    } else {
-      await api.post("/meetings/create", payload);
-    }
+    if (editing) await api.put(`/meetings/${selected.id}`, payload);
+    else await api.post("/meetings/create", payload);
 
     resetForm();
     loadMeetings();
@@ -146,13 +141,14 @@ export default function Meetings() {
     setEditing(false);
   };
 
+  /* ================= DELETE ================= */
   const deleteMeeting = async (id) => {
     if (!window.confirm("Delete this meeting?")) return;
     await api.delete(`/meetings/${id}`);
     loadMeetings();
   };
 
-  /* ================= SORTED ================= */
+  /* ================= DASHBOARD ================= */
   const sortedMeetings = [...meetings].sort(
     (a, b) => new Date(a.meeting_date) - new Date(b.meeting_date)
   );
@@ -163,30 +159,30 @@ export default function Meetings() {
 
   const completed = sortedMeetings.length - upcoming;
 
+  /* ================= UI ================= */
   return (
     <>
       <Navbar />
       <div style={{ padding: 30 }}>
         <h2>📅 Meetings</h2>
+        <p>Upcoming: {upcoming} | Completed: {completed}</p>
 
-        {/* ===== DASHBOARD ===== */}
-        <h3>Upcoming: {upcoming} | Completed: {completed}</h3>
-
-        {/* ===== MEETINGS LIST ===== */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(260px,1fr))", gap: 16 }}>
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(260px,1fr))", gap:16 }}>
           {sortedMeetings.map((m) => (
             <div key={m.id} style={{ background:"#fff", padding:20, borderRadius:16 }}>
               <div style={{ display:"flex", justifyContent:"space-between" }}>
                 <b>{m.title}</b>
-                <span style={{ color:"#fff", background:MEETING_META[meetingStatusAdvanced(m.meeting_date)].color, padding:"4px 12px", borderRadius:999 }}>
+                <span style={{ background:MEETING_META[meetingStatusAdvanced(m.meeting_date)].color, color:"#fff", padding:"4px 12px", borderRadius:999 }}>
                   {MEETING_META[meetingStatusAdvanced(m.meeting_date)].icon} {meetingStatusAdvanced(m.meeting_date)}
                 </span>
               </div>
 
               <p>🕒 {formatMeetingTime(m.meeting_date)}</p>
-              <small>{getDayLabel(m.meeting_date)} • {getCountdown(m.meeting_date)}</small>
+              <small>{getDayLabel(m.meeting_date)} {getCountdown(m.meeting_date) && `• ${getCountdown(m.meeting_date)}`}</small>
 
-              {meetingStatusAdvanced(m.meeting_date)==="UPCOMING" && getCountdown(m.meeting_date) && new Date(m.meeting_date)-new Date()<30*60*1000 && (
+              {meetingStatusAdvanced(m.meeting_date)==="UPCOMING" &&
+               getCountdown(m.meeting_date) &&
+               new Date(m.meeting_date)-new Date() < 30*60*1000 && (
                 <div style={{ background:"#fef3c7", padding:8, borderRadius:8, marginTop:8 }}>
                   ⚠ Starts in {getCountdown(m.meeting_date)}
                 </div>
