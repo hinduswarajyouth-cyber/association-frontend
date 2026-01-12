@@ -17,15 +17,15 @@ import {
 /* ================= STATUS META ================= */
 const MEETING_META = {
   UPCOMING: { color: "#2563eb", icon: "📅" },
+  LIVE: { color: "#dc2626", icon: "🔴" },
   COMPLETED: { color: "#16a34a", icon: "✅" },
 };
 
-/* ================= COMPONENT ================= */
 export default function Meetings() {
   const { user } = useAuth();
   const role = user.role;
 
-  /* ROLE GROUPS */
+  /* ================= ROLES ================= */
   const ADMIN_ROLES = ["SUPER_ADMIN", "PRESIDENT"];
   const CAN_VOTE = [
     "EC_MEMBER",
@@ -35,12 +35,11 @@ export default function Meetings() {
   ];
   const CAN_DELETE = role === "SUPER_ADMIN";
 
-  /* STATES */
+  /* ================= STATE ================= */
   const [meetings, setMeetings] = useState([]);
   const [selected, setSelected] = useState(null);
   const [editing, setEditing] = useState(false);
   const [resolutions, setResolutions] = useState([]);
-
   const [attendance, setAttendance] = useState([]);
 
   const [form, setForm] = useState({
@@ -53,12 +52,50 @@ export default function Meetings() {
   const [newTitle, setNewTitle] = useState("");
   const [newContent, setNewContent] = useState("");
   const [deadline, setDeadline] = useState("");
-
   const [minutesFile, setMinutesFile] = useState(null);
 
-  /* ================= HELPERS ================= */
-  const meetingStatus = (date) =>
-    new Date(date) > new Date() ? "UPCOMING" : "COMPLETED";
+  /* ================= TIME & STATUS HELPERS ================= */
+  const formatMeetingTime = (date) => {
+    return new Date(date).toLocaleString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    });
+  };
+
+  const getDayLabel = (date) => {
+    const d = new Date(date);
+    const today = new Date();
+    const diff = d.setHours(0,0,0,0) - today.setHours(0,0,0,0);
+
+    if (diff === 0) return "Today";
+    if (diff === 86400000) return "Tomorrow";
+    if (diff === -86400000) return "Yesterday";
+
+    return d.toLocaleDateString("en-IN", { weekday: "long" });
+  };
+
+  const getCountdown = (date) => {
+    const diff = new Date(date) - new Date();
+    if (diff <= 0) return null;
+
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    const mins = Math.floor((diff / (1000 * 60)) % 60);
+    return `${hours}h ${mins}m`;
+  };
+
+  const meetingStatusAdvanced = (date) => {
+    const now = new Date();
+    const start = new Date(date);
+    const end = new Date(start.getTime() + 60 * 60 * 1000);
+
+    if (now < start) return "UPCOMING";
+    if (now >= start && now <= end) return "LIVE";
+    return "COMPLETED";
+  };
 
   /* ================= LOAD ================= */
   const loadMeetings = async () => {
@@ -79,7 +116,6 @@ export default function Meetings() {
     const r = await api.get(`/meetings/resolution/${m.id}`);
     setResolutions(r.data || []);
 
-    // OPTIONAL BACKEND: /meetings/attendance/:id
     api.get(`/meetings/attendance/${m.id}`)
       .then(res => setAttendance(res.data || []))
       .catch(() => setAttendance([]));
@@ -87,15 +123,17 @@ export default function Meetings() {
 
   /* ================= CREATE / UPDATE ================= */
   const saveMeeting = async () => {
-    if (!form.title || !form.meeting_date) {
-      alert("Title & Date required");
-      return;
-    }
+    if (!form.title || !form.meeting_date) return alert("Title & Date required");
+
+    const payload = {
+      ...form,
+      meeting_date: new Date(form.meeting_date + ":00").toISOString()
+    };
 
     if (editing) {
-      await api.put(`/meetings/${selected.id}`, form);
+      await api.put(`/meetings/${selected.id}`, payload);
     } else {
-      await api.post("/meetings/create", form);
+      await api.post("/meetings/create", payload);
     }
 
     resetForm();
@@ -108,272 +146,57 @@ export default function Meetings() {
     setEditing(false);
   };
 
-  /* ================= DELETE ================= */
   const deleteMeeting = async (id) => {
     if (!window.confirm("Delete this meeting?")) return;
     await api.delete(`/meetings/${id}`);
     loadMeetings();
   };
 
-  /* ================= VOTE ================= */
-  const vote = async (rid, v) => {
-    await api.post(`/meetings/vote/${rid}`, { vote: v });
-    const r = await api.get(`/meetings/resolution/${selected.id}`);
-    setResolutions(r.data || []);
-  };
+  /* ================= SORTED ================= */
+  const sortedMeetings = [...meetings].sort(
+    (a, b) => new Date(a.meeting_date) - new Date(b.meeting_date)
+  );
 
-  /* ================= RESOLUTION ================= */
-  const addResolution = async () => {
-    if (!newTitle || !newContent) return alert("All fields required");
-
-    await api.post(`/meetings/resolution/${selected.id}`, {
-      title: newTitle,
-      content: newContent,
-      vote_deadline: deadline || null,
-    });
-
-    setNewTitle("");
-    setNewContent("");
-    setDeadline("");
-
-    const r = await api.get(`/meetings/resolution/${selected.id}`);
-    setResolutions(r.data || []);
-  };
-
-  /* ================= MINUTES UPLOAD ================= */
-  const uploadMinutes = async () => {
-    if (!minutesFile) return alert("Select PDF file");
-
-    const fd = new FormData();
-    fd.append("file", minutesFile);
-
-    // OPTIONAL BACKEND: POST /meetings/minutes/:id
-    await api.post(`/meetings/minutes/${selected.id}`, fd);
-    alert("Minutes uploaded");
-  };
-
-  /* ================= DASHBOARD ================= */
-  const upcoming = meetings.filter(
-    (m) => meetingStatus(m.meeting_date) === "UPCOMING"
+  const upcoming = sortedMeetings.filter(
+    (m) => meetingStatusAdvanced(m.meeting_date) === "UPCOMING"
   ).length;
-  const completed = meetings.length - upcoming;
 
-  const attendanceChart = attendance.map(a => ({
-    name: a.name,
-    count: a.present ? 1 : 0,
-  }));
+  const completed = sortedMeetings.length - upcoming;
 
   return (
     <>
       <Navbar />
-      <div style={page}>
+      <div style={{ padding: 30 }}>
         <h2>📅 Meetings</h2>
 
         {/* ===== DASHBOARD ===== */}
-        <div style={dashGrid}>
-          <div style={{ ...dashCard, background: "linear-gradient(135deg,#2563eb,#1e40af)" }}>
-            <div style={{ fontSize: 32 }}>📅</div>
-            <div>
-              <small>Upcoming</small>
-              <h2>{upcoming}</h2>
-            </div>
-          </div>
-
-          <div style={{ ...dashCard, background: "linear-gradient(135deg,#16a34a,#166534)" }}>
-            <div style={{ fontSize: 32 }}>✅</div>
-            <div>
-              <small>Completed</small>
-              <h2>{completed}</h2>
-            </div>
-          </div>
-        </div>
-
-        {/* ===== CREATE / EDIT ===== */}
-        {ADMIN_ROLES.includes(role) && (
-          <div style={card}>
-            <h3>{editing ? "✏️ Edit Meeting" : "➕ Create Meeting"}</h3>
-
-            <input style={input} placeholder="Meeting Title"
-              value={form.title}
-              onChange={(e) => setForm({ ...form, title: e.target.value })}
-            />
-
-            <input style={input} type="datetime-local"
-              value={form.meeting_date}
-              onChange={(e) => setForm({ ...form, meeting_date: e.target.value })}
-            />
-
-            <textarea style={textarea} placeholder="Description"
-              value={form.description}
-              onChange={(e) => setForm({ ...form, description: e.target.value })}
-            />
-
-            <input style={input} placeholder="Zoom / Google Meet Link"
-              value={form.join_link}
-              onChange={(e) => setForm({ ...form, join_link: e.target.value })}
-            />
-
-            <button style={btnPrimary} onClick={saveMeeting}>
-              {editing ? "Update" : "Create"}
-            </button>
-          </div>
-        )}
+        <h3>Upcoming: {upcoming} | Completed: {completed}</h3>
 
         {/* ===== MEETINGS LIST ===== */}
-        <div style={grid}>
-          {meetings.map((m) => (
-            <div
-              key={m.id}
-              style={cardAnimated}
-              onMouseEnter={e => e.currentTarget.style.transform = "translateY(-4px)"}
-              onMouseLeave={e => e.currentTarget.style.transform = "translateY(0)"}
-            >
-              <div style={cardHeader}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(260px,1fr))", gap: 16 }}>
+          {sortedMeetings.map((m) => (
+            <div key={m.id} style={{ background:"#fff", padding:20, borderRadius:16 }}>
+              <div style={{ display:"flex", justifyContent:"space-between" }}>
                 <b>{m.title}</b>
-                <span style={{
-                  padding: "6px 14px",
-                  borderRadius: 999,
-                  fontSize: 12,
-                  color: "#fff",
-                  background: MEETING_META[meetingStatus(m.meeting_date)].color
-                }}>
-                  {MEETING_META[meetingStatus(m.meeting_date)].icon} {meetingStatus(m.meeting_date)}
+                <span style={{ color:"#fff", background:MEETING_META[meetingStatusAdvanced(m.meeting_date)].color, padding:"4px 12px", borderRadius:999 }}>
+                  {MEETING_META[meetingStatusAdvanced(m.meeting_date)].icon} {meetingStatusAdvanced(m.meeting_date)}
                 </span>
               </div>
 
-              <p>🕒 {new Date(m.meeting_date).toLocaleString()}</p>
+              <p>🕒 {formatMeetingTime(m.meeting_date)}</p>
+              <small>{getDayLabel(m.meeting_date)} • {getCountdown(m.meeting_date)}</small>
 
-              <button style={btnPrimary} onClick={() => openMeeting(m)}>Open</button>
-              {ADMIN_ROLES.includes(role) && (
-                <button style={btnSecondary} onClick={() => {
-                  setSelected(m);
-                  setEditing(true);
-                  setForm({
-                    title: m.title,
-                    meeting_date: m.meeting_date.slice(0, 16),
-                    description: m.description || "",
-                    join_link: m.join_link || "",
-                  });
-                }}>Edit</button>
+              {meetingStatusAdvanced(m.meeting_date)==="UPCOMING" && getCountdown(m.meeting_date) && new Date(m.meeting_date)-new Date()<30*60*1000 && (
+                <div style={{ background:"#fef3c7", padding:8, borderRadius:8, marginTop:8 }}>
+                  ⚠ Starts in {getCountdown(m.meeting_date)}
+                </div>
               )}
-              {CAN_DELETE && (
-                <button style={btnDanger} onClick={() => deleteMeeting(m.id)}>Delete</button>
-              )}
+
+              <button onClick={() => openMeeting(m)}>Open</button>
             </div>
           ))}
         </div>
-
-        {/* ===== MEETING DETAILS ===== */}
-        {selected && (
-          <div style={card}>
-            <h3>{selected.title}</h3>
-
-            {selected.join_link && (
-              <a href={selected.join_link} target="_blank" rel="noreferrer" style={joinBtn}>
-                🎥 Join Meeting
-              </a>
-            )}
-
-            {/* ===== ATTENDANCE CHART ===== */}
-            {attendance.length > 0 && (
-              <div style={chartCard}>
-                <h4>👥 Attendance</h4>
-                <ResponsiveContainer width="100%" height={250}>
-                  <BarChart data={attendanceChart}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" />
-                    <YAxis allowDecimals={false} />
-                    <Tooltip />
-                    <Bar dataKey="count" fill="#2563eb" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            )}
-
-            {/* ===== MINUTES UPLOAD ===== */}
-            {ADMIN_ROLES.includes(role) && (
-              <div style={box}>
-                <h4>📄 Upload Meeting Minutes</h4>
-                <input type="file" accept="application/pdf"
-                  onChange={(e) => setMinutesFile(e.target.files[0])}
-                />
-                <button style={btnPrimary} onClick={uploadMinutes}>Upload</button>
-              </div>
-            )}
-
-            {/* ===== RESOLUTIONS ===== */}
-            <h4>📜 Resolutions</h4>
-
-            {resolutions.map((r) => (
-              <div key={r.id} style={resolutionCard}>
-                <h5>{r.title}</h5>
-                <p>{r.content}</p>
-
-                <p>Status: <b style={{ color: r.status === "APPROVED" ? "green" : "orange" }}>
-                  {r.status}
-                </b></p>
-
-                {CAN_VOTE.includes(role) && !r.is_locked && (
-                  <>
-                    <button style={btnYes} onClick={() => vote(r.id, "YES")}>👍 YES</button>
-                    <button style={btnNo} onClick={() => vote(r.id, "NO")}>👎 NO</button>
-                  </>
-                )}
-
-                {r.pdf_path && (
-                  <a
-                    href={`${import.meta.env.VITE_API_BASE_URL}/${r.pdf_path}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    style={pdfBtn}
-                  >
-                    📄 Download Resolution PDF
-                  </a>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
       </div>
     </>
   );
 }
-
-/* ================= STYLES ================= */
-const page = { padding: 30, background: "#f1f5f9", minHeight: "100vh" };
-
-const dashGrid = { display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 20, marginBottom: 30 };
-
-const dashCard = { color: "#fff", padding: 20, borderRadius: 18, display: "flex", gap: 16, alignItems: "center", boxShadow: "0 20px 40px rgba(0,0,0,.15)" };
-
-const grid = { display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(260px,1fr))", gap: 16 };
-
-const card = { background: "#fff", padding: 20, borderRadius: 18, marginBottom: 20, boxShadow: "0 10px 25px rgba(0,0,0,.08)" };
-
-const cardAnimated = { ...card, transition: "transform .25s, box-shadow .25s" };
-
-const cardHeader = { display: "flex", justifyContent: "space-between", alignItems: "center" };
-
-const chartCard = { background: "#fff", padding: 20, borderRadius: 16, marginTop: 20, boxShadow: "0 10px 25px rgba(0,0,0,.08)" };
-
-const resolutionCard = { border: "1px solid #e5e7eb", padding: 15, borderRadius: 12, marginBottom: 15 };
-
-const box = { background: "#f8fafc", padding: 15, borderRadius: 12, marginBottom: 20 };
-
-const input = { width: "100%", padding: 10, marginBottom: 10, borderRadius: 8, border: "1px solid #cbd5f5" };
-
-const textarea = { width: "100%", height: 80, padding: 10, marginBottom: 10, borderRadius: 8, border: "1px solid #cbd5f5" };
-
-const btnPrimary = { background: "#2563eb", color: "#fff", padding: "8px 14px", border: "none", borderRadius: 8, marginRight: 6 };
-
-const btnSecondary = { background: "#f59e0b", color: "#fff", padding: "8px 14px", border: "none", borderRadius: 8, marginRight: 6 };
-
-const btnDanger = { background: "#dc2626", color: "#fff", padding: "8px 14px", border: "none", borderRadius: 8 };
-
-const btnYes = { background: "#16a34a", color: "#fff", padding: "6px 12px", marginRight: 8, borderRadius: 6 };
-
-const btnNo = { background: "#dc2626", color: "#fff", padding: "6px 12px", borderRadius: 6 };
-
-const joinBtn = { display: "inline-block", marginBottom: 15, background: "#0ea5e9", color: "#fff", padding: "8px 14px", borderRadius: 8, textDecoration: "none" };
-
-const pdfBtn = { display: "inline-block", marginTop: 10, background: "#16a34a", color: "#fff", padding: "6px 12px", borderRadius: 6, textDecoration: "none" };
