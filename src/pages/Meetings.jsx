@@ -142,7 +142,7 @@ setVotes(voteMap);
 
     const payload = {
   ...form,
-  meeting_date: form.meeting_date.replace("T", " ") + ":00"
+  meeting_date: new Date(form.meeting_date).toISOString()
 };
 
 if (editing) {
