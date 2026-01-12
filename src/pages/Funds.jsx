@@ -92,7 +92,7 @@ export default function Funds() {
     );
     if (!confirm) return;
 
-    await api.delete(`/funds/${id}`);
+    await api.delete(`/funds/delete/${id}`);
     loadFunds();
   };
 
@@ -284,66 +284,87 @@ export default function Funds() {
 /* ===== STYLES ===== */
 
 const container = {
-  padding: 30,
-  background: "#f4f6f8",
+  padding: "40px",
+  background: "linear-gradient(135deg,#f8fafc,#eef2ff)",
   minHeight: "100vh",
 };
 
 const card = {
-  background: "#fff",
-  padding: 25,
-  borderRadius: 10,
-  boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+  background: "rgba(255,255,255,0.75)",
+  backdropFilter: "blur(16px)",
+  padding: "30px",
+  borderRadius: "18px",
+  boxShadow: "0 30px 60px rgba(0,0,0,.08)",
 };
 
 const title = {
-  marginBottom: 20,
+  marginBottom: 25,
+  fontSize: 28,
+  fontWeight: 700,
+  color: "#0f172a",
 };
 
 const form = {
   display: "flex",
-  gap: 10,
-  marginBottom: 20,
-  background: "#f9fafb",
-  padding: 15,
-  borderRadius: 8,
+  gap: 12,
+  marginBottom: 25,
+  background: "rgba(255,255,255,.7)",
+  padding: 16,
+  borderRadius: 14,
+  boxShadow: "0 10px 30px rgba(0,0,0,.05)",
 };
 
 const primaryBtn = {
-  background: "#2f86eb",
+  background: "linear-gradient(135deg,#2563eb,#1e40af)",
   color: "#fff",
   border: "none",
-  padding: "8px 14px",
-  borderRadius: 6,
+  padding: "10px 18px",
+  borderRadius: 999,
+  fontWeight: 700,
   cursor: "pointer",
+  boxShadow: "0 10px 25px rgba(37,99,235,.35)",
 };
 
 const table = {
   width: "100%",
-  borderCollapse: "collapse",
+  borderCollapse: "separate",
+  borderSpacing: 0,
+  borderRadius: 18,
+  overflow: "hidden",
+  background: "rgba(255,255,255,.8)",
+  backdropFilter: "blur(10px)",
+  boxShadow: "0 25px 60px rgba(0,0,0,.1)",
 };
 
 const th = {
-  background: "#f1f5f9",
-  textAlign: "left",
-  padding: 10,
-  fontWeight: 600,
+  background: "linear-gradient(135deg,#1e3a8a,#2563eb)",
+  color: "#fff",
+  padding: 14,
+  fontSize: 13,
+  textTransform: "uppercase",
+  letterSpacing: ".05em",
 };
 
 const td = {
-  padding: 10,
+  padding: 14,
   borderBottom: "1px solid #e5e7eb",
+  fontSize: 14,
+  color: "#0f172a",
 };
 
 const editBtn = {
-  padding: "4px 10px",
-  borderRadius: 5,
-  border: "1px solid #ccc",
+  padding: "6px 14px",
+  borderRadius: 999,
+  border: "none",
+  fontWeight: 600,
+  background: "#2563eb",
+  color: "#fff",
   cursor: "pointer",
+  boxShadow: "0 6px 18px rgba(37,99,235,.35)",
 };
 
 const dangerBtn = {
   ...editBtn,
-  color: "red",
-  border: "1px solid red",
+  background: "#dc2626",
+  boxShadow: "0 6px 18px rgba(220,38,38,.35)",
 };
