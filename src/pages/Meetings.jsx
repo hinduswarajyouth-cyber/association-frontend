@@ -32,15 +32,13 @@ const meetingCountdown = (d) => {
 };
 
 const saveAgenda = async () => {
+  if (!selected) {
+    alert("No meeting selected");
+    return;
+  }
+
   try {
-    console.log("Saving agenda for meeting:", selected?.id);
-    console.log("Agenda text:", agenda);
-
-    const res = await api.post(`/meetings/agenda/${selected.id}`, {
-      agenda: agenda
-    });
-
-    console.log("Save response:", res.data);
+    await api.post(`/meetings/agenda/${selected.id}`, { agenda });
 
     const r = await api.get(`/meetings/agenda/${selected.id}`);
     setAgenda(r.data.agenda || "");
@@ -49,7 +47,7 @@ const saveAgenda = async () => {
     alert("Agenda saved successfully");
   } catch (err) {
     console.error("Agenda save failed", err);
-    alert(err.response?.data?.error || "Agenda not saved");
+    alert(err.response?.data?.error || "Failed to save agenda");
   }
 };
 
