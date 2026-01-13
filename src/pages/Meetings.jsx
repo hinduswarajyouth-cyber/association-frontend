@@ -33,9 +33,14 @@ const meetingCountdown = (d) => {
 
 const saveAgenda = async () => {
   try {
-    console.log("Saving agenda for", selected.id);
+    console.log("Saving agenda for meeting:", selected?.id);
+    console.log("Agenda text:", agenda);
 
-    await api.post(`/meetings/agenda/${selected.id}`, { agenda });
+    const res = await api.post(`/meetings/agenda/${selected.id}`, {
+      agenda: agenda
+    });
+
+    console.log("Save response:", res.data);
 
     const r = await api.get(`/meetings/agenda/${selected.id}`);
     setAgenda(r.data.agenda || "");
@@ -43,10 +48,11 @@ const saveAgenda = async () => {
 
     alert("Agenda saved successfully");
   } catch (err) {
-    console.error("Agenda save error", err);
-    alert(err.response?.data?.error || "Failed to save agenda");
+    console.error("Agenda save failed", err);
+    alert(err.response?.data?.error || "Agenda not saved");
   }
 };
+
 
 const isLive = (d) => {
   const t = ist(d).getTime();
