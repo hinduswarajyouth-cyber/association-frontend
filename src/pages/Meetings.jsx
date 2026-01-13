@@ -21,7 +21,7 @@ const MEETING_META = {
 };
 
 /* ================= COMPONENT ================= */
-const ist = d => new Date(d.replace(" ", "T"));
+const ist = d => new Date(d);
 
 const meetingCountdown = (d) => {
   const diff = ist(d) - new Date();
@@ -31,6 +31,20 @@ const meetingCountdown = (d) => {
   return `${h}h ${m}m`;
 };
 
+const saveAgenda = async () => {
+  try {
+    await api.post(`/meetings/agenda/${selected.id}`, { agenda });
+
+    // Reload agenda + lock status
+    const r = await api.get(`/meetings/agenda/${selected.id}`);
+    setAgenda(r.data.agenda || "");
+    setAgendaLocked(r.data.agenda_locked);
+
+    alert("Agenda saved successfully");
+  } catch {
+    alert("Failed to save agenda");
+  }
+};
 const isLive = (d) => {
   const t = ist(d).getTime();
   const now = Date.now();
@@ -67,7 +81,7 @@ export default function Meetings() {
   const [editing, setEditing] = useState(false);
   const [resolutions, setResolutions] = useState([]);
   const [votes, setVotes] = useState({});
-
+const [voteStats, setVoteStats] = useState({});
   const [attendance, setAttendance] = useState([]);
 
   const [form, setForm] = useState({
@@ -84,8 +98,20 @@ export default function Meetings() {
   const [minutesFile, setMinutesFile] = useState(null);
   const [agenda, setAgenda] = useState("");
 const [agendaLocked, setAgendaLocked] = useState(false);
+const [now, setNow] = useState(Date.now());
 
   /* ================= HELPERS ================= */
+  const agendaLockCountdown = (meetingDate) => {
+  const lockTime = new Date(meetingDate.replace(" ", "T")).getTime() + 15 * 60 * 1000;
+  const diff = lockTime - Date.now();
+
+  if (diff <= 0) return "🔒 Agenda Locked";
+
+  const m = Math.floor(diff / 60000);
+  const s = Math.floor((diff % 60000) / 1000);
+
+  return `🔓 Locks in ${m}m ${s}s`;
+};
   const meetingStatus = (date) => {
   const now = new Date();
   const d = new Date(date.replace(" ", "T"));
@@ -101,6 +127,10 @@ const [agendaLocked, setAgendaLocked] = useState(false);
   useEffect(() => {
     loadMeetings();
   }, []);
+  useEffect(() => {
+  const t = setInterval(() => setNow(Date.now()), 1000);
+  return () => clearInterval(t);
+}, []);
 
   /* ================= OPEN ================= */
   const openMeeting = async (m) => {
@@ -116,6 +146,8 @@ for (const res of r.data || []) {
   voteMap[res.id] = vr.data;
 }
 setVotes(voteMap);
+const stats = await api.get(`/meetings/vote-stats/${m.id}`);
+setVoteStats(stats.data);
 
     // OPTIONAL BACKEND: /meetings/attendance/:id
     api.get(`/meetings/attendance/${m.id}`)
@@ -301,7 +333,7 @@ if (editing) {
               </div>
 
    <p>
-  🕒 {new Date(m.meeting_date.replace(" ", "T")).toLocaleString()} <br/>
+  🕒 {new Date(m.meeting_date).toLocaleString()} <br/>
   📅 {smartDay(m.meeting_date)} <br/>
   ⏳ {meetingCountdown(m.meeting_date)}
   {isLive(m.meeting_date) && <span style={{ color: "red", fontWeight: 700 }}> 🔴 LIVE</span>}
@@ -344,14 +376,9 @@ if (editing) {
         style={textarea}
         placeholder="Enter agenda points..."
       />
-      <button
-        style={btnPrimary}
-        onClick={() =>
-          api.post(`/meetings/agenda/${selected.id}`, { agenda })
-        }
-      >
-        Save Agenda
-      </button>
+      <button style={btnPrimary} onClick={saveAgenda}>
+  Save Agenda
+</button>
     </>
   ) : (
     <pre style={{ whiteSpace: "pre-wrap" }}>
@@ -359,7 +386,19 @@ if (editing) {
     </pre>
   )}
 
-  {agendaLocked && <p style={{ color: "red" }}>🔒 Agenda Locked</p>}
+{role === "PRESIDENT" && agendaLocked && (
+  <button
+    style={{ ...btnPrimary, background: "#dc2626" }}
+    onClick={async () => {
+      await api.post(`/meetings/agenda-unlock/${selected.id}`);
+      const r = await api.get(`/meetings/agenda/${selected.id}`);
+      setAgendaLocked(r.data.agenda_locked);
+      alert("Agenda unlocked by President");
+    }}
+  >
+    🔓 Override Lock
+  </button>
+)}
 </div>
 
             {selected.join_link && (
@@ -456,10 +495,13 @@ if (editing) {
                 <p>Status: <b style={{ color: r.status === "APPROVED" ? "green" : "orange" }}>
                   {r.status}
                 </b></p>
+                <div style={{ fontSize: 13, marginBottom: 6 }}>
+  🗳 {voteStats[r.id]?.totalVotes || 0} / {voteStats[r.id]?.totalEC} voted <br/>
+  ⏳ Remaining: {voteStats[r.id]?.remaining || 0}
+</div>
 
-               {CAN_VOTE.includes(role) && 
- !r.is_locked && 
- (!r.vote_deadline || new Date(r.vote_deadline.replace(" ", "T")) > new Date()) && (
+              {((CAN_VOTE.includes(role)) || role==="PRESIDENT") &&
+ !r.is_locked && (
                   <>
                     <button style={btnYes} onClick={() => vote(r.id, "YES")}>👍 YES</button>
                     <button style={btnNo} onClick={() => vote(r.id, "NO")}>👎 NO</button>
