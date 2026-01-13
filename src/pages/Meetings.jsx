@@ -146,7 +146,7 @@ for (const res of r.data || []) {
   voteMap[res.id] = vr.data;
 }
 setVotes(voteMap);
-const stats = await api.get(`/meetings/vote-stats/${m.id}`);
+
 setVoteStats(stats.data);
 
     // OPTIONAL BACKEND: /meetings/attendance/:id
