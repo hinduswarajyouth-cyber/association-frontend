@@ -23,20 +23,28 @@ export function NotificationProvider({ children }) {
 
   /* ================= MARK AS READ ================= */
   const markAsRead = async (id) => {
-    try {
-      // optimistic UI update
-      setNotifications((prev) =>
-        prev.map((n) =>
-          n.id === id ? { ...n, is_read: true } : n
-        )
-      );
+  try {
+    // optimistic UI update
+    setNotifications((prev) =>
+      prev.map((n) =>
+        n.id === id ? { ...n, is_read: true } : n
+      )
+    );
 
-      await api.put(`/notifications/${id}/read`);
-    } catch (err) {
-      console.warn("Failed to mark notification read");
-    }
-  };
-
+    // correct API
+    await api.post(`/notifications/read/${id}`);
+  } catch (err) {
+    console.warn("Failed to mark notification read");
+  }
+};
+const markAllAsRead = async () => {
+  try {
+    await api.post("/notifications/read-all");
+    setNotifications(n => n.map(x => ({ ...x, is_read: true })));
+  } catch {
+    console.warn("Failed to mark all");
+  }
+};
   /* ================= EFFECT ================= */
   useEffect(() => {
     if (user && !loaded) {
@@ -52,12 +60,14 @@ export function NotificationProvider({ children }) {
 
   return (
     <NotificationContext.Provider
-      value={{
-        notifications,
-        reloadNotifications: loadNotifications,
-        markAsRead, // ✅ NOW PROVIDED
-      }}
-    >
+  value={{
+    notifications,
+    reloadNotifications: loadNotifications,
+    markAsRead,
+    markAllAsRead,
+  }}
+>
+
       {children}
     </NotificationContext.Provider>
   );

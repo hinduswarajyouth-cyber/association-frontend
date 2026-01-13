@@ -2,7 +2,7 @@ import { useNotifications } from "../context/NotificationContext";
 import { useNavigate } from "react-router-dom";
 
 export default function NotificationPanel({ onClose }) {
-  const { notifications, markAsRead } = useNotifications();
+ const { notifications, markAsRead, markAllAsRead } = useNotifications();
   const navigate = useNavigate();
 
   return (
