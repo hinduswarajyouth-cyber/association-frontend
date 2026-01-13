@@ -38,16 +38,18 @@ const saveAgenda = async () => {
   }
 
   try {
-    await api.post(`/meetings/agenda/${selected.id}`, { agenda });
+    await api.post(`/meetings/agenda/${selected.id}`, {
+      agenda: agenda,
+    });
 
     const r = await api.get(`/meetings/agenda/${selected.id}`);
     setAgenda(r.data.agenda || "");
     setAgendaLocked(r.data.agenda_locked);
 
-    alert("Agenda saved successfully");
+    alert("Agenda saved");
   } catch (err) {
-    console.error("Agenda save failed", err);
-    alert(err.response?.data?.error || "Failed to save agenda");
+    console.error("Agenda error", err);
+    alert(err.response?.data?.error || "Save failed");
   }
 };
 
