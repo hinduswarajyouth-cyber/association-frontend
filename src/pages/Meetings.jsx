@@ -31,28 +31,6 @@ const meetingCountdown = (d) => {
   return `${h}h ${m}m`;
 };
 
-const saveAgenda = async () => {
-  if (!selected) {
-    alert("No meeting selected");
-    return;
-  }
-
-  try {
-    await api.post(`/meetings/agenda/${selected.id}`, {
-      agenda: agenda,
-    });
-
-    const r = await api.get(`/meetings/agenda/${selected.id}`);
-    setAgenda(r.data.agenda || "");
-    setAgendaLocked(r.data.agenda_locked);
-
-    alert("Agenda saved");
-  } catch (err) {
-    console.error("Agenda error", err);
-    alert(err.response?.data?.error || "Save failed");
-  }
-};
-
 
 const isLive = (d) => {
   const t = ist(d).getTime();
@@ -108,6 +86,27 @@ export default function Meetings() {
   const [agenda, setAgenda] = useState("");
 const [agendaLocked, setAgendaLocked] = useState(false);
 const [now, setNow] = useState(Date.now());
+const saveAgenda = async () => {
+  if (!selected) {
+    alert("No meeting selected");
+    return;
+  }
+
+  try {
+    await api.post(`/meetings/agenda/${selected.id}`, {
+      agenda,
+    });
+
+    const r = await api.get(`/meetings/agenda/${selected.id}`);
+    setAgenda(r.data.agenda || "");
+    setAgendaLocked(r.data.agenda_locked);
+
+    alert("Agenda saved");
+  } catch (err) {
+    console.error("Agenda error", err);
+    alert(err.response?.data?.error || "Save failed");
+  }
+};
 
   /* ================= HELPERS ================= */
   const agendaLockCountdown = (meetingDate) => {
