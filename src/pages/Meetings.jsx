@@ -81,7 +81,7 @@ export default function Meetings() {
   const [editing, setEditing] = useState(false);
   const [resolutions, setResolutions] = useState([]);
   const [votes, setVotes] = useState({});
-const [voteStats, setVoteStats] = useState({});
+
   const [attendance, setAttendance] = useState([]);
 
   const [form, setForm] = useState({
@@ -117,6 +117,17 @@ const [now, setNow] = useState(Date.now());
   const d = new Date(date.replace(" ", "T"));
   return d > now ? "UPCOMING" : "COMPLETED";
 };
+const getVoteCount = (rid) => {
+  const v = votes[rid] || [];
+  let yes = 0, no = 0;
+
+  v.forEach(x => {
+    if (x.vote === "YES") yes++;
+    if (x.vote === "NO") no++;
+  });
+
+  return { yes, no, total: v.length };
+};
 
   /* ================= LOAD ================= */
   const loadMeetings = async () => {
@@ -147,7 +158,7 @@ for (const res of r.data || []) {
 }
 setVotes(voteMap);
 
-setVoteStats(stats.data);
+
 
     // OPTIONAL BACKEND: /meetings/attendance/:id
     api.get(`/meetings/attendance/${m.id}`)
@@ -384,7 +395,16 @@ if (editing) {
     <pre style={{ whiteSpace: "pre-wrap" }}>
       {agenda || "No agenda set"}
     </pre>
-  )}
+      )}
+      <p style={{
+  marginTop: 10,
+  fontWeight: 700,
+  color: agendaLockCountdown(selected.meeting_date).includes("Locked")
+    ? "#dc2626"
+    : "#16a34a"
+}}>
+  {agendaLockCountdown(selected.meeting_date)}
+</p>
 
 {role === "PRESIDENT" && agendaLocked && (
   <button
@@ -495,10 +515,7 @@ if (editing) {
                 <p>Status: <b style={{ color: r.status === "APPROVED" ? "green" : "orange" }}>
                   {r.status}
                 </b></p>
-                <div style={{ fontSize: 13, marginBottom: 6 }}>
-  🗳 {voteStats[r.id]?.totalVotes || 0} / {voteStats[r.id]?.totalEC} voted <br/>
-  ⏳ Remaining: {voteStats[r.id]?.remaining || 0}
-</div>
+   
 
               {((CAN_VOTE.includes(role)) || role==="PRESIDENT") &&
  !r.is_locked && (
