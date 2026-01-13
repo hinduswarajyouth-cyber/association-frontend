@@ -9,9 +9,27 @@ export default function NotificationPanel({ onClose }) {
     <div style={panel}>
       {/* HEADER */}
       <div style={header}>
-        <h4 style={title}>🔔 Notifications</h4>
-        <button style={closeBtn} onClick={onClose}>✕</button>
-      </div>
+  <h4 style={title}>🔔 Notifications</h4>
+
+  <div style={{ display: "flex", gap: 10 }}>
+    <button
+      onClick={markAllAsRead}
+      style={{
+        background: "#22c55e",
+        border: "none",
+        color: "#022c22",
+        padding: "4px 10px",
+        borderRadius: 8,
+        fontSize: 12,
+        cursor: "pointer",
+      }}
+    >
+      Mark all
+    </button>
+
+    <button style={closeBtn} onClick={onClose}>✕</button>
+  </div>
+</div>
 
       {/* EMPTY STATE */}
       {notifications.length === 0 && (
