@@ -541,12 +541,14 @@ const vote = async (rid, v) => {
    
 
               {((CAN_VOTE.includes(role)) || role==="PRESIDENT") &&
- !r.is_locked && (
-                  <>
-                    <button style={btnYes} onClick={() => vote(r.id, "YES")}>👍 YES</button>
-                    <button style={btnNo} onClick={() => vote(r.id, "NO")}>👎 NO</button>
-                  </>
-                )}
+ !r.is_locked &&
+ !votes[r.id]?.some(v => v.name === user.name) && (
+  <>
+    <button style={btnYes} onClick={() => vote(r.id, "YES")}>👍 YES</button>
+    <button style={btnNo} onClick={() => vote(r.id, "NO")}>👎 NO</button>
+  </>
+)}
+
                 {votes[r.id] && (
   <div style={{ marginTop: 10, background: "#f1f5f9", padding: 10, borderRadius: 8 }}>
     <b>🧾 Who Voted</b>
