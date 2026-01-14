@@ -3,6 +3,7 @@ import api from "../api/api";
 import Navbar from "../components/Navbar";
 import { useAuth } from "../context/AuthContext";
 
+/* ===== CHART ===== */
 import {
   ResponsiveContainer,
   BarChart,
@@ -19,11 +20,11 @@ const MEETING_META = {
   COMPLETED: { color: "#16a34a", icon: "✅" },
 };
 
-const ist = d => new Date(d);
-
 /* ================= HELPERS ================= */
+const parseDate = (d) => new Date(d.includes("T") ? d : d.replace(" ", "T"));
+
 const meetingCountdown = (d) => {
-  const diff = ist(d) - new Date();
+  const diff = parseDate(d).getTime() - Date.now();
   if (diff <= 0) return "Started";
   const h = Math.floor(diff / 3600000);
   const m = Math.floor((diff % 3600000) / 60000);
@@ -31,20 +32,35 @@ const meetingCountdown = (d) => {
 };
 
 const isLive = (d) => {
-  const t = ist(d).getTime();
+  const t = parseDate(d).getTime();
   const now = Date.now();
   return now > t - 15 * 60 * 1000 && now < t + 2 * 60 * 60 * 1000;
 };
 
+const meetingStatus = (d) =>
+  parseDate(d) > new Date() ? "UPCOMING" : "COMPLETED";
+
 const smartDay = (d) => {
-  const date = new Date(d.replace(" ", "T"));
+  const date = parseDate(d);
   const today = new Date();
-  const diff = Math.floor((date - today) / 86400000);
+  today.setHours(0, 0, 0, 0);
+  date.setHours(0, 0, 0, 0);
+  const diff = (date - today) / 86400000;
   if (diff === 0) return "Today";
   if (diff === 1) return "Tomorrow";
   return date.toLocaleDateString("en-IN", { weekday: "long" });
 };
 
+const agendaLockCountdown = (d) => {
+  const lockTime = parseDate(d).getTime() + 15 * 60 * 1000;
+  const diff = lockTime - Date.now();
+  if (diff <= 0) return "🔒 Agenda Locked";
+  const m = Math.floor(diff / 60000);
+  const s = Math.floor((diff % 60000) / 1000);
+  return `🔓 Locks in ${m}m ${s}s`;
+};
+
+/* ================= COMPONENT ================= */
 export default function Meetings() {
   const { user } = useAuth();
   const role = user.role;
@@ -56,15 +72,20 @@ export default function Meetings() {
     "GENERAL_SECRETARY",
     "JOINT_SECRETARY",
   ];
+  const CAN_DELETE = role === "SUPER_ADMIN";
 
-  /* ================= STATES ================= */
   const [meetings, setMeetings] = useState([]);
   const [selected, setSelected] = useState(null);
   const [editing, setEditing] = useState(false);
   const [resolutions, setResolutions] = useState([]);
   const [votes, setVotes] = useState({});
   const [attendance, setAttendance] = useState([]);
-  const quorum = Math.ceil(attendance.length / 2);
+  const quorum = Math.ceil(
+    attendance.filter((a) => a.present).length / 2
+  );
+
+  const [agenda, setAgenda] = useState("");
+  const [agendaLocked, setAgendaLocked] = useState(false);
 
   const [form, setForm] = useState({
     title: "",
@@ -73,22 +94,27 @@ export default function Meetings() {
     join_link: "",
   });
 
-  const [agenda, setAgenda] = useState("");
-  const [agendaLocked, setAgendaLocked] = useState(false);
+  const [newTitle, setNewTitle] = useState("");
+  const [newContent, setNewContent] = useState("");
+  const [deadline, setDeadline] = useState("");
   const [minutesFile, setMinutesFile] = useState(null);
 
   /* ================= LOAD ================= */
+  const loadMeetings = async () => {
+    const res = await api.get("/meetings");
+    setMeetings(res.data || []);
+  };
+
   useEffect(() => {
-    api.get("/meetings").then(res => setMeetings(res.data || []));
+    loadMeetings();
   }, []);
 
-  /* ================= OPEN MEETING ================= */
+  /* ================= OPEN ================= */
   const openMeeting = async (m) => {
     setSelected(m);
     setEditing(false);
 
     await api.post(`/meetings/join/${m.id}`).catch(() => {});
-
     const r = await api.get(`/meetings/resolution/${m.id}`);
     setResolutions(r.data || []);
 
@@ -100,91 +126,106 @@ export default function Meetings() {
     setVotes(voteMap);
 
     api.get(`/meetings/attendance/${m.id}`)
-      .then(res => setAttendance(res.data || []))
+      .then((res) => setAttendance(res.data || []))
       .catch(() => setAttendance([]));
 
     api.get(`/meetings/agenda/${m.id}`)
-      .then(r => {
+      .then((r) => {
         setAgenda(r.data.agenda || "");
         setAgendaLocked(r.data.agenda_locked);
+      })
+      .catch(() => {
+        setAgenda("");
+        setAgendaLocked(false);
       });
+  };
+
+  /* ================= SAVE MEETING ================= */
+  const saveMeeting = async () => {
+    if (!form.title || !form.meeting_date) {
+      alert("Title & Date required");
+      return;
+    }
+
+    const payload = {
+      ...form,
+      meeting_date: new Date(form.meeting_date).toISOString(),
+    };
+
+    if (editing) {
+      await api.put(`/meetings/${selected.id}`, payload);
+    } else {
+      await api.post("/meetings/create", payload);
+    }
+
+    setForm({ title: "", meeting_date: "", description: "", join_link: "" });
+    setSelected(null);
+    setEditing(false);
+    loadMeetings();
   };
 
   /* ================= VOTE ================= */
   const vote = async (rid, v) => {
-    await api.post(`/meetings/vote/${rid}`, { vote: v });
-    const vr = await api.get(`/meetings/votes/${rid}`);
-    setVotes(prev => ({ ...prev, [rid]: vr.data }));
+    try {
+      await api.post(`/meetings/vote/${rid}`, { vote: v });
+      const vr = await api.get(`/meetings/votes/${rid}`);
+      setVotes((p) => ({ ...p, [rid]: vr.data }));
+      alert("✅ Vote submitted");
+    } catch (err) {
+      alert(err.response?.data?.error || "Vote failed");
+    }
   };
 
-  /* ================= RENDER ================= */
+  /* ================= JSX ================= */
   return (
     <>
       <Navbar />
-      <div style={page}>
+      <div style={{ padding: 20 }}>
         <h2>📅 Meetings</h2>
 
-        {/* ===== MEETINGS LIST ===== */}
-        <div style={grid}>
-          {meetings.map(m => (
-            <div key={m.id} style={card}>
+        <div style={{ display: "grid", gap: 16 }}>
+          {meetings.map((m) => (
+            <div key={m.id} style={{ padding: 16, border: "1px solid #ddd" }}>
               <b>{m.title}</b>
-
               <p>
                 🕒 {new Date(m.meeting_date).toLocaleString()} <br />
                 📅 {smartDay(m.meeting_date)} <br />
                 ⏳ {meetingCountdown(m.meeting_date)}
-                {isLive(m.meeting_date) && <span style={{ color: "red" }}> 🔴 LIVE</span>}
+                {isLive(m.meeting_date) && (
+                  <span style={{ color: "red" }}> 🔴 LIVE</span>
+                )}
               </p>
 
-              <button style={btnPrimary} onClick={() => openMeeting(m)}>
-                Open
-              </button>
+              <button onClick={() => openMeeting(m)}>Open</button>
+
+              {ADMIN_ROLES.includes(role) && (
+                <button
+                  onClick={() => {
+                    setSelected(m);
+                    setEditing(true);
+                    setForm({
+                      title: m.title,
+                      meeting_date: parseDate(m.meeting_date)
+                        .toISOString()
+                        .slice(0, 16),
+                      description: m.description || "",
+                      join_link: m.join_link || "",
+                    });
+                  }}
+                >
+                  Edit
+                </button>
+              )}
+
+              {CAN_DELETE && (
+                <button onClick={() => api.delete(`/meetings/${m.id}`)}>
+                  Delete
+                </button>
+              )}
             </div>
           ))}
         </div>
-
-        {/* ===== MEETING DETAILS ===== */}
-        {selected && (
-          <div style={card}>
-            <h3>{selected.title}</h3>
-
-            <h4>📜 Resolutions</h4>
-            {resolutions.map(r => (
-              <div key={r.id} style={resolutionCard}>
-                <h5>{r.title}</h5>
-                <p>{r.content}</p>
-
-                {((CAN_VOTE.includes(role)) || role === "PRESIDENT") &&
-                  !votes[r.id]?.some(v => v.name === user.name) && (
-                    <>
-                      <button onClick={() => vote(r.id, "YES")}>👍 YES</button>
-                      <button onClick={() => vote(r.id, "NO")}>👎 NO</button>
-                    </>
-                  )}
-
-                {votes[r.id] && (
-                  <div>
-                    <b>Who Voted</b>
-                    {votes[r.id].map((v, i) => (
-                      <div key={i}>
-                        {v.vote === "YES" ? "👍" : "👎"} {v.name}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
       </div>
     </>
   );
 }
-
-/* ================= STYLES ================= */
-const page = { padding: 30, background: "#f1f5f9", minHeight: "100vh" };
-const grid = { display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(260px,1fr))", gap: 16 };
-const card = { background: "#fff", padding: 20, borderRadius: 16 };
-const resolutionCard = { border: "1px solid #e5e7eb", padding: 12, marginBottom: 10 };
-const btnPrimary = { background: "#2563eb", color: "#fff", padding: "6px 12px", border: "none", borderRadius: 6 };
