@@ -402,46 +402,38 @@ const vote = async (rid, v) => {
 <div style={box}>
   <h4>📝 Meeting Agenda</h4>
 
-  {ADMIN_ROLES.includes(role) && !agendaLocked ? (
+  {ADMIN_ROLES.includes(role) && (!agendaLocked || role === "PRESIDENT") ? (
     <>
       <textarea
         value={agenda}
         onChange={(e) => setAgenda(e.target.value)}
         style={textarea}
-        placeholder="Enter agenda points..."
       />
       <button style={btnPrimary} onClick={saveAgenda}>
-  Save Agenda
-</button>
+        Save Agenda
+      </button>
     </>
   ) : (
-    <pre style={{ whiteSpace: "pre-wrap" }}>
-      {agenda || "No agenda set"}
-    </pre>
-      )}
-      <p style={{
-  marginTop: 10,
-  fontWeight: 700,
-  color: agendaLockCountdown(selected.meeting_date).includes("Locked")
-    ? "#dc2626"
-    : "#16a34a"
-}}>
-  {agendaLockCountdown(selected.meeting_date)}
-</p>
+    <pre>{agenda || "No agenda set"}</pre>
+  )}
 
-{role === "PRESIDENT" && agendaLocked && (
-  <button
-    style={{ ...btnPrimary, background: "#dc2626" }}
-    onClick={async () => {
-      await api.post(`/meetings/agenda-unlock/${selected.id}`);
-      const r = await api.get(`/meetings/agenda/${selected.id}`);
-      setAgendaLocked(r.data.agenda_locked);
-      alert("Agenda unlocked by President");
-    }}
-  >
-    🔓 Override Lock
-  </button>
-)}
+  <p style={{ fontWeight: 700 }}>
+    {agendaLockCountdown(selected.meeting_date)}
+  </p>
+
+  {role === "PRESIDENT" && agendaLocked && (
+    <button
+      style={{ background: "#dc2626", color: "#fff" }}
+      onClick={async () => {
+        await api.post(`/meetings/agenda-unlock/${selected.id}`);
+        const r = await api.get(`/meetings/agenda/${selected.id}`);
+        setAgendaLocked(r.data.agenda_locked);
+        alert("Agenda unlocked by President");
+      }}
+    >
+      🔓 Override Lock
+    </button>
+  )}
 </div>
 
             {selected.join_link && (
