@@ -21,6 +21,13 @@ const MEETING_META = {
 };
 
 /* ================= COMPONENT ================= */
+const EC_ROLES = [
+  "EC_MEMBER",
+  "PRESIDENT",
+  "VICE_PRESIDENT",
+  "GENERAL_SECRETARY",
+  "JOINT_SECRETARY",
+];
 const ist = d => new Date(d);
 
 const meetingCountdown = (d) => {
