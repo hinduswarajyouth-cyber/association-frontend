@@ -219,17 +219,32 @@ if (editing) {
     loadMeetings();
   };
 
-  /* ================= VOTE ================= */
-  const vote = async (rid, v) => {
-  await api.post(`/meetings/vote/${rid}`, { vote: v });
+ /* ================= VOTE ================= */
+const vote = async (rid, v) => {
+  try {
+    // 1️⃣ Submit vote
+    await api.post(`/meetings/vote/${rid}`, { vote: v });
 
-  // reload resolutions
-  const r = await api.get(`/meetings/resolution/${selected.id}`);
-  setResolutions(r.data || []);
+    // 2️⃣ Success message
+    alert("✅ Vote submitted successfully");
 
-  // reload votes for this resolution
-  const vr = await api.get(`/meetings/votes/${rid}`);
-  setVotes(prev => ({ ...prev, [rid]: vr.data }));
+    // 3️⃣ Reload resolutions (status update కోసం)
+    const r = await api.get(`/meetings/resolution/${selected.id}`);
+    setResolutions(r.data || []);
+
+    // 4️⃣ Reload votes list
+    const vr = await api.get(`/meetings/votes/${rid}`);
+    setVotes(prev => ({ ...prev, [rid]: vr.data }));
+
+  } catch (err) {
+    console.error("VOTE ERROR:", err);
+
+    // 5️⃣ Proper error message
+    alert(
+      err.response?.data?.error ||
+      "❌ Vote submit avvaledu. Please try again."
+    );
+  }
 };
 
   /* ================= RESOLUTION ================= */
