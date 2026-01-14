@@ -51,7 +51,7 @@ export default function Meetings() {
   const [newContent, setNewContent] = useState("");
   const [deadline, setDeadline] = useState("");
 
-  /* ================= LOAD ================= */
+  /* ================= LOAD MEETINGS ================= */
   const loadMeetings = async () => {
     const r = await api.get("/meetings");
     setMeetings(r.data || []);
@@ -61,11 +61,14 @@ export default function Meetings() {
     loadMeetings();
   }, []);
 
-  /* ================= OPEN MEETING ================= */
+  /* ================= OPEN MEETING (FIXED) ================= */
   const openMeeting = async (m) => {
     setSelected(m);
 
-    // auto attendance
+    // 🔑 allow React to re-render first
+    await new Promise(r => setTimeout(r, 0));
+
+    // attendance
     api.post(`/meetings/join/${m.id}`).catch(() => {});
 
     // agenda
@@ -73,7 +76,7 @@ export default function Meetings() {
     setAgenda(a.data.agenda || "");
     setAgendaLocked(a.data.agenda_locked);
 
-    // attendance
+    // attendance list
     const at = await api.get(`/meetings/attendance/${m.id}`);
     setAttendance(at.data || []);
 
@@ -82,12 +85,12 @@ export default function Meetings() {
     setResolutions(r.data || []);
 
     // votes
-    const map = {};
+    const voteMap = {};
     for (const res of r.data || []) {
       const vr = await api.get(`/meetings/votes/${res.id}`);
-      map[res.id] = vr.data;
+      voteMap[res.id] = vr.data;
     }
-    setVotes(map);
+    setVotes(voteMap);
   };
 
   /* ================= AGENDA ================= */
@@ -101,7 +104,8 @@ export default function Meetings() {
 
   /* ================= RESOLUTION ================= */
   const addResolution = async () => {
-    if (!newTitle || !newContent) return alert("All fields required");
+    if (!newTitle || !newContent)
+      return alert("All fields required");
 
     await api.post(`/meetings/resolution/${selected.id}`, {
       title: newTitle,
@@ -117,7 +121,7 @@ export default function Meetings() {
     setResolutions(r.data || []);
   };
 
-  /* ================= VOTE ================= */
+  /* ================= VOTING ================= */
   const hasVoted = (rid) =>
     votes[rid]?.some(v => v.user_id === user.id);
 
@@ -142,7 +146,7 @@ export default function Meetings() {
       <Navbar />
       <h2>📅 Meetings</h2>
 
-      {/* ===== MEETING LIST ===== */}
+      {/* ===== LIST ===== */}
       {meetings.map(m => (
         <div key={m.id}>
           <b>{m.title}</b>
@@ -153,6 +157,7 @@ export default function Meetings() {
       {/* ===== DETAILS ===== */}
       {selected && (
         <>
+          <hr />
           <h3>{selected.title}</h3>
 
           {/* ===== AGENDA ===== */}
@@ -172,8 +177,12 @@ export default function Meetings() {
           {role === "PRESIDENT" && agendaLocked && (
             <button
               onClick={async () => {
-                await api.post(`/meetings/agenda-unlock/${selected.id}`);
-                const r = await api.get(`/meetings/agenda/${selected.id}`);
+                await api.post(
+                  `/meetings/agenda-unlock/${selected.id}`
+                );
+                const r = await api.get(
+                  `/meetings/agenda/${selected.id}`
+                );
                 setAgendaLocked(r.data.agenda_locked);
               }}
             >
@@ -181,7 +190,7 @@ export default function Meetings() {
             </button>
           )}
 
-          {/* ===== RESOLUTION CREATE ===== */}
+          {/* ===== CREATE RESOLUTION ===== */}
           {ADMIN_ROLES.includes(role) && (
             <>
               <h4>➕ Create Resolution</h4>
@@ -205,11 +214,11 @@ export default function Meetings() {
           )}
 
           {/* ===== RESOLUTIONS ===== */}
+          <h4>📜 Resolutions</h4>
           {resolutions.map(r => (
-            <div key={r.id}>
-              <h4>{r.title}</h4>
+            <div key={r.id} style={{ border: "1px solid #ccc", padding: 10 }}>
+              <b>{r.title}</b>
               <p>{r.content}</p>
-
               <p>Status: <b>{r.status}</b></p>
 
               {canVote(role, r) && !hasVoted(r.id) && (
@@ -229,6 +238,7 @@ export default function Meetings() {
                 <a
                   href={`${import.meta.env.VITE_API_BASE_URL}/${r.pdf_path}`}
                   target="_blank"
+                  rel="noreferrer"
                 >
                   📄 Resolution PDF
                 </a>
@@ -257,41 +267,3 @@ export default function Meetings() {
     </>
   );
 }
-/* ================= STYLES ================= */
-const page = { padding: 30, background: "#f1f5f9", minHeight: "100vh" };
-
-const dashGrid = { display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 20, marginBottom: 30 };
-
-const dashCard = { color: "#fff", padding: 20, borderRadius: 18, display: "flex", gap: 16, alignItems: "center", boxShadow: "0 20px 40px rgba(0,0,0,.15)" };
-
-const grid = { display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(260px,1fr))", gap: 16 };
-
-const card = { background: "#fff", padding: 20, borderRadius: 18, marginBottom: 20, boxShadow: "0 10px 25px rgba(0,0,0,.08)" };
-
-const cardAnimated = { ...card, transition: "transform .25s, box-shadow .25s" };
-
-const cardHeader = { display: "flex", justifyContent: "space-between", alignItems: "center" };
-
-const chartCard = { background: "#fff", padding: 20, borderRadius: 16, marginTop: 20, boxShadow: "0 10px 25px rgba(0,0,0,.08)" };
-
-const resolutionCard = { border: "1px solid #e5e7eb", padding: 15, borderRadius: 12, marginBottom: 15 };
-
-const box = { background: "#f8fafc", padding: 15, borderRadius: 12, marginBottom: 20 };
-
-const input = { width: "100%", padding: 10, marginBottom: 10, borderRadius: 8, border: "1px solid #cbd5f5" };
-
-const textarea = { width: "100%", height: 80, padding: 10, marginBottom: 10, borderRadius: 8, border: "1px solid #cbd5f5" };
-
-const btnPrimary = { background: "#2563eb", color: "#fff", padding: "8px 14px", border: "none", borderRadius: 8, marginRight: 6 };
-
-const btnSecondary = { background: "#f59e0b", color: "#fff", padding: "8px 14px", border: "none", borderRadius: 8, marginRight: 6 };
-
-const btnDanger = { background: "#dc2626", color: "#fff", padding: "8px 14px", border: "none", borderRadius: 8 };
-
-const btnYes = { background: "#16a34a", color: "#fff", padding: "6px 12px", marginRight: 8, borderRadius: 6 };
-
-const btnNo = { background: "#dc2626", color: "#fff", padding: "6px 12px", borderRadius: 6 };
-
-const joinBtn = { display: "inline-block", marginBottom: 15, background: "#0ea5e9", color: "#fff", padding: "8px 14px", borderRadius: 8, textDecoration: "none" };
-
-const pdfBtn = { display: "inline-block", marginTop: 10, background: "#16a34a", color: "#fff", padding: "6px 12px", borderRadius: 6, textDecoration: "none" };
