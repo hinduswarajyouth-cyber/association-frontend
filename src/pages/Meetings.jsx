@@ -77,6 +77,8 @@ export default function Meetings() {
   const [votes, setVotes] = useState({});
 
   const [attendance, setAttendance] = useState([]);
+  // ===== QUORUM =====
+const quorum = Math.ceil(attendance.length / 2);
 
   const [form, setForm] = useState({
     title: "",
@@ -529,6 +531,9 @@ const vote = async (rid, v) => {
             {resolutions.map((r) => (
               <div key={r.id} style={resolutionCard}>
                 <h5>{r.title}</h5>
+                <p style={{ fontWeight: 600 }}>
+  🧮 Quorum: {votes[r.id]?.length || 0} / {quorum}
+</p>
                 <p>{r.content}</p>
                 {r.vote_deadline && (
   <p>⏳ Voting ends in {meetingCountdown(r.vote_deadline)}</p>
