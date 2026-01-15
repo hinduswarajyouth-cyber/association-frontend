@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import api from "../api/api";
 import Navbar from "../components/Navbar";
 import { useAuth } from "../context/AuthContext";
+
+/* ===== CHART ===== */
 import {
   ResponsiveContainer,
   BarChart,
@@ -12,121 +14,159 @@ import {
   CartesianGrid,
 } from "recharts";
 
-/* ================= META ================= */
+/* ================= STATUS META ================= */
 const MEETING_META = {
   UPCOMING: { color: "#2563eb", icon: "📅" },
   COMPLETED: { color: "#16a34a", icon: "✅" },
 };
 
-const EC_ROLES = [
-  "EC_MEMBER",
-  "PRESIDENT",
-  "VICE_PRESIDENT",
-  "GENERAL_SECRETARY",
-  "JOINT_SECRETARY",
-];
-
-const meetingCountdown = (d) => {
-  const diff = new Date(d) - new Date();
-  if (diff <= 0) return "Closed";
-  const h = Math.floor(diff / 3600000);
-  const m = Math.floor((diff % 3600000) / 60000);
-  return `${h}h ${m}m`;
-};
-
-const isLive = (d) => {
-  const t = new Date(d).getTime();
-  const now = Date.now();
-  return now > t - 15 * 60 * 1000 && now < t + 2 * 60 * 60 * 1000;
-};
-
+/* ================= COMPONENT ================= */
 export default function Meetings() {
   const { user } = useAuth();
   const role = user.role;
 
+  /* ROLE GROUPS */
   const ADMIN_ROLES = ["SUPER_ADMIN", "PRESIDENT"];
-  const CAN_VOTE = [...EC_ROLES];
+  const CAN_VOTE = [
+    "EC_MEMBER",
+    "VICE_PRESIDENT",
+    "GENERAL_SECRETARY",
+    "JOINT_SECRETARY",
+  ];
   const CAN_DELETE = role === "SUPER_ADMIN";
 
+  /* STATES */
   const [meetings, setMeetings] = useState([]);
   const [selected, setSelected] = useState(null);
   const [editing, setEditing] = useState(false);
   const [resolutions, setResolutions] = useState([]);
-  const [votes, setVotes] = useState({});
+
   const [attendance, setAttendance] = useState([]);
 
-  const quorum = Math.ceil(
-    attendance.filter(a => EC_ROLES.includes(a.role)).length / 2
-  );
-
-  const [agenda, setAgenda] = useState("");
-  const [agendaLocked, setAgendaLocked] = useState(false);
-  const [now, setNow] = useState(Date.now());
+  const [form, setForm] = useState({
+    title: "",
+    meeting_date: "",
+    description: "",
+    join_link: "",
+  });
 
   const [newTitle, setNewTitle] = useState("");
   const [newContent, setNewContent] = useState("");
   const [deadline, setDeadline] = useState("");
 
+  const [minutesFile, setMinutesFile] = useState(null);
+
+  /* ================= HELPERS ================= */
+  const meetingStatus = (date) =>
+    new Date(date) > new Date() ? "UPCOMING" : "COMPLETED";
+
+  /* ================= LOAD ================= */
+  const loadMeetings = async () => {
+    const res = await api.get("/meetings");
+    setMeetings(res.data || []);
+  };
+
   useEffect(() => {
-    api.get("/meetings").then(r => setMeetings(r.data || []));
-    const t = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(t);
+    loadMeetings();
   }, []);
 
+  /* ================= OPEN ================= */
   const openMeeting = async (m) => {
     setSelected(m);
+    setEditing(false);
+
     await api.post(`/meetings/join/${m.id}`).catch(() => {});
-    const [resR, voteR, attR, agR] = await Promise.all([
-      api.get(`/meetings/resolution/${m.id}`),
-      api.get(`/meetings/attendance/${m.id}`),
-      api.get(`/meetings/agenda/${m.id}`)
-    ]);
+    const r = await api.get(`/meetings/resolution/${m.id}`);
+    setResolutions(r.data || []);
 
-    setResolutions(resR.data || []);
-    setAttendance(attR.data || []);
-    setAgenda(agR.data.agenda || "");
-    setAgendaLocked(agR.data.agenda_locked);
+    // OPTIONAL BACKEND: /meetings/attendance/:id
+    api.get(`/meetings/attendance/${m.id}`)
+      .then(res => setAttendance(res.data || []))
+      .catch(() => setAttendance([]));
+  };
 
-    const vm = {};
-    for (const r of resR.data || []) {
-      const vr = await api.get(`/meetings/votes/${r.id}`);
-      vm[r.id] = vr.data;
+  /* ================= CREATE / UPDATE ================= */
+  const saveMeeting = async () => {
+    if (!form.title || !form.meeting_date) {
+      alert("Title & Date required");
+      return;
     }
-    setVotes(vm);
-  };
-  const agendaLockCountdown = (d) => {
-    const lockTime = new Date(d).getTime() + 15 * 60 * 1000;
-    const diff = lockTime - now;
-    if (diff <= 0) return "🔒 Agenda Locked";
-    const m = Math.floor(diff / 60000);
-    const s = Math.floor((diff % 60000) / 1000);
-    return `🔓 Locks in ${m}m ${s}s`;
+
+    const payload = {
+  ...form,
+  meeting_date: new Date(form.meeting_date + ":00").toISOString()
+};
+
+if (editing) {
+  await api.put(`/meetings/${selected.id}`, payload);
+} else {
+  await api.post("/meetings/create", payload);
+}
+
+    resetForm();
+    loadMeetings();
   };
 
+  const resetForm = () => {
+    setForm({ title: "", meeting_date: "", description: "", join_link: "" });
+    setSelected(null);
+    setEditing(false);
+  };
+
+  /* ================= DELETE ================= */
+  const deleteMeeting = async (id) => {
+    if (!window.confirm("Delete this meeting?")) return;
+    await api.delete(`/meetings/${id}`);
+    loadMeetings();
+  };
+
+  /* ================= VOTE ================= */
   const vote = async (rid, v) => {
-    try {
-      await api.post(`/meetings/vote/${rid}`, { vote: v });
-      alert("Vote submitted");
-      const vr = await api.get(`/meetings/votes/${rid}`);
-      setVotes(prev => ({ ...prev, [rid]: vr.data }));
-    } catch (e) {
-      alert(e.response?.data?.error || "Vote failed");
-    }
+    await api.post(`/meetings/vote/${rid}`, { vote: v });
+    const r = await api.get(`/meetings/resolution/${selected.id}`);
+    setResolutions(r.data || []);
   };
 
+  /* ================= RESOLUTION ================= */
   const addResolution = async () => {
     if (!newTitle || !newContent) return alert("All fields required");
+
     await api.post(`/meetings/resolution/${selected.id}`, {
       title: newTitle,
       content: newContent,
       vote_deadline: deadline || null,
     });
+
     setNewTitle("");
     setNewContent("");
     setDeadline("");
+
     const r = await api.get(`/meetings/resolution/${selected.id}`);
     setResolutions(r.data || []);
   };
+
+  /* ================= MINUTES UPLOAD ================= */
+  const uploadMinutes = async () => {
+    if (!minutesFile) return alert("Select PDF file");
+
+    const fd = new FormData();
+    fd.append("file", minutesFile);
+
+    // OPTIONAL BACKEND: POST /meetings/minutes/:id
+    await api.post(`/meetings/minutes/${selected.id}`, fd);
+    alert("Minutes uploaded");
+  };
+
+  /* ================= DASHBOARD ================= */
+  const upcoming = meetings.filter(
+    (m) => meetingStatus(m.meeting_date) === "UPCOMING"
+  ).length;
+  const completed = meetings.length - upcoming;
+
+  const attendanceChart = attendance.map(a => ({
+    name: a.name,
+    count: a.present ? 1 : 0,
+  }));
 
   return (
     <>
@@ -134,16 +174,96 @@ export default function Meetings() {
       <div style={page}>
         <h2>📅 Meetings</h2>
 
-        {/* ===== MEETING LIST ===== */}
+        {/* ===== DASHBOARD ===== */}
+        <div style={dashGrid}>
+          <div style={{ ...dashCard, background: "linear-gradient(135deg,#2563eb,#1e40af)" }}>
+            <div style={{ fontSize: 32 }}>📅</div>
+            <div>
+              <small>Upcoming</small>
+              <h2>{upcoming}</h2>
+            </div>
+          </div>
+
+          <div style={{ ...dashCard, background: "linear-gradient(135deg,#16a34a,#166534)" }}>
+            <div style={{ fontSize: 32 }}>✅</div>
+            <div>
+              <small>Completed</small>
+              <h2>{completed}</h2>
+            </div>
+          </div>
+        </div>
+
+        {/* ===== CREATE / EDIT ===== */}
+        {ADMIN_ROLES.includes(role) && (
+          <div style={card}>
+            <h3>{editing ? "✏️ Edit Meeting" : "➕ Create Meeting"}</h3>
+
+            <input style={input} placeholder="Meeting Title"
+              value={form.title}
+              onChange={(e) => setForm({ ...form, title: e.target.value })}
+            />
+
+            <input style={input} type="datetime-local"
+              value={form.meeting_date}
+              onChange={(e) => setForm({ ...form, meeting_date: e.target.value })}
+            />
+
+            <textarea style={textarea} placeholder="Description"
+              value={form.description}
+              onChange={(e) => setForm({ ...form, description: e.target.value })}
+            />
+
+            <input style={input} placeholder="Zoom / Google Meet Link"
+              value={form.join_link}
+              onChange={(e) => setForm({ ...form, join_link: e.target.value })}
+            />
+
+            <button style={btnPrimary} onClick={saveMeeting}>
+              {editing ? "Update" : "Create"}
+            </button>
+          </div>
+        )}
+
+        {/* ===== MEETINGS LIST ===== */}
         <div style={grid}>
-          {meetings.map(m => (
-            <div key={m.id} style={cardAnimated}>
-              <b>{m.title}</b>
-              <p>
-                {new Date(m.meeting_date).toLocaleString()}
-                {isLive(m.meeting_date) && <b style={{ color: "red" }}> 🔴 LIVE</b>}
-              </p>
+          {meetings.map((m) => (
+            <div
+              key={m.id}
+              style={cardAnimated}
+              onMouseEnter={e => e.currentTarget.style.transform = "translateY(-4px)"}
+              onMouseLeave={e => e.currentTarget.style.transform = "translateY(0)"}
+            >
+              <div style={cardHeader}>
+                <b>{m.title}</b>
+                <span style={{
+                  padding: "6px 14px",
+                  borderRadius: 999,
+                  fontSize: 12,
+                  color: "#fff",
+                  background: MEETING_META[meetingStatus(m.meeting_date)].color
+                }}>
+                  {MEETING_META[meetingStatus(m.meeting_date)].icon} {meetingStatus(m.meeting_date)}
+                </span>
+              </div>
+
+              <p>🕒 {new Date(m.meeting_date).toLocaleString()}</p>
+
               <button style={btnPrimary} onClick={() => openMeeting(m)}>Open</button>
+              {ADMIN_ROLES.includes(role) && (
+                <button style={btnSecondary} onClick={() => {
+                  setSelected(m);
+                  setEditing(true);
+                  setForm({
+                    title: m.title,
+                    meeting_date: m.meeting_date.slice(0, 16),
+                    description: m.description || "",
+                    join_link: m.join_link || "",
+                  });
+                }}>Edit</button>
+              )}
+              {CAN_DELETE && (
+                <button style={btnDanger} onClick={() => deleteMeeting(m.id)}>Delete</button>
+              )}
             </div>
           ))}
         </div>
@@ -153,78 +273,67 @@ export default function Meetings() {
           <div style={card}>
             <h3>{selected.title}</h3>
 
-            {/* ===== AGENDA ===== */}
-            <div style={box}>
-              <h4>📝 Agenda</h4>
-              {ADMIN_ROLES.includes(role) && (!agendaLocked || role === "PRESIDENT") ? (
-                <>
-                  <textarea
-                    style={textarea}
-                    value={agenda}
-                    onChange={e => setAgenda(e.target.value)}
-                  />
-                  <button
-                    style={btnPrimary}
-                    onClick={async () => {
-                      await api.post(`/meetings/agenda/${selected.id}`, { agenda });
-                      alert("Agenda saved");
-                    }}
-                  >
-                    Save Agenda
-                  </button>
-                </>
-              ) : (
-                <pre>{agenda}</pre>
-              )}
-              <p>{agendaLockCountdown(selected.meeting_date)}</p>
-            </div>
+            {selected.join_link && (
+              <a href={selected.join_link} target="_blank" rel="noreferrer" style={joinBtn}>
+                🎥 Join Meeting
+              </a>
+            )}
 
-            {/* ===== CREATE RESOLUTION ===== */}
+            {/* ===== ATTENDANCE CHART ===== */}
+            {attendance.length > 0 && (
+              <div style={chartCard}>
+                <h4>👥 Attendance</h4>
+                <ResponsiveContainer width="100%" height={250}>
+                  <BarChart data={attendanceChart}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" />
+                    <YAxis allowDecimals={false} />
+                    <Tooltip />
+                    <Bar dataKey="count" fill="#2563eb" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+
+            {/* ===== MINUTES UPLOAD ===== */}
             {ADMIN_ROLES.includes(role) && (
               <div style={box}>
-                <h4>➕ Create Resolution</h4>
-                <input
-                  style={input}
-                  placeholder="Title"
-                  value={newTitle}
-                  onChange={e => setNewTitle(e.target.value)}
+                <h4>📄 Upload Meeting Minutes</h4>
+                <input type="file" accept="application/pdf"
+                  onChange={(e) => setMinutesFile(e.target.files[0])}
                 />
-                <textarea
-                  style={textarea}
-                  placeholder="Content"
-                  value={newContent}
-                  onChange={e => setNewContent(e.target.value)}
-                />
-                <button style={btnPrimary} onClick={addResolution}>
-                  Add
-                </button>
+                <button style={btnPrimary} onClick={uploadMinutes}>Upload</button>
               </div>
             )}
 
             {/* ===== RESOLUTIONS ===== */}
             <h4>📜 Resolutions</h4>
-            {resolutions.map(r => (
+
+            {resolutions.map((r) => (
               <div key={r.id} style={resolutionCard}>
                 <h5>{r.title}</h5>
                 <p>{r.content}</p>
-                <p>Status: <b>{r.status}</b></p>
 
-                {!r.is_locked &&
-                  CAN_VOTE.includes(role) &&
-                  !votes[r.id]?.some(v => v.user_id === user.id) && (
-                    <>
-                      <button style={btnYes} onClick={() => vote(r.id, "YES")}>YES</button>
-                      <button style={btnNo} onClick={() => vote(r.id, "NO")}>NO</button>
-                    </>
-                  )}
+                <p>Status: <b style={{ color: r.status === "APPROVED" ? "green" : "orange" }}>
+                  {r.status}
+                </b></p>
 
-                {votes[r.id] && (
-                  <div>
-                    <b>Votes:</b>
-                    {votes[r.id].map((v, i) => (
-                      <div key={i}>{v.vote} - {v.name}</div>
-                    ))}
-                  </div>
+                {CAN_VOTE.includes(role) && !r.is_locked && (
+                  <>
+                    <button style={btnYes} onClick={() => vote(r.id, "YES")}>👍 YES</button>
+                    <button style={btnNo} onClick={() => vote(r.id, "NO")}>👎 NO</button>
+                  </>
+                )}
+
+                {r.pdf_path && (
+                  <a
+                    href={`${import.meta.env.VITE_API_BASE_URL}/${r.pdf_path}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    style={pdfBtn}
+                  >
+                    📄 Download Resolution PDF
+                  </a>
                 )}
               </div>
             ))}
@@ -238,144 +347,38 @@ export default function Meetings() {
 /* ================= STYLES ================= */
 const page = { padding: 30, background: "#f1f5f9", minHeight: "100vh" };
 
-const dashGrid = {
-  display: "grid",
-  gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))",
-  gap: 20,
-  marginBottom: 30,
-};
+const dashGrid = { display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 20, marginBottom: 30 };
 
-const dashCard = {
-  color: "#fff",
-  padding: 20,
-  borderRadius: 18,
-  display: "flex",
-  gap: 16,
-  alignItems: "center",
-  boxShadow: "0 20px 40px rgba(0,0,0,.15)",
-};
+const dashCard = { color: "#fff", padding: 20, borderRadius: 18, display: "flex", gap: 16, alignItems: "center", boxShadow: "0 20px 40px rgba(0,0,0,.15)" };
 
-const grid = {
-  display: "grid",
-  gridTemplateColumns: "repeat(auto-fit,minmax(260px,1fr))",
-  gap: 16,
-};
+const grid = { display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(260px,1fr))", gap: 16 };
 
-const card = {
-  background: "#fff",
-  padding: 20,
-  borderRadius: 18,
-  marginBottom: 20,
-  boxShadow: "0 10px 25px rgba(0,0,0,.08)",
-};
+const card = { background: "#fff", padding: 20, borderRadius: 18, marginBottom: 20, boxShadow: "0 10px 25px rgba(0,0,0,.08)" };
 
-const cardAnimated = {
-  ...card,
-  transition: "transform .25s, box-shadow .25s",
-};
+const cardAnimated = { ...card, transition: "transform .25s, box-shadow .25s" };
 
-const cardHeader = {
-  display: "flex",
-  justifyContent: "space-between",
-  alignItems: "center",
-};
+const cardHeader = { display: "flex", justifyContent: "space-between", alignItems: "center" };
 
-const chartCard = {
-  background: "#fff",
-  padding: 20,
-  borderRadius: 16,
-  marginTop: 20,
-  boxShadow: "0 10px 25px rgba(0,0,0,.08)",
-};
+const chartCard = { background: "#fff", padding: 20, borderRadius: 16, marginTop: 20, boxShadow: "0 10px 25px rgba(0,0,0,.08)" };
 
-const resolutionCard = {
-  border: "1px solid #e5e7eb",
-  padding: 15,
-  borderRadius: 12,
-  marginBottom: 15,
-};
+const resolutionCard = { border: "1px solid #e5e7eb", padding: 15, borderRadius: 12, marginBottom: 15 };
 
-const box = {
-  background: "#f8fafc",
-  padding: 15,
-  borderRadius: 12,
-  marginBottom: 20,
-};
+const box = { background: "#f8fafc", padding: 15, borderRadius: 12, marginBottom: 20 };
 
-const input = {
-  width: "100%",
-  padding: 10,
-  marginBottom: 10,
-  borderRadius: 8,
-  border: "1px solid #cbd5f5",
-};
+const input = { width: "100%", padding: 10, marginBottom: 10, borderRadius: 8, border: "1px solid #cbd5f5" };
 
-const textarea = {
-  width: "100%",
-  height: 80,
-  padding: 10,
-  marginBottom: 10,
-  borderRadius: 8,
-  border: "1px solid #cbd5f5",
-};
+const textarea = { width: "100%", height: 80, padding: 10, marginBottom: 10, borderRadius: 8, border: "1px solid #cbd5f5" };
 
-const btnPrimary = {
-  background: "#2563eb",
-  color: "#fff",
-  padding: "8px 14px",
-  border: "none",
-  borderRadius: 8,
-  marginRight: 6,
-};
+const btnPrimary = { background: "#2563eb", color: "#fff", padding: "8px 14px", border: "none", borderRadius: 8, marginRight: 6 };
 
-const btnSecondary = {
-  background: "#f59e0b",
-  color: "#fff",
-  padding: "8px 14px",
-  border: "none",
-  borderRadius: 8,
-  marginRight: 6,
-};
+const btnSecondary = { background: "#f59e0b", color: "#fff", padding: "8px 14px", border: "none", borderRadius: 8, marginRight: 6 };
 
-const btnDanger = {
-  background: "#dc2626",
-  color: "#fff",
-  padding: "8px 14px",
-  border: "none",
-  borderRadius: 8,
-};
+const btnDanger = { background: "#dc2626", color: "#fff", padding: "8px 14px", border: "none", borderRadius: 8 };
 
-const btnYes = {
-  background: "#16a34a",
-  color: "#fff",
-  padding: "6px 12px",
-  marginRight: 8,
-  borderRadius: 6,
-};
+const btnYes = { background: "#16a34a", color: "#fff", padding: "6px 12px", marginRight: 8, borderRadius: 6 };
 
-const btnNo = {
-  background: "#dc2626",
-  color: "#fff",
-  padding: "6px 12px",
-  borderRadius: 6,
-};
+const btnNo = { background: "#dc2626", color: "#fff", padding: "6px 12px", borderRadius: 6 };
 
-const joinBtn = {
-  display: "inline-block",
-  marginBottom: 15,
-  background: "#0ea5e9",
-  color: "#fff",
-  padding: "8px 14px",
-  borderRadius: 8,
-  textDecoration: "none",
-};
+const joinBtn = { display: "inline-block", marginBottom: 15, background: "#0ea5e9", color: "#fff", padding: "8px 14px", borderRadius: 8, textDecoration: "none" };
 
-const pdfBtn = {
-  display: "inline-block",
-  marginTop: 10,
-  background: "#16a34a",
-  color: "#fff",
-  padding: "6px 12px",
-  borderRadius: 6,
-  textDecoration: "none",
-};
+const pdfBtn = { display: "inline-block", marginTop: 10, background: "#16a34a", color: "#fff", padding: "6px 12px", borderRadius: 6, textDecoration: "none" };
