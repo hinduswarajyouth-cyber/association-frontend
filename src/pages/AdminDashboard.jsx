@@ -123,7 +123,7 @@ export default function AdminDashboard() {
       fontWeight: 700,
       cursor: "pointer"
     }}
-    onClick={() => navigate("/members/add")}
+onClick={() => navigate("/add-member")}
   >
     ➕ Add Member
   </button>
