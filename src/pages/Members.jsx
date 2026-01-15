@@ -7,6 +7,16 @@ export default function Members() {
   const [editing, setEditing] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  /* ===== ADD MEMBER STATES ===== */
+  const [adding, setAdding] = useState(false);
+  const [newMember, setNewMember] = useState({
+    name: "",
+    personal_email: "",
+    phone: "",
+    role: "MEMBER"
+  });
+
+  /* ===== LOAD MEMBERS ===== */
   const fetchMembers = async () => {
     try {
       const res = await api.get("/members");
@@ -20,6 +30,7 @@ export default function Members() {
 
   useEffect(() => { fetchMembers(); }, []);
 
+  /* ===== ACTIONS ===== */
   const toggleStatus = async (m) => {
     if (!window.confirm("Change status?")) return;
     await api.patch(`/members/${m.id}/status`);
@@ -58,11 +69,50 @@ export default function Members() {
     }
   };
 
+  /* ===== CREATE MEMBER ===== */
+  const createMember = async () => {
+    if (!newMember.name || !newMember.personal_email) {
+      return alert("Name & Email required");
+    }
+
+    try {
+      await api.post("/members/create", newMember);
+      setAdding(false);
+      setNewMember({
+        name: "",
+        personal_email: "",
+        phone: "",
+        role: "MEMBER"
+      });
+      fetchMembers();
+    } catch {
+      alert("Failed to create member");
+    }
+  };
+
   return (
     <>
       <Navbar />
       <div className="page">
-        <h2>Members</h2>
+
+        {/* ===== HEADER WITH ADD BUTTON ===== */}
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+          <h2>Members</h2>
+          <button
+            style={{
+              background:"#2563eb",
+              color:"#fff",
+              padding:"10px 20px",
+              borderRadius:999,
+              border:"none",
+              fontWeight:700,
+              cursor:"pointer"
+            }}
+            onClick={() => setAdding(true)}
+          >
+            ➕ Add Member
+          </button>
+        </div>
 
         {loading ? <p>Loading...</p> : (
           <table className="table">
@@ -117,6 +167,7 @@ export default function Members() {
         )}
       </div>
 
+      {/* ===== EDIT MEMBER MODAL ===== */}
       {editing && (
         <div className="modalBg">
           <div className="modal">
@@ -143,11 +194,61 @@ export default function Members() {
               <option>JOINT_SECRETARY</option>
             </select>
 
-            <label><input type="checkbox" checked={editing.active} onChange={e=>setEditing({...editing,active:e.target.checked})}/> Active</label>
+            <label>
+              <input type="checkbox"
+                checked={editing.active}
+                onChange={e=>setEditing({...editing,active:e.target.checked})}
+              /> Active
+            </label>
 
             <div className="modalActions">
               <button onClick={saveMember}>Save</button>
               <button onClick={()=>setEditing(null)}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ===== ADD MEMBER MODAL ===== */}
+      {adding && (
+        <div className="modalBg">
+          <div className="modal">
+            <h3>Add Member</h3>
+
+            <input
+              placeholder="Full Name"
+              value={newMember.name}
+              onChange={e=>setNewMember({...newMember,name:e.target.value})}
+            />
+
+            <input
+              placeholder="Email"
+              value={newMember.personal_email}
+              onChange={e=>setNewMember({...newMember,personal_email:e.target.value})}
+            />
+
+            <input
+              placeholder="Phone"
+              value={newMember.phone}
+              onChange={e=>setNewMember({...newMember,phone:e.target.value})}
+            />
+
+            <select
+              value={newMember.role}
+              onChange={e=>setNewMember({...newMember,role:e.target.value})}
+            >
+              <option>MEMBER</option>
+              <option>EC_MEMBER</option>
+              <option>TREASURER</option>
+              <option>PRESIDENT</option>
+              <option>VICE_PRESIDENT</option>
+              <option>GENERAL_SECRETARY</option>
+              <option>JOINT_SECRETARY</option>
+            </select>
+
+            <div className="modalActions">
+              <button onClick={createMember}>Create</button>
+              <button onClick={()=>setAdding(false)}>Cancel</button>
             </div>
           </div>
         </div>
