@@ -108,17 +108,34 @@ export default function AdminDashboard() {
 
         {/* ===== QUICK ACTIONS ===== */}
         <div style={actions}>
-          <button style={primaryBtn} onClick={() => navigate("/members")}>
-            Members
-          </button>
-          <button style={secondaryBtn} onClick={() => navigate("/expenses")}>
-            Expenses
-          </button>
-          <button style={auditBtn} onClick={() => navigate("/audit-logs")}>
-            Audit Logs
-          </button>
-        </div>
+  <button style={primaryBtn} onClick={() => navigate("/members")}>
+    Members
+  </button>
 
+  {/* 🔥 ADD MEMBER BUTTON (PASTE HERE) */}
+  <button
+    style={{
+      background: "#16a34a",
+      color: "#fff",
+      padding: 10,
+      borderRadius: 8,
+      border: "none",
+      fontWeight: 700,
+      cursor: "pointer"
+    }}
+    onClick={() => navigate("/members/add")}
+  >
+    ➕ Add Member
+  </button>
+
+  <button style={secondaryBtn} onClick={() => navigate("/expenses")}>
+    Expenses
+  </button>
+
+  <button style={auditBtn} onClick={() => navigate("/audit-logs")}>
+    Audit Logs
+  </button>
+</div>
         {/* ===== FUND BALANCES ===== */}
         <div style={card}>
           <h3>💰 Fund Balances</h3>
